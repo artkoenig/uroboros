@@ -179,7 +179,8 @@ Report, in this order:
 2. Which of those entries you would act on, and which name a role that is not
    yours.
 3. The skills preloaded into you, by name — this page among them.
-4. The tools your page allows you.
+4. The tools available to you as dispatched — your page's frontmatter is not
+   in your context, so report the set you actually hold.
 
 Then return. A check-mode run that produces work, or a file, is a failed one.
 
