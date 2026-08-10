@@ -95,3 +95,58 @@ names nothing else.
   left that file alone. Flagging it only because a future widening of that case's
   file set would trip on it.
 - No question, nothing blocking.
+
+## Round 1
+
+Nothing to implement, and nothing implemented. The plan's Round 1 changes
+`test-repo.sh` and no other file, that change is the test-author's, and the plan
+states it outright: "**Implementer: there is nothing to implement this round.**
+Run `bash test-repo.sh`, confirm 75 cases and exit 0, and change no file." I did
+exactly that.
+
+### Tests first
+
+The plan records no red for this round: the page already carries every rule, so
+the replacing case `R1'` passes from its first run, and the run had to print 75
+cases and exit 0 both before and after. Running the suite is therefore both the
+red-first check and the done check, and one run serves as both.
+
+### Command run
+
+`bash test-repo.sh`, from the repository root, the only command the plan lists:
+75 cases, exit 0, `PASS: 75 cases`. Nothing skipped, nothing excluded. The block
+`=== the reviewer proves a doubt with a probe in the sandbox` printed all four
+of its cases green, the first of them the test-author's replacement:
+
+```
+ok   — every rule the probe licence needs stands in its own paragraph of agents/reviewer.md
+ok   — the old blanket prohibition on writing a test is gone from agents/reviewer.md
+ok   — the summary bullet on agents/reviewer.md reports how many probes ran and what they showed
+ok   — agents/reviewer.md is the only agent page or shipped skill naming a probe
+```
+
+Every other case in the file printed `ok` as well. I ran nothing else — not
+`./test.sh`, not any `node --test` suite, not `test-worktree.sh` — because the
+plan names nothing else.
+
+### Files changed
+
+None. `git status --porcelain` is empty apart from this handoff. `agents/
+reviewer.md`, `agents/test-author.md`, `README.md` and `test-repo.sh` are all
+exactly as the previous rounds left them, and no rule came back as a miss, so
+the plan's fallback ("If a new rule comes back as a miss, the case is wrong and
+the page is not; record it as a `deviations` entry") did not apply.
+
+### Notes for the reviewer
+
+- The one departure from the plan's literal text this round is the
+  test-author's, and it is already on the record: the label string for the
+  criterion-3-evidence rule reads "the pinning test stays with the test-author"
+  instead of the plan's "…stays the test-author's", to avoid an apostrophe
+  escape inside a single-quoted bash array literal. The label is printed on
+  failure and is matched on by nothing, so it pins the same rule.
+- The two observations the previous review left open are still open by design:
+  the 96-character line at `agents/reviewer.md:106` and the strictness of the
+  owners case are both marked "no correction needed", and the plan rejects
+  acting on them this round.
+- No question, nothing blocking.
