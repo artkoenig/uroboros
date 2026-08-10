@@ -61,6 +61,7 @@ const USAGE = [
   '  backlog.mjs steps   <backlogPath> <incrementId|-> [label ...] [--fields a,b,c]',
   '  backlog.mjs codemap <backlogPath>',
   '  backlog.mjs read    <backlogPath>',
+  '  backlog.mjs --help',
 ].join('\n')
 
 // Exit 2 is "you called it wrong" — an unknown command, a missing argument,
@@ -537,6 +538,14 @@ switch (command) {
   case 'read':
     need(1)
     read(rest[0])
+    break
+  // The same text the default branch puts on stderr with exit 2, put on
+  // stdout with exit 0 instead. Asking for the calling convention is a
+  // successful call and being called wrongly is not, so a caller that pipes
+  // the output or checks only the status can still tell the two apart.
+  case '--help':
+  case '-h':
+    process.stdout.write(USAGE + '\n')
     break
   default:
     fail(command ? `unknown command "${command}"\n${USAGE}` : USAGE, 2)
