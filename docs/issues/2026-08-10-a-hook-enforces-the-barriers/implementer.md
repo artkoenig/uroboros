@@ -122,3 +122,93 @@ Nothing is red. Nothing was skipped or excluded.
   *issue directory* reaches the same content and passes. That is the same class
   of accepted gap as `cd`-then-`cat`, and the plan does not ask for it.
 - No blocking question.
+
+## Round 1
+
+Built the researcher's Round 1 work order: the workflow now carries the human's
+answer in the prompt instead of routing an agent to `issue.md` for it.
+`hooks/read-barrier.mjs` and `hooks/read-barrier.test.mjs` are untouched, as the
+plan requires.
+
+### Tests first
+
+Ran `bash test-repo.sh` from the repository root before changing anything: exit
+1, `FAIL: 3 of 63 cases`. The three reds were exactly the ones the test-author
+handed over, and all in the `w19`/`w9`/`w1` driver modes:
+
+- `agile-loop.js: a resumed run hands the step that asked the human the answer
+  in its prompt` — three assertion failures in one case: the standing guard
+  (`implement:i1.0 is told to read the issue file its page closes: ["The answer
+  is under \`## Decisions\` in docs/issues/x/issue.md. Read it there first, …"]`),
+  `the repeated step's prompt does not carry the human's answer`, and `the
+  repeated step is pointed at the ## Decisions heading instead of handed the
+  answer`.
+- The `w9` case, on `the repeated step is not told that no answer came back …`.
+- The `w1` case, on `the state loader is not asked for the human's answer under
+  ## Decisions in issue.md …`.
+
+Red for the right reason: the workflow's `answeredBlock` pointed at the file,
+and the `load-state` prompt never asked for the section.
+
+### What changed
+
+All in `workflows/agile-loop.js` unless named otherwise.
+
+1. **`STATE` gains `decisions`.** A `string` property after `runSteps` and
+   before `summary`, described as everything under the `## Decisions` heading of
+   the issue file, verbatim and without the heading, empty when there is none.
+   `required` became
+   `['exists', 'branch', 'increments', 'runSteps', 'decisions', 'summary']`.
+2. **The `load-state` dispatch asks for it.** The paragraph the plan gives,
+   inserted immediately before the closing `Read nothing else, change nothing, …`
+   sentence, which stayed as it was.
+3. **One binding holds the answer.** `const decisions = state && typeof
+   state.decisions === 'string' ? state.decisions.trim() : ''`, after the
+   `issueBranch` block and before the `recorded`/`carriedQuestions` block, with
+   the comment the plan specifies on why the answer travels in the prompt.
+4. **`answeredBlock` hands over the text.** Replaced the function and its header
+   comment with the plan's version: the question (or, when none was recorded,
+   where the earlier attempt is) followed by either the answer in full or `The
+   human recorded no answer.` It names neither `issue.md` nor the `## Decisions`
+   heading any more.
+5. **Comment and log line follow the new route.** The comment above `const
+   recorded = new Map()` now says the state loader lifted the human's answer out
+   of `issue.md` and the step is worked again with the question and the answer in
+   front of it; a new `if (carriedQuestions.size && !decisions)` log line reports
+   that no answer came back.
+6. **The rulebook's sentence.** "with the question in its prompt and your answer
+   in `issue.md`" became "with the question and your answer both in its prompt".
+
+### Files touched
+
+- `/home/user/uroboros/workflows/agile-loop.js` — edits 1-5.
+- `/home/user/uroboros/rulebook.md` — edit 6.
+
+### Commands run
+
+- `bash test-repo.sh`, from the repository root, before the change: exit 1,
+  `FAIL: 3 of 63 cases` (the three above). Nothing skipped, nothing excluded.
+- `bash test-repo.sh`, from the repository root, after the change: exit 0,
+  `PASS: 63 cases`. Nothing skipped, nothing excluded.
+
+That closed list is the whole of what counts as done this round, so nothing else
+was run: `node --test hooks/read-barrier.test.mjs`, `bash test.sh` and `bash -n
+test.sh` are all off the plan's list and I left them alone.
+
+### Notes for the reviewer
+
+- **`GEMINI.md` is a symlink to `rulebook.md`, not a byte-for-byte twin.** The
+  plan says both files must get the same edit; `ls -l` shows
+  `GEMINI.md -> rulebook.md`, so editing `rulebook.md` edited both and `git
+  status` shows one modified path. Both files read with the new sentence;
+  nothing is left half-edited. Flagging it because the plan's premise about the
+  two files is wrong in a way that matters if anyone ever tries to edit them
+  separately.
+- **`answeredBlock` closes over `decisions`, which is declared after it.** The
+  function is a hoisted declaration and every call site runs well after the
+  `const` initialises, so there is no temporal-dead-zone hazard — the same shape
+  the existing `carriedQuestions` closure already had.
+- **No test edited and none written.** The `w19` mode, the `w9` and `w1`
+  changes, the fixtures and the standing guard loop were all in the tree when I
+  started.
+- No blocking question.
