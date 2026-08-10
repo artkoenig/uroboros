@@ -1497,40 +1497,50 @@ fi
 echo
 echo "=== the reviewer proves a doubt with a probe in the sandbox"
 
-# docs/issues/2026-08-10-reviewer-probes-in-the-sandbox lifts the reviewer's
-# blanket "never write a test, not even a throwaway" and replaces it with a
-# bounded licence: a probe written and run inside the sandbox worktree, never
-# reaching the checkout. A rewrite that grants the licence but drops one of
-# its bounds — no page mentioning the sandbox, or the sandbox exception
-# reaching outside it, or a probe left uncounted as evidence — would ship an
-# unbounded write permission or a silent one, and nothing but a grep over the
-# page's own sentences would catch either. Modelled on the
-# argus_view_patterns loop above: whitespace is collapsed first because every
-# one of these sentences wraps across lines in the source, and a per-line
-# grep would miss all of them.
+# The reviewer found that the flat pattern table above only proved every word
+# appears somewhere on the page — including the frontmatter `description`,
+# which already pairs "probe" with "sandbox", "checkout", "diff" and "doubt"
+# inside its own sentence. Deleting the rule from the body left the table
+# green, and the whole grip on criteria 1, 5 and 6 turned out to be the word
+# "commit" landing in a sentence that belongs to criterion 2. This case scopes
+# each rule to the section that owns it, then to one paragraph inside that
+# section, and pins it with a conjunction of terms chosen so only the
+# paragraph carrying that rule can satisfy all of them — so a paragraph
+# deleted from the body turns the case red instead of hiding behind a word
+# the frontmatter already carries.
 reviewer_probe_page="$root/agents/reviewer.md"
-reviewer_probe_collapsed="$(tr '\n' ' ' <"$reviewer_probe_page" | tr -s ' ')"
-declare -a reviewer_probe_patterns=(
-  'probe[^.]*sandbox|sandbox[^.]*probe'
-  'probe[^.]*checkout|checkout[^.]*probe'
-  'probe[^.]*commit|commit[^.]*probe'
-  'probe[^.]*diff|diff[^.]*probe'
-  'probe[^.]*doubt|doubt[^.]*probe'
-  'probe[^.]*(list|closed)|(list|closed)[^.]*probe'
-  'probe[^.]*test-author|test-author[^.]*probe'
-  'probe[^.]*returned|returned[^.]*probe'
+declare -a reviewer_probe_rules=(
+  '^## .*probe:criterion 1, a probe is written and run in the sandbox and what it returns is the reproduction:probe:sandbox:reproduc|return'
+  '^## .*probe:criterion 6, a probe follows a stated doubt that reaches the report:probe:doubt:report'
+  '^## .*probe:criterion 2, a probe never reaches the checkout, a commit or the diff:probe:checkout:commit:diff'
+  '^## .*probe:criterion 5, the closed list does not bind inside the sandbox:probe:closed:list'
+  '^## .*probe:criterion 3, a probe is evidence and the pinning test stays with the test-author:probe:test-author:classif|triag'
+  '^## .*reproduction:criterion 3, a reproduction is still a spec:reproduc:spec'
+  '^## what you record:criterion 4, the reproduction carries what the probe ran and returned:probe:return'
 )
 reviewer_probe_misses=""
-for pattern in "${reviewer_probe_patterns[@]}"; do
-  if ! echo "$reviewer_probe_collapsed" | grep -qiE "$pattern"; then
-    reviewer_probe_misses="${reviewer_probe_misses}${pattern}
+for rule in "${reviewer_probe_rules[@]}"; do
+  IFS=':' read -ra rule_fields <<<"$rule"
+  want="${rule_fields[0]}"
+  label="${rule_fields[1]}"
+  paragraphs="$(awk -v RS='' -v want="$want" '
+    /^## / { inside = tolower($0) ~ want; next }
+    inside { gsub(/\n/, " "); print }
+  ' "$reviewer_probe_page")"
+  matched="$paragraphs"
+  for ((field_index = 2; field_index < ${#rule_fields[@]}; field_index++)); do
+    term="${rule_fields[$field_index]}"
+    matched="$(echo "$matched" | grep -iE -- "$term" || true)"
+  done
+  if [ -z "$matched" ]; then
+    reviewer_probe_misses="${reviewer_probe_misses}${label}
 "
   fi
 done
 if [ -z "$reviewer_probe_misses" ]; then
-  ok "agents/reviewer.md carries every rule the probe licence needs"
+  ok "every rule the probe licence needs stands in its own paragraph of agents/reviewer.md"
 else
-  no "these patterns for the probe licence matched nothing in agents/reviewer.md:"
+  no "these rules of the probe licence stand in no paragraph of agents/reviewer.md:"
   echo "$reviewer_probe_misses" | sed 's/^/       /'
 fi
 
