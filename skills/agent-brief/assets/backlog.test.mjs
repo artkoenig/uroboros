@@ -974,6 +974,63 @@ test('read on a missing file exits 1 and prints nothing on stdout', () => {
   assert.equal(err.stdout || '', '');
 });
 
+// Shared mechanics, not any one command's rules: the CLI's own --help / -h
+// handling, and the usage text it shares with the exit-2 error path.
+
+test('--help prints the usage to stdout and exits 0, needing no backlog state at all', async () => {
+  const dir = tmpDir();
+
+  const { stdout, stderr } = await runAsync(['--help'], cleanEnv(), { cwd: dir });
+
+  assert.equal(stdout.startsWith('usage:\n'), true);
+  for (const line of [
+    'backlog.mjs init',
+    'backlog.mjs start',
+    'backlog.mjs record',
+    'backlog.mjs branch',
+    'backlog.mjs close',
+    'backlog.mjs index',
+    'backlog.mjs steps',
+    'backlog.mjs codemap',
+    'backlog.mjs read',
+    '--help',
+  ]) {
+    assert.equal(stdout.includes(line), true, `usage is missing "${line}"`);
+  }
+  assert.equal(stderr, '');
+  assert.deepEqual(fs.readdirSync(dir), [], 'asking for the usage writes no file and creates no backlog');
+});
+
+test('-h behaves exactly like --help', async () => {
+  const dir = tmpDir();
+
+  const help = await runAsync(['--help'], cleanEnv(), { cwd: dir });
+  const short = await runAsync(['-h'], cleanEnv(), { cwd: dir });
+
+  assert.equal(short.stdout, help.stdout);
+  assert.equal(short.stderr, '');
+});
+
+test('an unknown command keeps exiting 2 with the usage on stderr, byte for byte the same usage --help prints', async () => {
+  const help = await runAsync(['--help'], cleanEnv());
+
+  const err = runFails(['wat']);
+
+  assert.equal(err.status, 2);
+  assert.equal(err.stdout || '', '', 'the usage must not have moved to stdout on the error path');
+  assert.equal(err.stderr, 'unknown command "wat"\n' + help.stdout);
+});
+
+test('no arguments at all keeps exiting 2 with the usage on stderr', async () => {
+  const help = await runAsync(['--help'], cleanEnv());
+
+  const err = runFails([]);
+
+  assert.equal(err.status, 2);
+  assert.equal(err.stdout || '', '');
+  assert.equal(err.stderr, help.stdout);
+});
+
 test('a successful record leaves no .tmp file behind', () => {
   const dir = tmpDir();
   const backlogPath = path.join(dir, 'backlog.json');
