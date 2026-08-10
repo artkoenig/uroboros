@@ -358,3 +358,237 @@ cases are red: R1 (no page mentions a probe), R2 ("not even a throwaway" is
 still on l.90), R3 (the `summary` bullet does not mention a probe) and R4 (the
 owner list comes back empty instead of `agents/reviewer.md`). Every existing
 case in the file must still pass at the end.
+
+## Round 1
+
+The reviewer filed two findings, both `needs-plan`, both about the suite and
+neither about the prose: every acceptance criterion is stated on
+`agents/reviewer.md`, but four of them are pinned by nothing, because the four
+cases in `test-repo.sh` grep the whole page — frontmatter included — and the
+`description` on line 3 already pairs "probe" with "sandbox", "checkout",
+"diff" and "doubt" inside its own sentences. Delete the rule from the body and
+the suite stays green.
+
+So this round changes **`test-repo.sh` and no other file.** No production edit,
+no page edit. The one case that gives false confidence — the flat
+`reviewer_probe_patterns` table — is replaced by a table that matches each rule
+inside the *paragraph of the section that owns it*, which is what makes a
+deleted paragraph turn the case red. The other three cases in the block stay
+exactly as they are.
+
+### The fix, concretely
+
+In `test-repo.sh`, inside the existing block `=== the reviewer proves a doubt
+with a probe in the sandbox`, replace the first case — its comment and the
+`reviewer_probe_patterns` table, currently lines 1500–1535, everything from
+`# docs/issues/2026-08-10-reviewer-probes-in-the-sandbox lifts the reviewer's`
+down to the `fi` that closes it — with one case built on three mechanisms:
+
+1. **Section scoping.** A rule is looked for only inside the section that owns
+   it, so the frontmatter description cannot satisfy anything: it is not under
+   a `##` heading and is never read.
+2. **Paragraph scoping.** Inside that section each paragraph is collapsed to a
+   single line, and a rule must be satisfied by *one* paragraph — not by words
+   scattered across the section.
+3. **A conjunction of terms per rule**, chosen so that only the paragraph
+   carrying that rule can satisfy all of them. Each term is still a word or a
+   short alternation, never a sentence, so a rewording that keeps the rule
+   passes and a deletion does not.
+
+The extraction, which I verified (see "What I ran"), is one `awk` in paragraph
+mode. `want` is the lowercased heading pattern of the section:
+
+```
+awk -v RS='' -v want="$want" '
+  /^## / { inside = tolower($0) ~ want; next }
+  inside { gsub(/\n/, " "); print }
+' "$reviewer_probe_page"
+```
+
+Each rule is one entry of a `declare -a` array, colon-separated: the heading
+pattern, then the label printed on failure, then one field per term. Split it
+with `IFS=':' read -ra`, then filter the paragraph list through one
+`grep -iE -- "$term" || true` per term; a rule whose filtered list is empty is
+a miss. No label and no heading pattern may contain a colon.
+
+The table, verbatim — the terms are ERE, matched case-insensitively:
+
+| Heading pattern | Label (criterion) | Terms |
+| --- | --- | --- |
+| `^## .*probe` | criterion 1, a probe is written and run in the sandbox and what it returns is the reproduction | `probe`, `sandbox`, `reproduc\|return` |
+| `^## .*probe` | criterion 6, a probe follows a stated doubt that reaches the report | `probe`, `doubt`, `report` |
+| `^## .*probe` | criterion 2, a probe never reaches the checkout, a commit or the diff | `probe`, `checkout`, `commit`, `diff` |
+| `^## .*probe` | criterion 5, the closed list does not bind inside the sandbox | `probe`, `closed`, `list` |
+| `^## .*probe` | criterion 3, a probe is evidence and the pinning test stays the test-author's | `probe`, `test-author`, `classif\|triag` |
+| `^## .*reproduction` | criterion 3, a reproduction is still a spec | `reproduc`, `spec` |
+| `^## what you record` | criterion 4, the reproduction carries what the probe ran and returned | `probe`, `return` |
+
+Why each conjunction is the one that pins its paragraph, against the page as it
+stands:
+
+- **Criterion 1.** `reproduc|return` is what separates the licence paragraph
+  from the two other probe paragraphs that also pair "probe" with "sandbox".
+  Section scoping is what keeps the `## The reproduction rule` paragraph — which
+  says "probing in the sandbox" and "reproduction" in one breath — from
+  standing in for it.
+- **Criterion 6.** `report` is what separates the stated-doubt paragraph from
+  the licence paragraph, which also carries "doubt".
+- **Criterion 2.** All four terms meet in one sentence and nowhere else.
+- **Criterion 5.** `closed` plus `list` appear in the probe section only in the
+  closed-list paragraph.
+- **Criterion 3, both halves.** `classif|triag` pins the clause the reviewer
+  showed was droppable ("a finding a probe produced is classified like any
+  other"); the separate `## The reproduction rule` entry pins "A reproduction is
+  a spec", the sentence this change rewrote and the one a later edit would drop.
+- **Criterion 4.** `return` inside `## What you record` is carried by the
+  probe paragraph of the `findings` bullet alone; the `summary` bullet says
+  "showed", not "returned".
+
+Keep the file's conventions: `"$root/agents/reviewer.md"` for the path, `|| true`
+after every grep whose empty result is legitimate, one `ok`/`no` at the end of
+the loop, misses printed with `sed 's/^/       /'`. Suggested strings —
+`ok "every rule the probe licence needs stands in its own paragraph of
+agents/reviewer.md"` and `no "these rules of the probe licence stand in no
+paragraph of agents/reviewer.md:"`.
+
+The comment above the case says why it exists, as every case in that file does:
+the earlier table matched the frontmatter `description`, so deleting the rule
+for criterion 1, 5 or 6 from the body left the suite green, and the whole grip
+on three criteria was the word "commit" in a sentence belonging to a fourth.
+
+### Technical decisions, including the rejected ones
+
+- **No page changes this round.** The reviewer checked every criterion against
+  `agents/reviewer.md` and found all seven stated; both findings are that the
+  suite does not hold them. Editing the page would add a diff the next review
+  has to judge and fix nothing.
+- **Rejected: keeping the flat whole-page table and merely stripping the
+  frontmatter.** I checked it: it still leaves criterion 1 unpinned, because the
+  `## The reproduction rule` paragraph pairs "probing", "sandbox" and
+  "reproduction" in the body. Section scoping is not optional.
+- **Rejected: matching each rule against the collapsed section rather than a
+  paragraph.** Then criterion 6's `report` and criterion 1's `reproduc` would be
+  satisfied by each other's paragraphs, which is the same failure one level up.
+- **Rejected: exact heading strings.** `^## .*probe` and `^## .*reproduction`
+  let the section be renamed without turning the suite red for a wording choice
+  that is the reviewer's to make. A heading that no longer names a probe at all
+  makes every probe rule miss — that is the intended failure, and the printed
+  miss list says which rules were not found.
+- **Rejected: one case per rule, seven cases instead of one.** The file's
+  precedent for a table of required patterns (`argus_view_patterns`,
+  `reviewer_probe_patterns`) is a single case with a printed miss list, and a
+  miss list names the criterion just as precisely as seven case names would.
+- **Rejected: acting on the reviewer's two observations.** The 96-character line
+  at `agents/reviewer.md:106` and the strictness of the owners case are marked
+  "no correction needed" in the review; rewrapping the line would put a second,
+  cosmetic file in a diff that otherwise touches `test-repo.sh` alone.
+- **Rejected: a case that pins criterion 2's runtime half.** Unchanged from
+  Round 0: that no probe ever reaches a commit is a property of a future run,
+  not of this repository.
+
+### Module map
+
+| Path | What it holds | Entry points for this round |
+| --- | --- | --- |
+| `test-repo.sh` | The repository's own suite: bash `ok`/`no` cases in `echo "=== …"` blocks. `ok()`/`no()` at l.11–12, `root` at l.6. 1638 lines, exits non-zero when any case fails. | the block `=== the reviewer proves a doubt with a probe in the sandbox`, l.1497–1572; **replace** the comment and first case, l.1500–1535; **leave** the old-prohibition case (l.1537–1547), the `summary`-bullet case (l.1549–1560) and the owners case (l.1562–1572) untouched; the `argus_view_patterns` loop at l.1365–1389 is the table-and-miss-list precedent |
+| `agents/reviewer.md` | The reviewer's page. Read-only this round. Paragraph anchors the new table matches: `## The reproduction rule` l.87–91, `## The probe` l.112–132 (licence l.114–116, stated doubt l.118–121, the bounds l.123–124, the closed list l.126–128, evidence-not-the-test l.130–132), `## What you record` l.134–169 (probe paragraph l.149–150, `summary` bullet l.168–169) | none — do not edit |
+
+Unchanged and not to be touched: `README.md`, `agents/test-author.md`,
+`workflows/agile-loop.js`, `skills/agent-brief/SKILL.md`, `hooks/`, `tools/`,
+`rulebook.md`.
+
+### Environment
+
+- **Shell:** `bash`, every command run from the repository root.
+- **`awk`** is on the path and is used by the new case; nothing else in
+  `test-repo.sh` uses it today, and POSIX paragraph mode (`RS=''`), `tolower`
+  and `gsub` are all it needs. `node` is on the path for other blocks and is
+  not needed by this one.
+- **Linter, formatter, type checker: there are none in this repository.**
+- `test-repo.sh` is not executable; run it as `bash test-repo.sh`. It prints one
+  `ok —` or `FAIL —` line per case and exits non-zero if any case failed.
+- `./test.sh` is the aggregate of every suite and is deliberately **not** in the
+  closed list: this round touches nothing any other suite covers.
+
+### Test plan
+
+Tests are needed, and they are the whole of the change: both findings say the
+existing cases do not fail when the rule leaves the page, and the correction is
+a case that does.
+
+**What, per criterion.** One case, `R1'`, replacing the old `R1`. It carries
+seven rules, listed in the table above, covering criteria 1, 2, 3 (both halves),
+4, 5 and 6.
+
+- Input/state: `agents/reviewer.md` as it stands in the tree.
+- Expected: no rule misses; the case prints `ok` and the miss list is empty.
+- Edges: a rule matched by two paragraphs is as good as one, so a repeat needs
+  no handling; a section heading that matches nothing yields an empty paragraph
+  list and every rule of that section misses, which is the intended red.
+- Untested, deliberately: the wording of any sentence; `agents/test-author.md`'s
+  one clause and the `README.md` sentence (prose the review reads, and a grep
+  over them would fail on any correction the reviewer asks for); criterion 2's
+  runtime half.
+
+Criterion 7 keeps the case it already has — the `summary` bullet with its
+continuation lines must mention a probe — and criteria 1 and 5's containment
+property keeps the owners case. Neither was faulted; do not rewrite them.
+
+**How.** Level: structural, over the repository's own files, no framework and no
+fixtures. File: `test-repo.sh`, inside the existing block at l.1497. Conventions
+of that file, which the case follows: a comment above each case saying why it
+exists, `if … then ok "<lowercase declarative sentence>" else no "<what is
+wrong>" fi`, `"$root/…"` paths, `|| true` on a grep whose empty result is
+legitimate, offending lines printed with `sed 's/^/       /'`, and a table of
+requirements as a `declare -a` array plus a loop collecting misses into one
+string. Nothing is faked; nothing is written; no temporary directory is used.
+
+**Command that runs just this file:** `bash test-repo.sh`. There is no way to
+run one case; the file takes a few seconds.
+
+**What counts as done.** Run exactly this, from the repository root:
+
+```
+bash test-repo.sh
+```
+
+Nothing else. Not `./test.sh`, not `node --test` on any suite, not
+`test-worktree.sh`.
+
+**What is already red.** Nothing. I did not run the suite, not once and not as a
+baseline: the reviewer reported `bash test-repo.sh`, 75 cases, exit 0 on this
+tree, and this round adds no case and removes none, so 75 cases and exit 0 is
+what the run must still print afterwards.
+
+This round has no red-first phase, and that is deliberate: the page already
+carries every rule, so the replacement case passes from its first run — I
+verified exactly that (below). **Implementer: there is nothing to implement this
+round.** Run `bash test-repo.sh`, confirm 75 cases and exit 0, and change no
+file. If a new rule comes back as a miss, the case is wrong and the page is not;
+record it as a `deviations` entry and still do not edit `agents/reviewer.md`.
+
+### What I ran
+
+Not the suite. I ran a prototype of the proposed case — the `awk` extraction and
+the seven rules above, in a scratch script outside the checkout — against
+fourteen copies of `agents/reviewer.md`, to settle the one question the plan
+turns on: whether these conjunctions go red on exactly the reviewer's
+reproductions and stay green on a faithful rewording. No file in the checkout
+was read for it other than `agents/reviewer.md`, and none was written.
+
+Results, one line per copy:
+
+- the page as it stands: no misses.
+- each of the five probe paragraphs deleted in turn, and the whole `## The
+  probe` section deleted: the matching rule misses each time, all five miss for
+  the whole-section deletion.
+- the `findings` probe paragraph deleted: criterion 4 misses.
+- the last paragraph of `## The reproduction rule` deleted, and — the reviewer's
+  own two clause-level reproductions — "A reproduction is a spec, not a file you
+  wrote. " deleted, and " — and a finding a probe produced is classified like any
+  other" deleted: the matching rule misses each time.
+- the clause "and carry that sentence into your report" deleted: criterion 6
+  misses.
+- the whole `## The probe` section rewritten in different words, keeping every
+  rule: no misses.
+- the heading renamed to `## Probes in the sandbox`: no misses.
