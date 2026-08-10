@@ -461,3 +461,281 @@ must still pass at the end — in particular the driver's standing assertions th
 no prompt reads a step without `--fields`, that no implementer prompt is told to
 read `issue.md`, and w5's assertion that a *planned* implementer round is not
 sent to the codemap.
+
+## Round 1
+
+Two findings, both in `workflows/agile-loop.js`, both fixed by changing when the
+loop treats a round as direct. No page, no README, no `backlog.mjs`, no schema
+of the recorder changes. This section is the whole work order for this round:
+the sections above are how the change got here, not something to do again.
+
+### Implementation plan
+
+#### Finding 1 — a correction round of a `direct` increment always runs the full chain
+
+Criterion 6 gives no exception for a verdict whose findings are all direct
+fixes, so the attempt-level depth has to beat the verdict. At
+`workflows/agile-loop.js:802`, replace
+
+```js
+const directFix = round > 0 && isDirectFixRound(verdict)
+```
+
+with
+
+```js
+const directFix = round > 0 && depth !== 'direct' && isDirectFixRound(verdict)
+```
+
+`depth` is the attempt's depth, settled at line 763, so this reads: an increment
+this attempt is working direct leaves the direct path the moment a review files
+anything, whatever the verdict says about the findings.
+
+Rewrite the two comments that sit around those lines, because one of them
+states the decision this finding reverses:
+
+- The comment above `directFix` (l.799–801) keeps its point that the round
+  before's verdict is what decides, and gains the new clause: an increment the
+  planner cut direct is never a direct-fix round, because a review that files
+  anything against it has already shown the classification was wrong.
+- The comment above `directRound` (l.803–805) currently says "a correction round
+  of a direct increment is an ordinary round unless the reviewer's verdict makes
+  it a direct-fix one". Replace that clause: the planner's classification governs
+  round 0, and every later round of that attempt is a full round — the
+  reviewer-driven fast path stays open to increments the planner cut `full`.
+
+Nothing else in the round moves. `isDirectFixRound` keeps its meaning and its
+callers, the direct-fix implementer brief and its `{ effort: 'low' }` stay as
+they are, and w16 — a `full` increment whose review returns `allDirect` — must
+stay green, because that is the path the issue's non-goals keep.
+
+#### Finding 2 — a hand-back the state remembers forces `full` across a restart
+
+The session-local attempt counter cannot see an attempt an earlier session
+closed, so the depth override needs a signal that survives the restart. The
+recorder already computes one: `index` projects `attempts:
+(increment.attempts || []).length` per increment
+(`skills/agent-brief/assets/backlog.mjs:423`), which is how many attempts
+`close` has archived for that increment. A `todo` increment with a non-zero
+count is exactly an increment handed back after a failed attempt. Three edits,
+all in `workflows/agile-loop.js`:
+
+1. **`STATE`, `increments.items` (l.148–162).** Add `attempts: { type:
+   'integer' },` after `steps` in `properties`, and `'attempts'` at the end of
+   `required`. Give it no description — its neighbours in this schema, `depth`
+   included, carry none, and the array's own description already says the items
+   are the index's increments verbatim.
+2. **A map beside `branches` (after l.573).** Seed, from the same loop or a
+   second one over `savedIndex.increments`, a `const closedAttempts = new Map()`
+   holding the count for every increment whose `attempts` is a positive number.
+   Comment it in the file's voice: what it holds is how many attempts the state
+   says this increment has already closed, and it exists for one decision only —
+   an increment that has closed an attempt is never worked direct again, however
+   the re-cut classified it.
+3. **The depth line (l.758–763).** Extend the condition:
+   ```js
+   const depth =
+     task.depth === 'direct' && attempt === 1 && !closedAttempts.get(task.id) ? 'direct' : 'full'
+   ```
+   and extend its comment: the session counter catches a hand-back inside one
+   session, the archived count catches one across a restart, and between them a
+   second attempt is never direct.
+
+Then correct the head comment at l.64–69, which now contradicts the code. Its
+clause "closing an increment ends its attempt in the state, so nothing there
+counts attempts" is false once the loop reads that count: keep `MAX_ATTEMPTS`
+session-local and keep the sentence that a restart granting one more attempt is
+cheaper than a budget kept in the file, but say that the count the index does
+carry is read for one thing only — never working an increment direct twice.
+
+### Technical decisions, including the rejected ones
+
+- **The archived attempt count, not the branch name, is the restart signal.**
+  `nextBranchName` also knows a later attempt is starting, and the reviewer's
+  finding names it. Rejected: the branch machinery only runs when the state
+  loader named an issue branch (`workflows/agile-loop.js:521, 779`), so a run
+  on a checkout with no issue branch would silently lose the rule; and it would
+  make branch naming, which is about collisions on the remote, the carrier of a
+  rule about chain depth.
+- **A map keyed by id, seeded once at startup, not `task.attempts` read off the
+  increment.** The increment object is replaced by the planner's returned
+  `increments` on every re-cut (l.1035–1037), and that object cannot carry
+  `attempts` — `BACKLOG` forbids it with `additionalProperties: false`. The map
+  survives that, exactly as `branches` does.
+- **`MAX_ATTEMPTS` stays session-local.** Seeding the `attempts` counter itself
+  from the archived count was rejected: it would change the backstop's budget
+  across a restart, which the head comment settles deliberately and which no
+  criterion of this issue asks for.
+- **An increment that closed an attempt is forced `full` whatever it closed
+  as.** A `done` increment a later re-cut re-opens as `todo` is thereby full
+  too. Rejected: keying on the status the attempt closed with, which would add a
+  field to the index for a case worth nothing — `full` is the default the whole
+  change leans on, and being conservative here costs at most one increment's
+  chain.
+- **Nothing outside the loop changes.** `README.md` already says "A correction
+  round leaves that path, and a second attempt at an increment is always
+  `full`", and `agents/planner.md`'s `## How deep the chain goes` already says
+  a misclassified increment "is worked again in full afterwards". Both describe
+  the behaviour after this round, so do not edit them. `agents/implementer.md`,
+  `agents/reviewer.md`, `skills/agent-brief/assets/backlog.mjs` and its suite
+  doc are untouched.
+
+### Module map
+
+| Path | What it holds | Entry points for this round |
+| --- | --- | --- |
+| `workflows/agile-loop.js` | The whole orchestration: schemas, prompt builders, the resume machinery, the increment loop. Run by the harness as an async function body with `args`, `agent`, `log`, `phase`. | head comment l.64–69; `STATE` increments items l.148–162; `branches` seed l.565–573; `incrementHasHistory` l.580; per-attempt depth l.758–763; `directFix`/`directRound` l.797–806 |
+| `skills/agent-brief/assets/backlog.mjs` | The only writer and reader of `backlog.json`. Read-only for this round: `index` at l.406 already projects `attempts` as a count, and `close` at l.346–349 is what increments it. | nothing to change |
+| `test-repo.sh` | The repository's suite: bash cases plus an embedded `driver.js` heredoc (l.485–1254) that compiles `workflows/agile-loop.js` with `new AsyncFunction` and runs it against a stubbed `agent()` under a mode name, then a list of `run_driver` calls (l.1266–1294). | `idxIncrement` l.593–608; state builders l.620–700; `contextFor` l.702–783; mode chain, after the `w23` block that ends l.1239; `run_driver` list l.1266–1289 |
+
+### Environment
+
+- **Shell:** `bash`, run from the repository root.
+- **Runtime:** Node.js. The suite is zero-dependency; there is no `package.json`
+  at the repository root and no install step.
+- **Linter, formatter, type checker:** there are none in this repository.
+- `test-repo.sh` is not executable; it is run as `bash test-repo.sh`. It prints
+  one `ok`/`FAIL` line per case and exits non-zero when any case fails. There is
+  no way to run a single driver mode through it; the whole file takes a few
+  seconds.
+- `node --test skills/agent-brief/assets/backlog.test.mjs` is not part of this
+  round: no file that suite covers changes.
+
+### Test plan
+
+Tests are needed. Both findings are a behaviour of the loop on a path no case
+walks, and both are provable by the driver that already models this loop.
+
+#### What, per finding
+
+**Finding 1 — criterion 6, the `allDirect` edge.**
+
+- *W24* One increment, `depth: 'direct'`. `review:i1.0` returns the
+  all-direct-findings verdict; every later review is clean. Expected: the
+  correction round runs the full chain — researcher, test-author, implementer,
+  reviewer — and the round-1 implementer works from the plan, not from the
+  findings.
+- Edges: the `allDirect` verdict is the only one criterion 6 has left untested
+  (`allDirect: false` is w22, already in the tree). The
+  round-2-and-beyond repeat is not tested separately: `depth !== 'direct'` is
+  round-independent, and w17 already pins that an increment burns all its
+  correction rounds.
+- Untested by decision: that a `full` increment still takes the
+  reviewer-driven direct-fix path. w16 pins it already and must stay green.
+
+**Finding 2 — criterion 7, across a restart.**
+
+- *W25* A resumed run whose state holds one open increment classified
+  `direct`, with the abandoned branch of a failed attempt, one archived attempt
+  and no current step — the shape `close` leaves after the planner hands an
+  increment back. Expected: the increment is worked full from round 0, on a
+  fresh `-take2` branch, and its entry in the result carries `full`.
+- Edges: the count is read as "any non-zero", so a second restart needs no case
+  of its own. The live-session hand-back is w23, already in the tree.
+- Untested by decision: that the state loader actually returns `attempts` for
+  each increment. The driver stubs `agent()` and validates no schema, so the
+  `STATE` addition is unreachable from a test — the same gap the earlier round
+  recorded for `BACKLOG`'s `depth`, and it is the review that reads it.
+
+#### How, per case
+
+Both cases are integration cases against the real workflow script, in the
+`driver.js` heredoc inside `test-repo.sh`. Level: the whole script, compiled
+from source and run with a stubbed `agent()` that records `{label, agentType,
+prompt}` and answers per label. No framework: `assertTrue` and
+`assertEqualArrays` are defined at the top of the heredoc, failures are
+collected and printed on exit 1. Nothing touches the filesystem, and no fixture
+carries a plan, a test plan or a finding — only the steering values a return
+holds. Every assertion message says what went wrong, not what was expected.
+
+**Shared fixture changes**, before either case:
+
+- `idxIncrement` (l.593–608): add `attempts: 0` to the defaults, overridable
+  through `extra`, in the position the index prints it — after `steps`. Every
+  existing call site stays unchanged.
+- Add nothing to `DISJOINT_MARKERS`: neither case needs a new marker.
+
+**W24** — mode `w24`.
+
+- `contextFor` gains, after `case 'w23'`:
+  ```js
+  case 'w24':
+    return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithDirectFinding : verdictReturnClean) };
+  ```
+  It is w22 with w16's verdict fixture. Add a comment above it saying the case
+  is the `allDirect` edge of a direct increment: the verdict that would open the
+  fast path for a `full` increment must not open it for this one.
+- Assertions, in an `else if (mode === 'w24')` block after the `w23` block
+  (l.1239), opened with a comment in the surrounding style stating why the case
+  exists:
+  - `assertEqualArrays(labels, ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0', 'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'], …)`
+    with a message along the lines of "a direct increment whose review filed
+    findings that are all direct fixes did not run the full chain in its
+    correction round".
+  - `research:i1.1` exists and its prompt includes
+    `readStep('i1', 'review:i1.0', 'findings')`.
+  - `implement:i1.1` exists and its prompt includes
+    `readStep('i1', 'research:i1.1', 'plan,moduleMap,environment')` — the
+    planned brief, not the direct-fix one.
+- `run_driver "$wf" w24 "$wf_name: a direct increment whose review files only direct fixes still runs the full chain in its correction round"`,
+  added to the `for wf in` loop (l.1266–1289) after the `w23` line.
+
+**W25** — mode `w25`.
+
+- A new state builder beside the others (l.620–700), with a comment saying what
+  it models: the state a hand-back leaves once the session that made it is
+  gone — `close` archived the attempt's steps, so the increment is open with no
+  current step, one closed attempt and the abandoned branch still recorded, and
+  the session's own counter starts at zero again.
+  ```js
+  const handedBackState = () =>
+    stateOf(
+      [idxIncrement('i1', { depth: 'direct', branch: 'issue-branch--i1', attempts: 1 })],
+      [idxStep('decompose', decomposeReturnDirect)],
+    );
+  ```
+- `contextFor` gains
+  ```js
+  case 'w25':
+    return { stateReturn: handedBackState(), decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
+  ```
+- Assertions, in an `else if (mode === 'w25')` block after `w24`:
+  - `assertEqualArrays(labels, ['load-state', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'], …)`
+    with a message along the lines of "an increment whose earlier attempt the
+    state archived was worked direct again after the restart". `decompose` is
+    absent because the state's `runSteps` hold it and it replays, as in w15.
+  - `research:i1.0` exists and its prompt includes
+    `git checkout -b issue-branch--i1-take2` — the second attempt's fresh
+    branch, so the case shows the run knew it was a later attempt while it
+    classified.
+  - `result.increments[0].depth === 'full'`.
+- `run_driver "$wf" w25 "$wf_name: an increment the state shows as having already closed an attempt is full again after a restart"`,
+  added after the `w24` line.
+
+Change no existing case, no existing fixture beyond `idxIncrement`'s new
+default, and no bash block. w16, w20, w21, w22, w23, P1 and P2 stay exactly as
+they are and stay green.
+
+#### What counts as done
+
+Run exactly this, from the repository root:
+
+```
+bash test-repo.sh
+```
+
+Nothing else. Not the recorder suite, not `./test.sh`, not the `tools/` suites,
+not `test-worktree.sh` — this round changes one production file, and the driver
+inside `test-repo.sh` is what covers it.
+
+#### What is already red
+
+I ran no command this round, not once and not as a baseline. From reading, the
+tree is green as the reviewer left it (69 cases, exit 0), and after the
+test-author's work and before the implementer's exactly W24 and W25 are red:
+W24's label array comes back as
+`['load-state','decompose','implement:i1.0','review:i1.0','implement:i1.1','review:i1.1','replan:i1','publish']`
+because the correction round takes the direct-fix path, and W25's comes back as
+`['load-state','implement:i1.0','review:i1.0','replan:i1','publish']` because
+the restarted attempt is still classified direct. Every other case in
+`test-repo.sh` must be green before the change and after it.
