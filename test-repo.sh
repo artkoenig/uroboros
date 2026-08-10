@@ -602,6 +602,7 @@ function idxIncrement(id, extra) {
       branch: '',
       depth: 'full',
       steps: [],
+      attempts: 0,
     },
     extra || {},
   );
@@ -699,6 +700,16 @@ const laterIncrementState = () =>
     [idxStep('decompose', decomposeReturnOne)],
   );
 
+// The state a hand-back leaves once the session that made it is gone: `close`
+// archived the failed attempt's steps, so the increment is open with no
+// current step, one closed attempt on record and the abandoned branch still
+// carried — and the new session's own attempt counter starts at zero again.
+const handedBackState = () =>
+  stateOf(
+    [idxIncrement('i1', { depth: 'direct', branch: 'issue-branch--i1', attempts: 1 })],
+    [idxStep('decompose', decomposeReturnDirect)],
+  );
+
 function contextFor(m) {
   switch (m) {
     case 'w1':
@@ -777,6 +788,14 @@ function contextFor(m) {
         },
       };
     }
+    case 'w24':
+      // w22 with w16's verdict fixture: the review that would open the
+      // reviewer-driven fast path for a full increment must not open it for
+      // one the planner already cut direct — the allDirect edge of criterion
+      // 6.
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithDirectFinding : verdictReturnClean) };
+    case 'w25':
+      return { stateReturn: handedBackState(), decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1237,6 +1256,37 @@ async function main() {
     const secondAttempt = calls.find((c) => c.label === 'research:i1.0');
     assertTrue(!!secondAttempt && secondAttempt.prompt.includes('git checkout -b issue-branch--i1-take2'),
       "the second attempt's researcher is not sent to a fresh take2 branch, so the loop did not force the increment full despite the still-direct fixture");
+  } else if (mode === 'w24') {
+    // A direct increment whose round-0 review files a finding that is entirely
+    // a direct fix: the reviewer-driven fast path that skips the researcher and
+    // the test-author for a full increment must not open for one the planner
+    // already cut direct, because a review that files anything against it has
+    // already shown the classification was wrong. The correction round runs
+    // the full chain, and the round-1 implementer works from the plan, not
+    // from the findings.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0',
+       'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'],
+      'a direct increment whose review files only direct fixes did not run the full chain in its correction round');
+    const researchCall = calls.find((c) => c.label === 'research:i1.1');
+    assertTrue(!!researchCall && researchCall.prompt.includes(readStep('i1', 'review:i1.0', 'findings')),
+      "round 1's researcher is not sent to the findings the round-0 review filed");
+    const implCall = calls.find((c) => c.label === 'implement:i1.1');
+    assertTrue(!!implCall && implCall.prompt.includes(readStep('i1', 'research:i1.1', 'plan,moduleMap,environment')),
+      "round 1's implementer is not sent to the plan the researcher wrote, so the round did not take the planned brief");
+  } else if (mode === 'w25') {
+    // An increment the state shows as having already closed an attempt: the
+    // session-local counter cannot see it, but the archived attempt count the
+    // index carries can, and it is what keeps a hand-back full across a
+    // restart.
+    assertEqualArrays(labels,
+      ['load-state', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'an increment whose earlier attempt the state archived was worked direct again after the restart');
+    const researchCall = calls.find((c) => c.label === 'research:i1.0');
+    assertTrue(!!researchCall && researchCall.prompt.includes('git checkout -b issue-branch--i1-take2'),
+      "the restarted attempt's researcher is not sent to a fresh take2 branch, so the run did not know it was a later attempt while it classified");
+    assertTrue(!!result && Array.isArray(result.increments) && !!result.increments[0] && result.increments[0].depth === 'full',
+      "the run's result does not carry the restarted increment's chain depth as full");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1286,6 +1336,8 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w21 "$wf_name: a full increment and a direct increment each take their own path, the direct one judged by the run's last researcher step"
   run_driver "$wf" w22 "$wf_name: a direct increment whose review files a finding leaves the direct path for the rest of its attempt"
   run_driver "$wf" w23 "$wf_name: an increment the planner cut direct and handed back after a failed attempt is full on its next attempt"
+  run_driver "$wf" w24 "$wf_name: a direct increment whose review files only direct fixes still runs the full chain in its correction round"
+  run_driver "$wf" w25 "$wf_name: an increment the state shows as having already closed an attempt is full again after a restart"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment

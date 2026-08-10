@@ -186,3 +186,99 @@ The one thing worth the researcher's attention is the accidental read of
 `backlog.mjs` noted above: it changed nothing about what I wrote, but it is a
 process gap on my side rather than a plan gap, so I am recording it rather
 than silently absorbing it.
+
+## Round 1
+
+This round's criterion is the reviewer's reproduction spec for two findings,
+both in `workflows/agile-loop.js`. I wrote the two cases the Round 1 test plan
+named, W24 and W25, in `test-repo.sh` alone. Production code was not opened
+this round either.
+
+### Finding 1 — criterion 6, the `allDirect` edge
+
+*W24* → `test-repo.sh`, driver mode `w24`, case line `"agile-loop.js: a direct
+increment whose review files only direct fixes still runs the full chain in
+its correction round"`. `contextFor` gained `case 'w24'`, modelled on the
+plan's own description — w22's fixture (`decomposeReturnDirect`, no state)
+with w16's verdict fixture (`verdictReturnWithDirectFinding` on `review:i1.0`
+alone, `verdictReturnClean` after). Assertions, exactly as the plan specifies:
+the label array, `research:i1.1`'s prompt carrying
+`readStep('i1', 'review:i1.0', 'findings')`, and `implement:i1.1`'s prompt
+carrying `readStep('i1', 'research:i1.1', 'plan,moduleMap,environment')` — the
+planned brief, not the direct-fix one.
+
+Failure when run:
+```
+a direct increment whose review files only direct fixes did not run the full
+chain in its correction round — expected
+["load-state","decompose","implement:i1.0","review:i1.0","research:i1.1","tests:i1.1","implement:i1.1","review:i1.1","replan:i1","publish"]
+got
+["load-state","decompose","implement:i1.0","review:i1.0","implement:i1.1","review:i1.1","replan:i1","publish"]
+round 1's researcher is not sent to the findings the round-0 review filed
+round 1's implementer is not sent to the plan the researcher wrote, so the
+round did not take the planned brief
+```
+All three sub-assertions fail together, for the one reason the plan predicts:
+the correction round still takes the direct-fix path instead of the full
+chain.
+
+### Finding 2 — criterion 7, across a restart
+
+*W25* → `test-repo.sh`, driver mode `w25`, case line `"agile-loop.js: an
+increment the state shows as having already closed an attempt is full again
+after a restart"`. Added the state builder `handedBackState()` beside the
+other builders, exactly as the plan's snippet gives it: one increment,
+`depth: 'direct'`, `branch: 'issue-branch--i1'`, `attempts: 1`, with only
+`decompose` in `runSteps` — the shape `close` leaves once a session that made
+a hand-back is gone. `contextFor` gained `case 'w25'` returning that state
+with `decomposeReturnDirect` and `planReturn`. Assertions, exactly as the
+plan specifies: the label array (no `decompose` — it replays from
+`runSteps`, as in w15), `research:i1.0`'s prompt carrying
+`git checkout -b issue-branch--i1-take2`, and
+`result.increments[0].depth === 'full'`.
+
+Failure when run:
+```
+an increment whose earlier attempt the state archived was worked direct again
+after the restart — expected
+["load-state","research:i1.0","tests:i1.0","implement:i1.0","review:i1.0","replan:i1","publish"]
+got
+["load-state","implement:i1.0","review:i1.0","replan:i1","publish"]
+the restarted attempt's researcher is not sent to a fresh take2 branch, so the
+run did not know it was a later attempt while it classified
+the run's result does not carry the restarted increment's chain depth as full
+```
+All three sub-assertions fail together: the restarted attempt is still
+classified direct, exactly as the plan's "What is already red" predicts.
+
+### Shared fixture change
+
+Per the plan, `idxIncrement` (in `test-repo.sh`) gained `attempts: 0` in its
+defaults, in the position the index prints it — after `steps`, overridable
+through `extra`. Every existing call site is unchanged and still produces
+`attempts: 0`. Nothing was added to `DISJOINT_MARKERS`, matching the plan:
+neither case needs a new marker. No existing fixture, case or bash block
+changed beyond that.
+
+### Command run
+
+```
+bash test-repo.sh
+```
+71 cases, 69 ok, 2 FAIL (W24 and W25 above), exit 1. Every case that existed
+before this round — w1–w23, P1, P2 and every standing bash check — still
+passes.
+
+`skills/agent-brief/assets/backlog.test.mjs` was not touched and was not run
+this round: the plan's "What counts as done" names `bash test-repo.sh` alone,
+and no file that suite covers changes in this round.
+
+### Gaps and conflicts found in the plan
+
+None. Both label arrays, the prompt substrings and the fixture shapes the plan
+gives were followed literally and matched the driver's actual behaviour on the
+pre-round tree: each new case is red only on the missing behaviour the finding
+describes (the correction round still taking the direct-fix path for W24; the
+restarted attempt still reading as direct for W25), never on a fixture
+mistake — confirmed by running the suite after the fixture and `contextFor`
+additions, before writing either mode's own assertions.
