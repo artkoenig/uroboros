@@ -446,6 +446,30 @@ else
 fi
 
 echo
+echo "=== the planner alone owns the chain depth it decides"
+
+# `chain depth` is the planner's phrase to define and to own; any other agent
+# page or shipped skill naming it too would say the bar twice, and the two
+# copies disagree the moment one drifts. Mirrors the rulebook_readers case
+# above.
+chain_depth_owners="$(grep -lie 'chain depth' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$chain_depth_owners" = "$root/agents/planner.md" ]; then
+  ok 'agents/planner.md is the only agent page or shipped skill naming "chain depth"'
+else
+  no "the phrase \"chain depth\" is owned by more (or fewer) pages than agents/planner.md alone:"
+  echo "${chain_depth_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# The implementer's second work order — where its prompt names no researcher
+# step, the criteria and the codemap are its whole brief — has to name the
+# codemap by name for that brief to mean anything.
+if grep -qi 'codemap' "$root/agents/implementer.md"; then
+  ok "agents/implementer.md names the codemap it works from when no researcher step is named"
+else
+  no "agents/implementer.md never names the codemap"
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
@@ -536,11 +560,16 @@ const verdictReturnWithDirectFinding = Object.assign({}, verdictReturnWithFindin
   allDirect: true,
 });
 
-function increment(id) {
-  return { id, title: 'Deliver ' + id, goal: 'Deliver ' + id + '.', criteria: ['does ' + id], status: 'todo', note: '' };
+function increment(id, depth) {
+  return { id, title: 'Deliver ' + id, goal: 'Deliver ' + id + '.', criteria: ['does ' + id], status: 'todo', note: '', depth: depth || 'full' };
 }
 const decomposeReturnOne = { increments: [increment('i1')], questions: [], summary: 'backlog summary' };
 const decomposeReturnTwo = { increments: [increment('i1'), increment('i2')], questions: [], summary: 'backlog summary' };
+// The planner's chain depth on the cut: one increment classified direct alone,
+// and a mix of a full increment followed by a direct one, so a run can prove
+// each increment takes its own path.
+const decomposeReturnDirect = { increments: [increment('i1', 'direct')], questions: [], summary: 'backlog summary' };
+const decomposeReturnMixed = { increments: [increment('i1'), increment('i2', 'direct')], questions: [], summary: 'backlog summary' };
 
 // The state loader returns the index of backlog.json, never the file: the cut,
 // the recorded labels and the small steering values of each. These builders
@@ -571,6 +600,7 @@ function idxIncrement(id, extra) {
       status: 'todo',
       note: '',
       branch: '',
+      depth: 'full',
       steps: [],
     },
     extra || {},
@@ -722,6 +752,31 @@ function contextFor(m) {
       return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: () => verdictReturnWithFinding };
     case 'w19':
       return { stateReturn: buildQuestionState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w20':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
+    case 'w21':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnMixed, researchReturn: planReturn };
+    case 'w22':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithFinding : verdictReturnClean) };
+    case 'w23': {
+      // Modelled on w12: the closing planner hands the direct increment back
+      // as todo, still classified direct, and settles it done on the second
+      // pass. The depth surviving in the fixture is the point of the case —
+      // the loop, not the planner's re-cut, is what forces the second attempt
+      // full.
+      let replans = 0;
+      return {
+        stateReturn: noState,
+        decomposeReturn: decomposeReturnDirect,
+        researchReturn: planReturn,
+        closeFor: () => {
+          replans += 1;
+          return replans === 1
+            ? { increments: [increment('i1', 'direct')], questions: [], summary: 'handed back' }
+            : { increments: [Object.assign(increment('i1', 'direct'), { status: 'done' })], questions: [], summary: 'closed' };
+        },
+      };
+    }
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1107,6 +1162,81 @@ async function main() {
       'the repeated step is pointed at the ## Decisions heading instead of handed the answer');
     assertTrue(!!result && Array.isArray(result.blockedOnHuman) && result.blockedOnHuman.length === 0,
       'the resumed run did not carry on to a clean close');
+  } else if (mode === 'w20') {
+    // An increment the planner cut direct: round 0 is worked by the
+    // implementer and the reviewer alone, with no researcher and no
+    // test-author dispatched at all — the run holds no researcher step yet,
+    // so the commands the round is judged by are empty, the criterion 5
+    // empty-list edge.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'an increment the planner cut direct did not skip exactly the researcher and the test-author in round 0');
+    const implCall = calls.find((c) => c.label === 'implement:i1.0');
+    assertTrue(!!implCall && implCall.prompt.includes('increment 1 is yours'),
+      "the direct round's implementer prompt does not name the increment as its own");
+    assertTrue(!!implCall && implCall.prompt.includes('does i1'),
+      "the direct round's implementer prompt does not carry the increment's criteria");
+    assertTrue(!!implCall && implCall.prompt.includes(READ_CODEMAP),
+      "the direct round's implementer is not sent to the codemap");
+    assertTrue(!!implCall && implCall.prompt.includes('git checkout -b issue-branch--i1'),
+      "the direct round's implementer is not told to create the increment branch");
+    assertTrue(!!implCall && /\bbranch\b.*backlog\.json i1 issue-branch--i1/.test(implCall.prompt),
+      "the direct round's implementer is not told to record the branch in the run state");
+    assertTrue(!!implCall && !/\bsteps docs\/issues\/x\/backlog\.json/.test(implCall.prompt),
+      "the direct round's implementer is sent to read a step, though no researcher or test-author worked this increment");
+    assertTrue(!!implCall && implCall.prompt.includes('No command counts for this increment'),
+      "the direct round's implementer prompt does not say no command counts for this increment — the empty-checks edge of a run with no researcher step yet");
+    assertTrue(!!implCall && !implCall.prompt.includes('CHECK-MARKER'),
+      "the direct round's implementer prompt carries checks though the run holds no researcher step");
+    const reviewCall = calls.find((c) => c.label === 'review:i1.0');
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('No command counts for this increment'),
+      "the direct round's reviewer prompt does not say no command counts for this increment");
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('git diff issue-branch...HEAD'),
+      "the direct round's reviewer prompt does not name the increment's diff range against the issue branch");
+    assertTrue(!!result && Array.isArray(result.increments) && !!result.increments[0] && result.increments[0].depth === 'direct',
+      "the run's result does not carry increment 1's chain depth as direct");
+    assertTrue(logs.some((l) => /Increment 1 round 0/.test(l) && /direct/i.test(l)),
+      'no log line names the direct path for increment 1 round 0');
+  } else if (mode === 'w21') {
+    // A full increment and a direct increment in the same run: each takes its
+    // own path, and the direct one is judged by the checks the run's last
+    // researcher step closed, carried across the increment boundary.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1',
+       'implement:i2.0', 'review:i2.0', 'replan:i2', 'publish'],
+      'a full increment followed by a direct increment did not each take their own path');
+    const implCall = calls.find((c) => c.label === 'implement:i2.0');
+    assertTrue(!!implCall && implCall.prompt.includes('CHECK-MARKER'),
+      "increment 2's direct implementer prompt does not carry the checks the run's last researcher step closed");
+    const reviewCall = calls.find((c) => c.label === 'review:i2.0');
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('CHECK-MARKER'),
+      "increment 2's direct reviewer prompt does not carry the checks the run's last researcher step closed");
+    assertTrue(!!result && Array.isArray(result.increments),
+      'the run result does not carry an increments list');
+    assertEqualArrays((result && result.increments || []).map((w) => w.depth), ['full', 'direct'],
+      "the run's result does not carry each worked increment's own chain depth");
+  } else if (mode === 'w22') {
+    // A direct increment whose round 0 review files a finding leaves the
+    // direct path for the rest of the attempt: the correction round runs the
+    // full chain.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0',
+       'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'],
+      'a direct increment whose review files a finding did not leave the direct path for the rest of its attempt');
+  } else if (mode === 'w23') {
+    // An increment the planner cut direct, handed back after a failed
+    // attempt, and still classified direct in the fixture on the second pass
+    // — the loop, not the planner, is what forces it full.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0', 'replan:i1',
+       'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'an increment the planner cut direct and then handed back was not worked full on its second attempt');
+    const firstAttempt = calls.filter((c) => c.label === 'implement:i1.0')[0];
+    assertTrue(!!firstAttempt && firstAttempt.prompt.includes('git checkout -b issue-branch--i1\`'),
+      "the first attempt's direct implementer is not told to create the base-named branch");
+    const secondAttempt = calls.find((c) => c.label === 'research:i1.0');
+    assertTrue(!!secondAttempt && secondAttempt.prompt.includes('git checkout -b issue-branch--i1-take2'),
+      "the second attempt's researcher is not sent to a fresh take2 branch, so the loop did not force the increment full despite the still-direct fixture");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1152,6 +1282,10 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w17 "$wf_name: a blocked increment's branch is closed unmerged and named to the closing planner"
   run_driver "$wf" w18 "$wf_name: the publish prompt carries the run's outcome and sends the agent to read nothing"
   run_driver "$wf" w19 "$wf_name: a resumed run hands the step that asked the human the answer in its prompt"
+  run_driver "$wf" w20 "$wf_name: an increment the planner cut direct is worked by the implementer and the reviewer alone"
+  run_driver "$wf" w21 "$wf_name: a full increment and a direct increment each take their own path, the direct one judged by the run's last researcher step"
+  run_driver "$wf" w22 "$wf_name: a direct increment whose review files a finding leaves the direct path for the rest of its attempt"
+  run_driver "$wf" w23 "$wf_name: an increment the planner cut direct and handed back after a failed attempt is full on its next attempt"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
