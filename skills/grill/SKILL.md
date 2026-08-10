@@ -17,13 +17,19 @@ survives untouched.
 
 ## Ground yourself first
 
-Ask the user to clarify the problem statement. The main session does NO research of its own in the codebase. You do not read the code or the documentation yourself to prepare for the interview. You rely entirely on the user's input to establish the acceptance criteria.
+Send a subagent to sweep what is already true about the idea — the code, the
+project's documentation, the record of past issues under `docs/issues/`, and
+the documentation of what the project builds on — and have it return answers,
+never file contents. You read none of that yourself: your context is the most
+expensive in the run, and the sweep exists to keep it clean. What comes back
+is the ground the interview stands on — what already exists, what the idea
+would touch, and which questions the repository cannot answer.
 
 ## Then ask
 
-1. **Open with the ground.** A few sentences: what you found, and what your
-   questions therefore rest on. A premise corrected here costs one turn; found
-   wrong later it costs every answer built on it.
+1. **Open with the ground.** A few sentences: what the sweep found, and what
+   your questions therefore rest on. A premise corrected here costs one turn;
+   found wrong later it costs every answer built on it.
 2. **One question per turn.** Ask the single question whose answer most
    constrains the design. Offer the options you see and your recommendation —
    picking is faster than drafting. Never bundle questions; bundled questions
@@ -38,13 +44,15 @@ Ask the user to clarify the problem statement. The main session does NO research
 
 ## The output
 
-Write the issue directly to a file under `docs/issues/<timestamp>-<slug>/issue.md`. Create a markdown file with the problem and the criteria, and **record a decision** — for every answer the human gave. The human's answers are not the only thing that shaped them, and a criterion whose source is gone is one nobody can revisit. 
-
-Do NOT use git to commit this issue file. The main session does no git operations.
-Once the file is created and the human has approved the criteria, hand over the issue filename to the `researcher` subagent to begin the linear workflow.
+Write the issue to `docs/issues/<timestamp>-<slug>/issue.md`: the problem,
+the acceptance criteria, and **a decision recorded for every answer the human
+gave** — the human's answers are not the only thing that shaped the criteria,
+and a criterion whose source is gone is one nobody can revisit.
 
 Then show the criteria to the human for approval: this is the first of their
-three steering points, and the one place a run genuinely waits.
+three steering points, and the one place a run genuinely waits. With the
+approval given, this skill is done — Issue Mode carries on from the approved
+issue: commit and push the file, then run the loop on the issue directory.
 
 ## What it is not
 

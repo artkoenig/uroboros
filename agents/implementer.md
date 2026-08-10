@@ -4,7 +4,6 @@ description: Builds the implementation plan the run state holds. Its prompt name
 tools: Read, Write, Edit, Bash
 skills:
   - agent-brief
-model: opus
 color: blue
 ---
 

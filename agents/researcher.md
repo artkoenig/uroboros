@@ -4,7 +4,6 @@ description: 'Reads the issue spec, researches the codebase starting from the pl
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch
 skills:
   - agent-brief
-model: opus
 color: magenta
 ---
 
@@ -32,8 +31,6 @@ your increment, say so in your `moduleMap`; you never write the codemap yourself
 A question about whether something exists — a rule, a claim, a caller — is a
 search, not a read: grep for it and open only what the hits point at. Opening a
 file to learn that it says nothing is the expensive way to find out.
-
-Adapt your approach based on the complexity level specified by the issue file.
 
 ## What you record
 

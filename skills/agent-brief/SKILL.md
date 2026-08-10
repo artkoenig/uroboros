@@ -118,8 +118,9 @@ verbatim and whole — to a file outside the repository, then run
 node "<base>/assets/backlog.mjs" start <issueDir>/backlog.json <incrementId> <label> <promptFile>
 ```
 
-before any other work, with the increment id and the label your prompt gives
-you. `<base>` is the base directory of the `agent-brief` skill, which your
+before any other work — after only the branch steps your prompt names, so the
+announcement lands on the branch your step commits to — with the increment id
+and the label your prompt gives you. `<base>` is the base directory of the `agent-brief` skill, which your
 context names on its `Base directory for this skill:` line; where no such line
 is there, find the helper with `find "$HOME/.claude/plugins" -path
 '*agent-brief/assets/backlog.mjs' | head -1`. That helper is the only writer of
@@ -179,7 +180,8 @@ Report, in this order:
 2. Which of those entries you would act on, and which name a role that is not
    yours.
 3. The skills preloaded into you, by name — this page among them.
-4. The tools your page allows you.
+4. The tools available to you as dispatched — your page's frontmatter is not
+   in your context, so report the set you actually hold.
 
 Then return. A check-mode run that produces work, or a file, is a failed one.
 

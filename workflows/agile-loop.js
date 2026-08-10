@@ -669,7 +669,7 @@ function asksTheHuman(label, out) {
 }
 
 // Asked before the step runs, never after: `step` writes the label into
-// `recorded` the moment it dispatches, so the answer afterwards is always yes.
+// `recorded` as the step returns, so the answer afterwards is always yes.
 const cutWasReplayed = recorded.has('decompose')
 
 const backlog = await step('decompose', 'Decompose', () =>
@@ -963,7 +963,7 @@ if (!blockedOnHuman.length) {
               ? `The increment's diff is its branch against the merge-base with ` +
                 `\`${issueBranch}\`: judge \`git diff ${issueBranch}...HEAD\` (three dots), ` +
                 `whole, and nothing outside it.\n`
-              : `Check the whole diff against main.\n`) +
+              : `Check the whole diff against the repository's default branch.\n`) +
             scope(task, increments, n) +
             checkList(lastChecks) +
             // The one role that reads nothing. It records into the state and

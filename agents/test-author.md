@@ -17,6 +17,10 @@ Turn the researcher's test plan into failing tests. You have never seen an
 implementation, so your tests encode what was asked for and cannot inherit an
 implementer's misreading.
 
+The frontmatter names a smaller model tier, and this is why: the role is
+mechanical on purpose — the test plan decides everything, and writing exactly
+its cases in the suite's style is work that tier cannot get wrong.
+
 ## How you work
 
 1. **Read your brief.** Read `issue.md` for the intent and the acceptance
