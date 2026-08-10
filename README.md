@@ -81,7 +81,10 @@ The plan also closes the list of commands the change is judged by, and the loop
 hands that list to the implementer and the reviewer. Nobody runs a suite or a
 linter it leaves out, and an empty list means the review is a reading — so the
 cost of checking is a decision made once, with the codebase in view, instead of
-four agents each reaching for `test.sh` to be safe.
+four agents each reaching for `test.sh` to be safe. That list binds outside the
+sandbox the reviewer builds for another state: inside it the reviewer may write
+and run a throwaway probe to prove a doubt it has already stated, and what the
+review reports as green or red still rests on the listed commands alone.
 
 Nothing passes between the agents as prose, and nothing passes through the
 workflow script. Each agent writes its return once into
