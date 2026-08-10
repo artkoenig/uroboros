@@ -130,6 +130,13 @@ incomplete; the planner folds those corrections in when it re-cuts. That is
 the division the run is built on: the planner says what — the increments and
 the files — and the researcher says how.
 
+The planner also says how deep the chain has to go for each increment: `full`
+by default, and `direct` when the criteria and the codemap already name the
+file, the place and the right result and no test could catch anything. A
+`direct` increment's first round is the implementer and the reviewer alone,
+judged by the commands the run's last researcher closed. A correction round
+leaves that path, and a second attempt at an increment is always `full`.
+
 After every increment the planner re-cuts the ones still open against what
 that increment actually showed — splitting, merging, reordering, sharpening a
 criterion the researcher found ambiguous, dropping work that turned out
@@ -141,6 +148,8 @@ flowchart LR
     ISSUE[("issue.md")] --> PLAN["planner<br/>maps the files, cuts the<br/>issue into increments"]
     PLAN --> BACK[("backlog.json<br/>the codemap, the current cut, every<br/>step's return and the prompt behind it")]
     BACK -->|"the first increment<br/>still open"| CHAIN["researcher → test-author<br/>→ implementer → reviewer<br/>correction rounds as before"]
+    BACK -->|"an increment cut direct:<br/>no plan, no test"| SHORT["implementer → reviewer"]
+    SHORT --> REPLAN
     CHAIN --> REPLAN["planner<br/>closes that increment and<br/>re-cuts the rest"]
     REPLAN --> BACK
     BACK ==>|"nothing left,<br/>or the run gives up"| PUB["Publish: push the branch,<br/>open the pull request"]

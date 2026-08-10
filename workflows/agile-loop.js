@@ -41,9 +41,10 @@ export const meta = {
 // what a resumed run works from is the same object the live run worked from,
 // because there is only one of it.
 //
-// What this script does carry is steering: the cut, whether tests are needed,
-// the closed list of commands the reviewer runs, how many findings a review
-// filed, and the questions that end a run. Those few small values reach it as
+// What this script does carry is steering: the cut, how deep the chain goes for
+// each increment, whether tests are needed, the closed list of commands the
+// reviewer runs, how many findings a review filed, and the questions that end a
+// run. Those few small values reach it as
 // each agent's structured return, and a resumed run recovers them from the
 // state's index rather than from any agent re-emitting them. That is the whole
 // of the duplication left, and it is the price of a script that has no
@@ -150,12 +151,13 @@ const STATE = {
           title: { type: 'string' },
           goal: { type: 'string' },
           criteria: { type: 'array', items: { type: 'string' } },
+          depth: { type: 'string', enum: ['full', 'direct'] },
           status: { type: 'string', enum: ['todo', 'done', 'blocked', 'dropped'] },
           note: { type: 'string' },
           branch: { type: 'string' },
           steps: { type: 'array', items: INDEX_STEP },
         },
-        required: ['id', 'title', 'goal', 'criteria', 'status', 'note', 'branch', 'steps'],
+        required: ['id', 'title', 'goal', 'criteria', 'depth', 'status', 'note', 'branch', 'steps'],
         additionalProperties: false,
       },
     },
@@ -195,10 +197,15 @@ const BACKLOG = {
           title: { type: 'string' },
           goal: { type: 'string' },
           criteria: { type: 'array', items: { type: 'string' } },
+          depth: {
+            type: 'string',
+            enum: ['full', 'direct'],
+            description: 'The chain depth you recorded for this increment. Your page states the bar.',
+          },
           status: { type: 'string', enum: ['todo', 'done', 'blocked', 'dropped'] },
           note: { type: 'string' },
         },
-        required: ['id', 'title', 'goal', 'criteria', 'status', 'note'],
+        required: ['id', 'title', 'goal', 'criteria', 'depth', 'status', 'note'],
         additionalProperties: false,
       },
     },
@@ -699,7 +706,7 @@ let increments =
 function codemapBlock() {
   return (
     `The planner's codemap is in the run state: read it with the backlog helper's ` +
-    `\`codemap\` subcommand, as \`codemap ${dir}/backlog.json\`, before you research.\n`
+    `\`codemap\` subcommand, as \`codemap ${dir}/backlog.json\`, before you begin.\n`
   )
 }
 
@@ -713,6 +720,12 @@ const worked = []
 const attempts = new Map()
 let stopped = ''
 
+// The commands the run's most recent researcher step closed, carried across
+// increment boundaries. An increment worked without a researcher is judged by
+// this list; where the run has walked no researcher step yet, it is empty and
+// the review is a reading.
+let lastChecks = []
+
 // A resumed run picks up counting where the state left off. Every increment
 // the file already holds closed was worked by an earlier session: it keeps its
 // ordinal and its line in the result — `done` is the accepted case, `blocked`
@@ -725,6 +738,7 @@ for (const t of increments) {
       n: worked.length + 1,
       id: t.id,
       title: t.title,
+      depth: t.depth === 'direct' ? 'direct' : 'full',
       accepted: t.status === 'done',
       findings: t.status === 'done' ? 0 : null,
       reason: t.note || `closed as ${t.status} in an earlier session`,
@@ -743,6 +757,10 @@ if (!blockedOnHuman.length) {
     }
     const attempt = (attempts.get(task.id) || 0) + 1
     attempts.set(task.id, attempt)
+    // The one place the loop overrides the planner: a second attempt is worked
+    // in full whatever the re-cut classified it as, so a misclassification the
+    // first attempt already paid for cannot be repeated.
+    const depth = task.depth === 'direct' && attempt === 1 ? 'direct' : 'full'
     if (attempt > MAX_ATTEMPTS) {
       stopped =
         `"${task.title}" was worked ${MAX_ATTEMPTS} times and the planner handed it back ` +
@@ -782,12 +800,23 @@ if (!blockedOnHuman.length) {
       // round before: round 0 is never a direct-fix round, so `plan` is always
       // the one an earlier round produced by the time this is true.
       const directFix = round > 0 && isDirectFixRound(verdict)
+      // The planner's own classification governs round 0 alone: a correction
+      // round of a direct increment is an ordinary round unless the reviewer's
+      // verdict makes it a direct-fix one.
+      const directRound = round === 0 && depth === 'direct'
 
-      if (directFix) {
-        log(
-          `Increment ${n} round ${round}: every finding is a direct fix — research and tests ` +
-            `skipped, checks carried over from round ${round - 1}.`,
-        )
+      if (directFix || directRound) {
+        if (directFix) {
+          log(
+            `Increment ${n} round ${round}: every finding is a direct fix — research and tests ` +
+              `skipped, checks carried over from round ${round - 1}.`,
+          )
+        } else if (directRound) {
+          log(
+            `Increment ${n} round ${round}: the planner cut this increment direct — the ` +
+              `implementer and the reviewer alone, no research and no tests.`,
+          )
+        }
         testsLabel = ''
       } else {
         const researchLabel = `research:${task.id}.${round}`
@@ -822,6 +851,7 @@ if (!blockedOnHuman.length) {
           ),
         )
         planLabel = researchLabel
+        lastChecks = Array.isArray(plan.checks) ? plan.checks : []
         if (asksTheHuman(researchLabel, plan)) break
         log(
           `Increment ${n} round ${round}: tests needed: ${plan.needsTests}; ` +
@@ -855,8 +885,17 @@ if (!blockedOnHuman.length) {
         agent(
           `Issue directory: ${dir}\n` +
             questionBlock(buildLabel) +
-            branchBlock(task.id, incrementBranch, false) +
-            (directFix
+            // On the direct path the implementer is the attempt's first
+            // dispatch, so it is the step that records and creates the branch —
+            // without it the increment is worked on the issue branch and the
+            // reviewer's three-dot diff is empty.
+            branchBlock(task.id, incrementBranch, directRound && freshBranch) +
+            (directRound
+              ? scope(task, increments, n) +
+                codemapBlock() +
+                `No researcher and no test-author worked this increment: what stands above ` +
+                  `is your whole brief.\n`
+              : directFix
               ? readBlock(
                   `This is correction loop ${round} of ${MAX_CORRECTIONS} for this increment, ` +
                     `and it is a direct-fix round: nobody planned it and nobody wrote a test ` +
@@ -883,9 +922,9 @@ if (!blockedOnHuman.length) {
                   ? ''
                   : `No test was written for this round — the plan asked for none.\n`)) +
             // No researcher ran this round, so the list of commands that counts
-            // is the one the last round closed. It is the same code being
-            // judged.
-            checkList(plan.checks) +
+            // is the one the run's last researcher step closed. It is the same
+            // code being judged.
+            checkList(lastChecks) +
             recordStep(task.id, buildLabel, BUILD_PAYLOAD),
           Object.assign(
             { agentType: 'uroboros:implementer', phase: 'Implement', label: buildLabel, schema: BUILD },
@@ -914,7 +953,7 @@ if (!blockedOnHuman.length) {
                 `whole, and nothing outside it.\n`
               : `Check the whole diff against main.\n`) +
             scope(task, increments, n) +
-            checkList(plan.checks) +
+            checkList(lastChecks) +
             // The one role that reads nothing. It records into the state and
             // never opens it, because that state holds the plan it is the check
             // on. Its page says so at length; this prompt is what makes the
@@ -948,6 +987,7 @@ if (!blockedOnHuman.length) {
       n,
       id: task.id,
       title: task.title,
+      depth,
       accepted,
       findings: findingCount,
       reason: (verdict && (verdict.reason || verdict.summary)) || '',
