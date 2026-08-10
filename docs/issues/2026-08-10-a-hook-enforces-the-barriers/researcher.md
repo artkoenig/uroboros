@@ -501,3 +501,316 @@ exist, and `node --test hooks/read-barrier.test.mjs` will fail on a missing
 file until then. That is the intended red. Nothing else in either suite is
 expected red; if something is, it belongs to code this change never touched and
 gets reported with its exit code and left alone.
+
+## Round 1
+
+The reviewer filed one finding. This section is the whole work order for it;
+nothing from Round 0 carries over, the list of commands included.
+
+### The finding, and what it costs
+
+`hooks/read-barrier.mjs` refuses the implementer every read of `issue.md`, and
+that refusal is correct by the implementer's own page. But `workflows/agile-loop.js`
+orders exactly that read on one path: when a step ended the previous run with a
+question for the human, the resumed run dispatches it again with
+`answeredBlock(label)`, whose text is "The answer is under `## Decisions` in
+`<dir>/issue.md`. Read it there first". For the implementer the prompt now
+orders a call the hook denies, and the human's answer reaches it through no
+other route — it lives only in `issue.md`, the researcher's step is recorded
+and not re-run, and the deny's own "instead" line points back at the prompt it
+came from. The step is worked again without the answer it asked for.
+
+### What gets built
+
+The workflow stops routing any agent to `issue.md` for the answer and carries
+the answer itself. The state loader — a `general-purpose` agent, ungated by the
+hook, already the one dispatch that opens the run state at startup — lifts the
+text under the `## Decisions` heading out of `issue.md` once and returns it in
+its structured return. The workflow keeps it in one binding and puts it in the
+prompt of every step that ended the last run asking. The hook is not touched:
+its refusal was right, and after this change its "Take what you need from the
+reads your prompt names" is literally true, because the answer is in the
+prompt.
+
+Rejected alternatives, and why:
+
+- **Carve an exception into the hook for `issue.md`.** The hook decides from
+  the payload alone and cannot see that a run is resumed, so the exception
+  would have to be unconditional — which is the barrier the issue exists to
+  build, deleted.
+- **Have the workflow read `issue.md` itself.** The workflow runtime gives the
+  script `args`, `agent`, `log` and `phase` and no filesystem; the script's own
+  header says so.
+- **Re-run the researcher so it relays the answer.** The resume semantics are
+  keyed on recorded labels; re-running a recorded step to launder one paragraph
+  costs a dispatch and changes a mechanism that works.
+- **A separate dispatch that fetches the answer.** A second general-purpose
+  agent for one section of one file, when the one that already runs at startup
+  can return it in the same call.
+
+### The edits, one by one
+
+All five are in `workflows/agile-loop.js` unless named otherwise.
+
+**1. `STATE` gains a `decisions` field.** In the `STATE` schema, after the
+`runSteps` property and before `summary`:
+
+```js
+    decisions: {
+      type: 'string',
+      description:
+        'Everything under the `## Decisions` heading of the issue file, verbatim and without the heading itself. Empty string when the file has no such heading.',
+    },
+```
+
+and `decisions` joins `required`, which becomes
+`['exists', 'branch', 'increments', 'runSteps', 'decisions', 'summary']`.
+
+**2. The state loader is asked for it.** In the `load-state` dispatch prompt,
+insert this immediately before the closing `Read nothing else, change nothing,
+…` sentence:
+
+```js
+    `The human's answers to whatever ended an earlier run are under a \`## Decisions\` heading ` +
+    `in ${dir}/issue.md: return everything under that heading in decisions, verbatim and ` +
+    `without the heading itself, up to the next \`## \` heading or the end of the file. Return ` +
+    `an empty string when there is no such heading and when there is no such file, and read no ` +
+    `other part of it into your return.\n` +
+```
+
+The trailing "Read nothing else … beyond the read-only ones named here" stays
+as it is: this read is now one of the ones named here.
+
+**3. One binding holds the answer.** After the `issueBranch` block (the
+`if (!issueBranch) log(...)`) and before the `recorded`/`carriedQuestions`
+block, add:
+
+```js
+// The human's answer to whatever ended the last run, lifted out of `issue.md`
+// by the state loader — the one agent of the run that may open that file. It
+// travels in the prompt of the step that asked, because that file is closed to
+// the implementer by its own page and by `hooks/read-barrier.mjs`, so a prompt
+// that sent it there would order a call the hook refuses and strand the step.
+const decisions = state && typeof state.decisions === 'string' ? state.decisions.trim() : ''
+```
+
+**4. `answeredBlock` hands over the text instead of the path.** Replace the
+function and its header comment with:
+
+```js
+// The question this step asked before the run stopped, and the human's answer
+// to it. The answer is in the prompt and not behind a read, because `issue.md`
+// is closed to some of the roles that ask.
+function answeredBlock(label) {
+  const asked = carriedQuestions.get(label)
+  return (
+    (asked && asked.length
+      ? `This step ended the previous run with a question for the human:\n` +
+        asked.map((q) => `  - ${q}`).join('\n') +
+        '\n'
+      : `This step ended the previous run with a question for the human, and your own earlier ` +
+        `attempt is in the run state under this step's label.\n`) +
+    (decisions
+      ? `The human answered it, and the answer is here in full:\n${decisions}\n` +
+        `Work this step again from it, and ask again only what it does not settle.\n`
+      : `The human recorded no answer. Work this step again from what you have, and ask again ` +
+        `only what you still cannot settle.\n`)
+  )
+}
+```
+
+Two things about that text are deliberate and must survive: it names neither
+`issue.md` nor the `## Decisions` heading — where the human writes the answer is
+the rulebook's rule and the run's closing log line, and the agent needs the
+text, not its address — and the second branch states where the earlier attempt
+is instead of ordering a read of it, which is the same sentence reworded and no
+new instruction.
+
+**5. Two comments and one log line follow the new route.** The comment above
+`const recorded = new Map()` opens "A step that ended the run with a question
+for the human is not replayed from its recorded return: the human answered in
+`issue.md`, so the step is worked again with the question in front of it" —
+change that clause to say the state loader lifted the human's answer out of
+`issue.md` and the step is worked again with the question and the answer in
+front of it. And after the existing `if (carriedQuestions.size) log(...)`
+block, add:
+
+```js
+if (carriedQuestions.size && !decisions) {
+  log('No answer came back from the issue file, so the steps that asked are worked again without one.')
+}
+```
+
+**6. The rulebook's sentence.** `rulebook.md` and `GEMINI.md` are byte-for-byte
+identical files and both must get the same edit. In the paragraph beginning "A
+result carrying `blockedOnHuman`", replace "with the question in its prompt and
+your answer in `issue.md`" with "with the question and your answer both in its
+prompt". Nothing else in either file changes: the human still records the
+answer under a `## Decisions` heading in `issue.md`, which is what the rest of
+that paragraph says.
+
+### Module map
+
+- `workflows/agile-loop.js` — the one workflow. Entry points for this change,
+  in file order: the `STATE` schema (edit 1), the `load-state` dispatch that
+  opens every run (edit 2), `answeredBlock`/`questionBlock` around the middle
+  of the file (edit 4), the `issueBranch` block that the new `decisions`
+  binding follows (edit 3), and the `recorded`/`carriedQuestions` block just
+  below it (edit 5). `questionBlock` is called in all five role dispatches, so
+  every step that asked gets the answer, not only the implementer's.
+- `test-repo.sh` — the repository's own checks. The workflow driver is a
+  `node` script in a heredoc (`cat >"$driver_tmp/driver.js" <<'JS'` … `JS`): it
+  compiles `agile-loop.js` with `new AsyncFunction('args', 'agent', 'log',
+  'phase', src)`, runs it with a stub `agent` that records every
+  `{label, agentType, prompt}` and returns a fixture per label, then asserts
+  per mode. The modes are dispatched at the bottom by `run_driver "$wf" wN
+  "<description>"`.
+- `hooks/read-barrier.mjs` — not edited. Named here so nobody goes looking:
+  the refusal it makes is the correct one.
+- `rulebook.md`, `GEMINI.md` — the session's page, identical twins.
+
+### Environment
+
+- Node and bash are on the PATH; no install step, no build step, zero
+  dependencies. Run everything from the repository root.
+- `bash test-repo.sh` is the only command this round's work is judged by. It
+  runs the repository's own checks, including every workflow driver mode, and
+  prints one `ok`/`no` line per case with a `PASS`/`FAIL` summary and a
+  non-zero exit on any `no`.
+- There is no linter and no formatter in this repository, and nothing to
+  install before the command above.
+
+### Test plan
+
+Tests are needed. The finding is a prompt that orders a call the hook denies,
+and a driver mode reproduces it from the payload the script builds.
+
+Everything below lives in `test-repo.sh`, in the driver heredoc. There is no
+test framework: `assertTrue(cond, msg)` and `assertEqualArrays(actual,
+expected, msg)` push into `failures`, a non-empty `failures` exits 1, and the
+bash wrapper `run_driver` turns that into one `ok`/`no` line. A case is named
+by the description string passed to `run_driver`, which reads
+`agile-loop.js: <what the run does>`. Nothing is mocked: the real workflow
+source is compiled and run, with `agent`, `log` and `phase` stubbed, which is
+also what proves the script uses no other runtime.
+
+**Fixture changes first.**
+
+- `stateOf` takes the answer: `const stateOf = (increments, runSteps, decisions) => ({ exists: true, branch: 'issue-branch', increments, runSteps, decisions: decisions || '', summary: '' })`.
+  `noState` gains `decisions: ''`.
+- `DISJOINT_MARKERS` gains `'MARKER-BUILD-QUESTION'` and
+  `'MARKER-HUMAN-ANSWER'`. Neither contains nor is contained by an existing
+  marker, and the standing containment loop at the top of `main` checks that.
+- A new fixture beside `questionState`, with the comment saying why the
+  implementer is the role this case is built on — its page and the read barrier
+  close `issue.md` to it, so it is the role whose resume the old prompt broke:
+
+```js
+const buildQuestionState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        branch: 'issue-branch--i1',
+        steps: [
+          idxStep('research:i1.0', planReturn),
+          idxStep('tests:i1.0', testsReturn),
+          idxStep('implement:i1.0', Object.assign({}, buildReturn, { questions: ['MARKER-BUILD-QUESTION'] })),
+        ],
+      }),
+    ],
+    [idxStep('decompose', decomposeReturnOne)],
+    'MARKER-HUMAN-ANSWER',
+  );
+```
+
+- `contextFor` gains
+  `case 'w19': return { stateReturn: buildQuestionState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };`
+- The modes list gains, inside the `for wf in ...` loop after the `w18` line:
+  `run_driver "$wf" w19 "$wf_name: a resumed run hands the step that asked the human the answer in its prompt"`
+
+**Case 1 — the finding, as a new `w19` branch** (criterion: a resumed run
+delivers the human's answer to the implementer without ordering a read its page
+forbids). Input: the state above, whose `implement:i1.0` asked
+`MARKER-BUILD-QUESTION` and whose loader returned `MARKER-HUMAN-ANSWER`.
+Assertions, in this order:
+
+1. `assertEqualArrays(labels, ['load-state', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'], ...)` —
+   the recorded researcher and test-author stay skipped and the step that asked
+   is worked again.
+2. The `implement:i1.0` prompt includes `MARKER-BUILD-QUESTION` — the question
+   it asked is in front of it.
+3. The `implement:i1.0` prompt includes `MARKER-HUMAN-ANSWER` — **this is the
+   assertion that is red today.**
+4. `assertTrue(!/## Decisions/.test(p), ...)` — it is handed the answer, not
+   pointed at the heading it may not go and read.
+5. `assertTrue(!!result && Array.isArray(result.blockedOnHuman) && result.blockedOnHuman.length === 0, ...)` —
+   the resumed run carries on to a clean close.
+
+**Case 2 — the empty edge, folded into the existing `w9` branch** (criterion:
+the same route when the human recorded nothing). `questionState()` passes no
+third argument, so `decisions` is `''`. Keep w9's first assertion (the
+prompt carries `MARKER-HUMAN-QUESTION`) and its last (the run makes progress).
+Replace the middle assertion — the one that today requires `/## Decisions/` and
+`/issue\.md/` in the researcher's prompt — with:
+`assertTrue(!!researchCall && /The human recorded no answer/.test(researchCall.prompt), "the repeated step is not told that no answer came back, so it cannot tell an empty answer from a missing one");`
+
+**Case 3 — the loader is asked for the section, in the existing `w1` branch**
+(criterion: the answer has a route into the script at all). Beside the existing
+`loader` assertions: the `load-state` prompt matches `/## Decisions/` and
+includes `docs/issues/x/issue.md`, with a message saying the human's answer
+would reach no resumed step otherwise.
+
+**Case 4 — a standing guard, checked in every mode.** Add a third loop beside
+the two that already run over every call ("no prompt may read a step whole",
+"the publish prompt reads nothing"), after them:
+
+```js
+  // `hooks/read-barrier.mjs` refuses the implementer every read of `issue.md`,
+  // so a prompt that ordered one would order a call the hook denies and strand
+  // the step mid-run. Checked in every mode.
+  for (const c of calls) {
+    if (!c.label.startsWith('implement:')) continue;
+    const ordered = c.prompt.split('\n').filter((line) => /issue\.md/.test(line) && /\bread\b/i.test(line));
+    assertTrue(ordered.length === 0,
+      c.label + ' is told to read the issue file its page closes: ' + JSON.stringify(ordered));
+  }
+```
+
+It is scoped to the implementer and to `issue.md` on purpose: the reviewer's
+prompt legitimately contains a line with both "Read" and `backlog.json` — the
+sentence forbidding it — so a generalised version would fire on correct text.
+
+**Left untested, deliberately.** A resumed *researcher* with an answer
+recorded: it is the same `answeredBlock` branch w19 exercises, and w9 already
+holds the researcher's resume. A `decisions` string that is only whitespace:
+`.trim()` puts it on the empty branch Case 2 covers. The state loader actually
+finding the `## Decisions` heading in a real file: that is an agent following
+its prompt, and no driver mode can dispatch a real one. `hooks/read-barrier.mjs`
+itself: not edited, and its suite already pins the refusal.
+
+### What counts as done
+
+Closed list, run from the repository root:
+
+    bash test-repo.sh
+
+Nothing else. The hook is not touched this round, so
+`node --test hooks/read-barrier.test.mjs` is deliberately off the list — its 26
+cases judge a file this round does not edit, and `test-repo.sh` still checks
+that the hook is wired, parses and opens nothing. `bash test.sh` is off it for
+the same reason it was in Round 0: it would re-run three `npm` suites over
+untouched code. `bash -n test.sh` is off it because `test.sh` is not edited
+this round.
+
+### What is already red
+
+I ran nothing, not once and not as a baseline. From reading, and from the exit
+codes the reviewer reported for the same tree: `bash test-repo.sh` passes as it
+stands. The assertions above are the intended red — Case 1's third assertion
+above all, which fails until the answer travels in the prompt, plus Case 3 and
+the rewritten middle of w9. Case 4 is red in the new `w19` mode as well, and
+green in every existing one: the old text puts "Read it there first" and
+`issue.md` on one line, and only a mode whose implementer carried a question
+renders that line at all. Anything else that comes back red
+belongs to code this change never touched: report it with its exit code and
+leave it alone.
