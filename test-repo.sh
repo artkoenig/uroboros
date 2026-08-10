@@ -1495,6 +1495,83 @@ else
 fi
 
 echo
+echo "=== the reviewer proves a doubt with a probe in the sandbox"
+
+# docs/issues/2026-08-10-reviewer-probes-in-the-sandbox lifts the reviewer's
+# blanket "never write a test, not even a throwaway" and replaces it with a
+# bounded licence: a probe written and run inside the sandbox worktree, never
+# reaching the checkout. A rewrite that grants the licence but drops one of
+# its bounds — no page mentioning the sandbox, or the sandbox exception
+# reaching outside it, or a probe left uncounted as evidence — would ship an
+# unbounded write permission or a silent one, and nothing but a grep over the
+# page's own sentences would catch either. Modelled on the
+# argus_view_patterns loop above: whitespace is collapsed first because every
+# one of these sentences wraps across lines in the source, and a per-line
+# grep would miss all of them.
+reviewer_probe_page="$root/agents/reviewer.md"
+reviewer_probe_collapsed="$(tr '\n' ' ' <"$reviewer_probe_page" | tr -s ' ')"
+declare -a reviewer_probe_patterns=(
+  'probe[^.]*sandbox|sandbox[^.]*probe'
+  'probe[^.]*checkout|checkout[^.]*probe'
+  'probe[^.]*commit|commit[^.]*probe'
+  'probe[^.]*diff|diff[^.]*probe'
+  'probe[^.]*doubt|doubt[^.]*probe'
+  'probe[^.]*(list|closed)|(list|closed)[^.]*probe'
+  'probe[^.]*test-author|test-author[^.]*probe'
+  'probe[^.]*returned|returned[^.]*probe'
+)
+reviewer_probe_misses=""
+for pattern in "${reviewer_probe_patterns[@]}"; do
+  if ! echo "$reviewer_probe_collapsed" | grep -qiE "$pattern"; then
+    reviewer_probe_misses="${reviewer_probe_misses}${pattern}
+"
+  fi
+done
+if [ -z "$reviewer_probe_misses" ]; then
+  ok "agents/reviewer.md carries every rule the probe licence needs"
+else
+  no "these patterns for the probe licence matched nothing in agents/reviewer.md:"
+  echo "$reviewer_probe_misses" | sed 's/^/       /'
+fi
+
+# The rule above catches an incomplete licence, not a contradictory one: a
+# page that adds the probe section but leaves the old blanket prohibition
+# standing would pass every pattern above while still forbidding, in the
+# same breath, the thing it just allowed.
+reviewer_probe_old_ban="$(grep -inE 'not even a throwaway|never write a test' "$reviewer_probe_page" || true)"
+if [ -z "$reviewer_probe_old_ban" ]; then
+  ok "the old blanket prohibition on writing a test is gone from agents/reviewer.md"
+else
+  no "the old blanket prohibition is still on agents/reviewer.md:"
+  echo "$reviewer_probe_old_ban" | sed 's/^/       /'
+fi
+
+# Criterion 7 asks the review's summary to say how many probes ran and what
+# they showed, so a clean review still shows whether it looked. "probe"
+# pairing with "summary" anywhere on the page is too loose a test — the two
+# words could land in unrelated paragraphs — so this anchors on the
+# `summary` bullet itself and its continuation lines.
+reviewer_probe_summary_bullet="$(grep -A3 -- '- \*\*`summary`\*\*' "$reviewer_probe_page" || true)"
+if echo "$reviewer_probe_summary_bullet" | grep -qi 'probe'; then
+  ok "the summary bullet on agents/reviewer.md reports how many probes ran and what they showed"
+else
+  no "the summary bullet on agents/reviewer.md does not mention a probe:"
+  echo "$reviewer_probe_summary_bullet" | sed 's/^/       /'
+fi
+
+# The licence belongs on the reviewer's page alone — granting it in the
+# shared brief or on another agent's page would hand every agent the same
+# write permission the sandbox is meant to bound. Direct mirror of the
+# chain_depth_owners case above.
+reviewer_probe_owners="$(grep -lie 'probe' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$reviewer_probe_owners" = "$reviewer_probe_page" ]; then
+  ok "agents/reviewer.md is the only agent page or shipped skill naming a probe"
+else
+  no "the word \"probe\" is owned by more (or fewer) pages than agents/reviewer.md alone:"
+  echo "${reviewer_probe_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+echo
 echo "=== every test suite carries its doc"
 
 # The suite doc is what spares the test-author reading a suite whole to find
