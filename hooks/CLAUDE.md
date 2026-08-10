@@ -1,11 +1,11 @@
 # hooks/
 
-The plugin's two hooks, declared in `hooks.json` and shipped by `plugin.json`.
+The plugin's three hooks, declared in `hooks.json` and shipped by `plugin.json`.
 
 `session-start.sh` puts the rulebook in front of a starting session and warns a
 cloud session running an outdated plugin. `backlog-changed.mjs` follows
 `backlog.json` and pushes a run's state to the telemetry collector as the run
-writes it.
+writes it. `read-barrier.mjs` refuses a read an agent's own page forbids it.
 
 That second one is the only place in uroboros that talks to a collector. The
 recorder every agent writes its step through used to do the send itself, which
@@ -27,6 +27,40 @@ state, then a document identical to the one already sent. A run reads its state
 several times for every write, and that last gate — a digest of the last
 accepted document, kept per file in the temp directory — is what keeps the
 reads off the wire.
+
+The third one is the only place in uroboros that stops an agent doing
+something. Three of the rules the agent pages carry are barriers between roles
+— the implementer does not read `issue.md`, the reviewer does not read
+`backlog.json`, no agent reads a field of a step its page does not grant it —
+and until this hook they were honour-system. A role that reads the document
+written for another role is a role whose fresh context was not fresh, and that
+is the one failure a run cannot see in its own result. The pages still own
+those rules; this is their shadow, and every entry in its table cites the page
+it comes from, so a rule that moves moves in one place.
+
+It hangs off `PreToolUse` on `Read`, `Bash` and `Grep`, because a file has more
+than one route into a context: a `Read` by path, a `cat`, a `git show
+<ref>:<path>`, a `Grep` and the backlog helper's own reading subcommands are
+all the same read. It decides from the event's `agent_type` and tool input
+alone — it opens no file, opens no connection and reads no environment
+variable, which is what makes it cheap enough to sit in front of every one of
+those calls, and the only honest position for a guard that would otherwise be
+opening the state it guards.
+
+It fails open everywhere, and that asymmetry is the whole design. A wrong
+refusal blocks an agent mid-run over a call its page allows and costs a human
+the run; a wrong pass costs nothing that was not already being paid before the
+file existed. So only a positive identification refuses — a known reader
+command naming a `docs/issues/` path with a gated basename — and everything
+else is silent: an unknown agent, an ungated tool, an unparseable payload, a
+command it cannot classify, and its own crash. `node -e`, `python -c` and a
+`cd` before a `cat` are known holes, left open on purpose, because closing them
+means guessing.
+
+A refusal is the documented `PreToolUse` deny decision on stdout, not a
+non-zero exit: the exit code stays 0 on every path, and the reason that reaches
+the agent names the file or field, the page that closes it, and the route to
+take instead.
 
 ## Tests for `backlog-changed.mjs`
 

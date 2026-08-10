@@ -35,6 +35,11 @@ run "skills/agent-brief/assets: the backlog recorder" \
 run "hooks: the run-state hook" \
   node --test "$root/hooks/backlog-changed.test.mjs"
 
+# The hook that refuses a read an agent's own page forbids — the barriers the
+# pages used to only ask for.
+run "hooks: the read barrier" \
+  node --test "$root/hooks/read-barrier.test.mjs"
+
 # Through the package's own `test` script rather than a `node --test` line
 # repeated here, so the suite this runs stays the suite the tool declares.
 # Zero-dependency, so no install step is needed first.
