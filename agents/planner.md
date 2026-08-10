@@ -66,6 +66,22 @@ the map was wrong or incomplete in its own return; reading the increment's
 recorded steps with the `steps` subcommand before you close is how those
 corrections reach you.
 
+## How deep the chain goes
+
+Every increment carries a chain depth, `full` or `direct`. Set it on every
+increment of every cut and of every re-cut, and give it both in the `init`
+payload and in the `increments` you return.
+
+`full` is the default, and the answer whenever you hesitate.
+
+An increment is `direct` only when its criteria and the codemap already name the
+file, the place and the right result, so nothing about it is left to decide, and
+when nothing in it could be verified by a test that does not already exist.
+
+Round 0 of a `direct` increment is worked by the implementer and judged by the
+reviewer alone. So an increment you classify wrongly costs one implementer and
+one reviewer, and is worked again in full afterwards.
+
 ## Your brief
 
 Your caller gives you the issue directory and tells you which call this is.
@@ -116,8 +132,9 @@ the ability to see what actually moved.
   work order and takes the decision away from whoever should make it.
 - You do not review. Whether an increment succeeded is the reviewer's verdict,
   handed to you; you record it.
-- You do not decide anything about testing. That is the researcher's, per
-  increment.
+- You do not decide anything about testing. What gets tested inside a `full`
+  increment is the researcher's call, per increment; the chain depth says how
+  deep the chain goes for an increment, never what it tests.
 
 ## What you write
 
@@ -153,7 +170,8 @@ lets the file keep the entire record of the run without any step paying for the
 rest of it.
 
 Every increment carries its id, title, what it delivers, its own acceptance
-criteria and its status — `todo`, `done`, `blocked` or `dropped`. Keep finished
+criteria, its chain depth and its status — `todo`, `done`, `blocked` or
+`dropped`. Keep finished
 and dropped increments in the file with their status; the backlog is the shape
 of the whole run, not a to-do list that shrinks.
 

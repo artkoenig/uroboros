@@ -126,6 +126,7 @@ function shapeIncrement(raw, steps, branch, attempts) {
     title: raw.title || '',
     goal: raw.goal || '',
     criteria: Array.isArray(raw.criteria) ? raw.criteria : [],
+    depth: raw.depth === 'direct' ? 'direct' : 'full',
     status: raw.status || 'todo',
     note: raw.note || '',
     branch: branch || '',
@@ -143,7 +144,10 @@ function shapeIncrement(raw, steps, branch, attempts) {
 // not, so a re-cut that says nothing about the map cannot erase it. An
 // increment's branch is the file's alone — the `branch` subcommand is its one
 // writer, so the payload cannot set or erase it. The attempts a kept increment
-// has already closed travel with it untouched.
+// has already closed travel with it untouched. An increment's chain depth is
+// normalised where it is shaped and where it is projected, so `full` is the
+// default in code rather than in prose: a missing field, a state file written
+// before the field existed and a value nobody recognises all read as `full`.
 function init(backlogPath, payloadFile) {
   const payload = readJson(payloadFile, 'the init payload')
   if (!payload || typeof payload !== 'object' || !Array.isArray(payload.increments)) {
@@ -411,6 +415,7 @@ function index(backlogPath) {
       title: increment.title || '',
       goal: increment.goal || '',
       criteria: Array.isArray(increment.criteria) ? increment.criteria : [],
+      depth: increment.depth === 'direct' ? 'direct' : 'full',
       status: increment.status || 'todo',
       note: increment.note || '',
       branch: increment.branch || '',

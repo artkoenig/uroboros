@@ -59,8 +59,8 @@ implementer's misreading.
 
 In a correction round the criterion is a reviewer's reproduction spec instead of
 the whole intent, and the test plan of that round's researcher step is written
-for it. Write that case and nothing else. Earlier rounds are done with. The reviewer never writes
-tests; you do.
+for it. Write that case and nothing else. Earlier rounds are done with. The
+reviewer never writes the test that pins a behaviour; you do.
 
 ## Boundaries
 

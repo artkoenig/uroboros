@@ -81,7 +81,10 @@ The plan also closes the list of commands the change is judged by, and the loop
 hands that list to the implementer and the reviewer. Nobody runs a suite or a
 linter it leaves out, and an empty list means the review is a reading — so the
 cost of checking is a decision made once, with the codebase in view, instead of
-four agents each reaching for `test.sh` to be safe.
+four agents each reaching for `test.sh` to be safe. That list binds outside the
+sandbox the reviewer builds for another state: inside it the reviewer may write
+and run a throwaway probe to prove a doubt it has already stated, and what the
+review reports as green or red still rests on the listed commands alone.
 
 Nothing passes between the agents as prose, and nothing passes through the
 workflow script. Each agent writes its return once into
@@ -130,6 +133,13 @@ incomplete; the planner folds those corrections in when it re-cuts. That is
 the division the run is built on: the planner says what — the increments and
 the files — and the researcher says how.
 
+The planner also says how deep the chain has to go for each increment: `full`
+by default, and `direct` when the criteria and the codemap already name the
+file, the place and the right result and no test could catch anything. A
+`direct` increment's first round is the implementer and the reviewer alone,
+judged by the commands the run's last researcher closed. A correction round
+leaves that path, and a second attempt at an increment is always `full`.
+
 After every increment the planner re-cuts the ones still open against what
 that increment actually showed — splitting, merging, reordering, sharpening a
 criterion the researcher found ambiguous, dropping work that turned out
@@ -141,6 +151,8 @@ flowchart LR
     ISSUE[("issue.md")] --> PLAN["planner<br/>maps the files, cuts the<br/>issue into increments"]
     PLAN --> BACK[("backlog.json<br/>the codemap, the current cut, every<br/>step's return and the prompt behind it")]
     BACK -->|"the first increment<br/>still open"| CHAIN["researcher → test-author<br/>→ implementer → reviewer<br/>correction rounds as before"]
+    BACK -->|"an increment cut direct:<br/>no plan, no test"| SHORT["implementer → reviewer"]
+    SHORT --> REPLAN
     CHAIN --> REPLAN["planner<br/>closes that increment and<br/>re-cuts the rest"]
     REPLAN --> BACK
     BACK ==>|"nothing left,<br/>or the run gives up"| PUB["Publish: push the branch,<br/>open the pull request"]

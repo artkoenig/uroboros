@@ -191,6 +191,47 @@ test('init merges into an existing backlog: kept increments keep their steps, dr
   assert.equal(backlog.run.steps[0].label, 'decompose');
 });
 
+test('init records an increment\'s chain depth and defaults anything that is not "direct" to full', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  const payload = backlogTemplate([
+    incrementPayload('i1', 'First', { depth: 'direct' }),
+    incrementPayload('i2', 'Second'),
+    incrementPayload('i3', 'Third', { depth: 'shallow' }),
+  ]);
+
+  run(['init', backlogPath, writeJson(dir, 'init-payload.json', payload)]);
+
+  const backlog = JSON.parse(fs.readFileSync(backlogPath, 'utf8'));
+  assert.equal(backlog.increments[0].depth, 'direct', 'a payload that names depth: "direct" is recorded as direct');
+  assert.equal(backlog.increments[1].depth, 'full', 'an increment with no depth key at all defaults to full');
+  assert.equal(backlog.increments[2].depth, 'full', 'a depth value nobody recognises is not carried through — it defaults to full, same as a missing one');
+});
+
+test('a re-cut re-classifies an increment\'s chain depth, unlike its branch and its attempts which the payload does not own', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'first.json', backlogTemplate([
+    incrementPayload('i1', 'First', { depth: 'direct' }),
+  ]))]);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'step.json', { plan: 'MARKER-RECUT-STEP' })]);
+  run(['branch', backlogPath, 'i1', 'issue-branch--i1']);
+
+  // The re-cut payload names the same increment again with no depth key —
+  // the shape a planner returns when it classifies the increment as full this
+  // time.
+  run(['init', backlogPath, writeJson(dir, 'recut.json', backlogTemplate([
+    incrementPayload('i1', 'First'),
+  ]))]);
+
+  const backlog = JSON.parse(fs.readFileSync(backlogPath, 'utf8'));
+  const i1 = backlog.increments[0];
+  assert.equal(i1.depth, 'full', 'the payload owns the depth: a re-cut that carries no depth key resets it to full, unlike branch and attempts');
+  assert.equal(i1.steps.length, 1, "the increment's recorded step survives the re-cut");
+  assert.equal(i1.steps[0].label, 'research:i1.0');
+  assert.equal(i1.branch, 'issue-branch--i1', "the increment's branch survives the re-cut — only the depth is reset");
+});
+
 test('init stores the payload codemap at the top level, and a fresh init without one stores the empty string', () => {
   const dir = tmpDir();
   const backlogPath = path.join(dir, 'backlog.json');
@@ -718,6 +759,28 @@ test('index carries the cut, the step labels and the small steering values, and 
   assert.equal(stdout.includes('MARKER-CASE-OBJECT'), false, 'a list of objects is content and is never in the index');
   assert.equal(stdout.includes('MARKER-CODEMAP-CONTENT'), false, 'the codemap is content and is never in the index');
   assert.equal(idx.hasCodemap, true, 'the index says a codemap is there without carrying it');
+});
+
+test('index projects each increment\'s chain depth, and reads a state written before the field existed as full', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  // Written by hand, not by init, so it matches a state file recorded before
+  // this field existed: one increment carries a recorded depth, the other
+  // carries no depth key at all.
+  fs.writeFileSync(backlogPath, JSON.stringify({
+    version: 1,
+    issue: 'docs/issues/x',
+    workflow: 'agile-loop',
+    increments: [
+      { id: 'i1', title: 'First', goal: 'First.', criteria: ['does i1'], status: 'todo', note: '', depth: 'direct', steps: [] },
+      { id: 'i2', title: 'Second', goal: 'Second.', criteria: ['does i2'], status: 'todo', note: '', steps: [] },
+    ],
+  }));
+
+  const idx = JSON.parse(run(['index', backlogPath]));
+
+  assert.equal(idx.increments[0].depth, 'direct', 'the index projects a recorded direct depth');
+  assert.equal(idx.increments[1].depth, 'full', 'an increment with no depth key at all projects as full, so a state file written before this field existed indexes as full instead of undefined');
 });
 
 test('index marks the step that ended a run with a question, and carries the questions themselves', () => {

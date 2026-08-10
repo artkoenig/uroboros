@@ -446,6 +446,30 @@ else
 fi
 
 echo
+echo "=== the planner alone owns the chain depth it decides"
+
+# `chain depth` is the planner's phrase to define and to own; any other agent
+# page or shipped skill naming it too would say the bar twice, and the two
+# copies disagree the moment one drifts. Mirrors the rulebook_readers case
+# above.
+chain_depth_owners="$(grep -lie 'chain depth' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$chain_depth_owners" = "$root/agents/planner.md" ]; then
+  ok 'agents/planner.md is the only agent page or shipped skill naming "chain depth"'
+else
+  no "the phrase \"chain depth\" is owned by more (or fewer) pages than agents/planner.md alone:"
+  echo "${chain_depth_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# The implementer's second work order — where its prompt names no researcher
+# step, the criteria and the codemap are its whole brief — has to name the
+# codemap by name for that brief to mean anything.
+if grep -qi 'codemap' "$root/agents/implementer.md"; then
+  ok "agents/implementer.md names the codemap it works from when no researcher step is named"
+else
+  no "agents/implementer.md never names the codemap"
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
@@ -536,11 +560,16 @@ const verdictReturnWithDirectFinding = Object.assign({}, verdictReturnWithFindin
   allDirect: true,
 });
 
-function increment(id) {
-  return { id, title: 'Deliver ' + id, goal: 'Deliver ' + id + '.', criteria: ['does ' + id], status: 'todo', note: '' };
+function increment(id, depth) {
+  return { id, title: 'Deliver ' + id, goal: 'Deliver ' + id + '.', criteria: ['does ' + id], status: 'todo', note: '', depth: depth || 'full' };
 }
 const decomposeReturnOne = { increments: [increment('i1')], questions: [], summary: 'backlog summary' };
 const decomposeReturnTwo = { increments: [increment('i1'), increment('i2')], questions: [], summary: 'backlog summary' };
+// The planner's chain depth on the cut: one increment classified direct alone,
+// and a mix of a full increment followed by a direct one, so a run can prove
+// each increment takes its own path.
+const decomposeReturnDirect = { increments: [increment('i1', 'direct')], questions: [], summary: 'backlog summary' };
+const decomposeReturnMixed = { increments: [increment('i1'), increment('i2', 'direct')], questions: [], summary: 'backlog summary' };
 
 // The state loader returns the index of backlog.json, never the file: the cut,
 // the recorded labels and the small steering values of each. These builders
@@ -571,7 +600,9 @@ function idxIncrement(id, extra) {
       status: 'todo',
       note: '',
       branch: '',
+      depth: 'full',
       steps: [],
+      attempts: 0,
     },
     extra || {},
   );
@@ -669,6 +700,16 @@ const laterIncrementState = () =>
     [idxStep('decompose', decomposeReturnOne)],
   );
 
+// The state a hand-back leaves once the session that made it is gone: `close`
+// archived the failed attempt's steps, so the increment is open with no
+// current step, one closed attempt on record and the abandoned branch still
+// carried — and the new session's own attempt counter starts at zero again.
+const handedBackState = () =>
+  stateOf(
+    [idxIncrement('i1', { depth: 'direct', branch: 'issue-branch--i1', attempts: 1 })],
+    [idxStep('decompose', decomposeReturnDirect)],
+  );
+
 function contextFor(m) {
   switch (m) {
     case 'w1':
@@ -722,6 +763,39 @@ function contextFor(m) {
       return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: () => verdictReturnWithFinding };
     case 'w19':
       return { stateReturn: buildQuestionState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w20':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
+    case 'w21':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnMixed, researchReturn: planReturn };
+    case 'w22':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithFinding : verdictReturnClean) };
+    case 'w23': {
+      // Modelled on w12: the closing planner hands the direct increment back
+      // as todo, still classified direct, and settles it done on the second
+      // pass. The depth surviving in the fixture is the point of the case —
+      // the loop, not the planner's re-cut, is what forces the second attempt
+      // full.
+      let replans = 0;
+      return {
+        stateReturn: noState,
+        decomposeReturn: decomposeReturnDirect,
+        researchReturn: planReturn,
+        closeFor: () => {
+          replans += 1;
+          return replans === 1
+            ? { increments: [increment('i1', 'direct')], questions: [], summary: 'handed back' }
+            : { increments: [Object.assign(increment('i1', 'direct'), { status: 'done' })], questions: [], summary: 'closed' };
+        },
+      };
+    }
+    case 'w24':
+      // w22 with w16's verdict fixture: the review that would open the
+      // reviewer-driven fast path for a full increment must not open it for
+      // one the planner already cut direct — the allDirect edge of criterion
+      // 6.
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithDirectFinding : verdictReturnClean) };
+    case 'w25':
+      return { stateReturn: handedBackState(), decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1107,6 +1181,112 @@ async function main() {
       'the repeated step is pointed at the ## Decisions heading instead of handed the answer');
     assertTrue(!!result && Array.isArray(result.blockedOnHuman) && result.blockedOnHuman.length === 0,
       'the resumed run did not carry on to a clean close');
+  } else if (mode === 'w20') {
+    // An increment the planner cut direct: round 0 is worked by the
+    // implementer and the reviewer alone, with no researcher and no
+    // test-author dispatched at all — the run holds no researcher step yet,
+    // so the commands the round is judged by are empty, the criterion 5
+    // empty-list edge.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'an increment the planner cut direct did not skip exactly the researcher and the test-author in round 0');
+    const implCall = calls.find((c) => c.label === 'implement:i1.0');
+    assertTrue(!!implCall && implCall.prompt.includes('increment 1 is yours'),
+      "the direct round's implementer prompt does not name the increment as its own");
+    assertTrue(!!implCall && implCall.prompt.includes('does i1'),
+      "the direct round's implementer prompt does not carry the increment's criteria");
+    assertTrue(!!implCall && implCall.prompt.includes(READ_CODEMAP),
+      "the direct round's implementer is not sent to the codemap");
+    assertTrue(!!implCall && implCall.prompt.includes('git checkout -b issue-branch--i1'),
+      "the direct round's implementer is not told to create the increment branch");
+    assertTrue(!!implCall && /\bbranch\b.*backlog\.json i1 issue-branch--i1/.test(implCall.prompt),
+      "the direct round's implementer is not told to record the branch in the run state");
+    assertTrue(!!implCall && !/\bsteps docs\/issues\/x\/backlog\.json/.test(implCall.prompt),
+      "the direct round's implementer is sent to read a step, though no researcher or test-author worked this increment");
+    assertTrue(!!implCall && implCall.prompt.includes('No command counts for this increment'),
+      "the direct round's implementer prompt does not say no command counts for this increment — the empty-checks edge of a run with no researcher step yet");
+    assertTrue(!!implCall && !implCall.prompt.includes('CHECK-MARKER'),
+      "the direct round's implementer prompt carries checks though the run holds no researcher step");
+    const reviewCall = calls.find((c) => c.label === 'review:i1.0');
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('No command counts for this increment'),
+      "the direct round's reviewer prompt does not say no command counts for this increment");
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('git diff issue-branch...HEAD'),
+      "the direct round's reviewer prompt does not name the increment's diff range against the issue branch");
+    assertTrue(!!result && Array.isArray(result.increments) && !!result.increments[0] && result.increments[0].depth === 'direct',
+      "the run's result does not carry increment 1's chain depth as direct");
+    assertTrue(logs.some((l) => /Increment 1 round 0/.test(l) && /direct/i.test(l)),
+      'no log line names the direct path for increment 1 round 0');
+  } else if (mode === 'w21') {
+    // A full increment and a direct increment in the same run: each takes its
+    // own path, and the direct one is judged by the checks the run's last
+    // researcher step closed, carried across the increment boundary.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1',
+       'implement:i2.0', 'review:i2.0', 'replan:i2', 'publish'],
+      'a full increment followed by a direct increment did not each take their own path');
+    const implCall = calls.find((c) => c.label === 'implement:i2.0');
+    assertTrue(!!implCall && implCall.prompt.includes('CHECK-MARKER'),
+      "increment 2's direct implementer prompt does not carry the checks the run's last researcher step closed");
+    const reviewCall = calls.find((c) => c.label === 'review:i2.0');
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('CHECK-MARKER'),
+      "increment 2's direct reviewer prompt does not carry the checks the run's last researcher step closed");
+    assertTrue(!!result && Array.isArray(result.increments),
+      'the run result does not carry an increments list');
+    assertEqualArrays((result && result.increments || []).map((w) => w.depth), ['full', 'direct'],
+      "the run's result does not carry each worked increment's own chain depth");
+  } else if (mode === 'w22') {
+    // A direct increment whose round 0 review files a finding leaves the
+    // direct path for the rest of the attempt: the correction round runs the
+    // full chain.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0',
+       'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'],
+      'a direct increment whose review files a finding did not leave the direct path for the rest of its attempt');
+  } else if (mode === 'w23') {
+    // An increment the planner cut direct, handed back after a failed
+    // attempt, and still classified direct in the fixture on the second pass
+    // — the loop, not the planner, is what forces it full.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0', 'replan:i1',
+       'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'an increment the planner cut direct and then handed back was not worked full on its second attempt');
+    const firstAttempt = calls.filter((c) => c.label === 'implement:i1.0')[0];
+    assertTrue(!!firstAttempt && firstAttempt.prompt.includes('git checkout -b issue-branch--i1\`'),
+      "the first attempt's direct implementer is not told to create the base-named branch");
+    const secondAttempt = calls.find((c) => c.label === 'research:i1.0');
+    assertTrue(!!secondAttempt && secondAttempt.prompt.includes('git checkout -b issue-branch--i1-take2'),
+      "the second attempt's researcher is not sent to a fresh take2 branch, so the loop did not force the increment full despite the still-direct fixture");
+  } else if (mode === 'w24') {
+    // A direct increment whose round-0 review files a finding that is entirely
+    // a direct fix: the reviewer-driven fast path that skips the researcher and
+    // the test-author for a full increment must not open for one the planner
+    // already cut direct, because a review that files anything against it has
+    // already shown the classification was wrong. The correction round runs
+    // the full chain, and the round-1 implementer works from the plan, not
+    // from the findings.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'implement:i1.0', 'review:i1.0',
+       'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'],
+      'a direct increment whose review files only direct fixes did not run the full chain in its correction round');
+    const researchCall = calls.find((c) => c.label === 'research:i1.1');
+    assertTrue(!!researchCall && researchCall.prompt.includes(readStep('i1', 'review:i1.0', 'findings')),
+      "round 1's researcher is not sent to the findings the round-0 review filed");
+    const implCall = calls.find((c) => c.label === 'implement:i1.1');
+    assertTrue(!!implCall && implCall.prompt.includes(readStep('i1', 'research:i1.1', 'plan,moduleMap,environment')),
+      "round 1's implementer is not sent to the plan the researcher wrote, so the round did not take the planned brief");
+  } else if (mode === 'w25') {
+    // An increment the state shows as having already closed an attempt: the
+    // session-local counter cannot see it, but the archived attempt count the
+    // index carries can, and it is what keeps a hand-back full across a
+    // restart.
+    assertEqualArrays(labels,
+      ['load-state', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'an increment whose earlier attempt the state archived was worked direct again after the restart');
+    const researchCall = calls.find((c) => c.label === 'research:i1.0');
+    assertTrue(!!researchCall && researchCall.prompt.includes('git checkout -b issue-branch--i1-take2'),
+      "the restarted attempt's researcher is not sent to a fresh take2 branch, so the run did not know it was a later attempt while it classified");
+    assertTrue(!!result && Array.isArray(result.increments) && !!result.increments[0] && result.increments[0].depth === 'full',
+      "the run's result does not carry the restarted increment's chain depth as full");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1152,6 +1332,12 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w17 "$wf_name: a blocked increment's branch is closed unmerged and named to the closing planner"
   run_driver "$wf" w18 "$wf_name: the publish prompt carries the run's outcome and sends the agent to read nothing"
   run_driver "$wf" w19 "$wf_name: a resumed run hands the step that asked the human the answer in its prompt"
+  run_driver "$wf" w20 "$wf_name: an increment the planner cut direct is worked by the implementer and the reviewer alone"
+  run_driver "$wf" w21 "$wf_name: a full increment and a direct increment each take their own path, the direct one judged by the run's last researcher step"
+  run_driver "$wf" w22 "$wf_name: a direct increment whose review files a finding leaves the direct path for the rest of its attempt"
+  run_driver "$wf" w23 "$wf_name: an increment the planner cut direct and handed back after a failed attempt is full on its next attempt"
+  run_driver "$wf" w24 "$wf_name: a direct increment whose review files only direct fixes still runs the full chain in its correction round"
+  run_driver "$wf" w25 "$wf_name: an increment the state shows as having already closed an attempt is full again after a restart"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
@@ -1306,6 +1492,93 @@ if [ $? -eq 0 ]; then
   ok "plugin.json declares every page in agents/ and nothing that is not there"
 else
   no "plugin.json and agents/ disagree about which agents exist"
+fi
+
+echo
+echo "=== the reviewer proves a doubt with a probe in the sandbox"
+
+# The reviewer found that the flat pattern table above only proved every word
+# appears somewhere on the page — including the frontmatter `description`,
+# which already pairs "probe" with "sandbox", "checkout", "diff" and "doubt"
+# inside its own sentence. Deleting the rule from the body left the table
+# green, and the whole grip on criteria 1, 5 and 6 turned out to be the word
+# "commit" landing in a sentence that belongs to criterion 2. This case scopes
+# each rule to the section that owns it, then to one paragraph inside that
+# section, and pins it with a conjunction of terms chosen so only the
+# paragraph carrying that rule can satisfy all of them — so a paragraph
+# deleted from the body turns the case red instead of hiding behind a word
+# the frontmatter already carries.
+reviewer_probe_page="$root/agents/reviewer.md"
+declare -a reviewer_probe_rules=(
+  '^## .*probe:criterion 1, a probe is written and run in the sandbox and what it returns is the reproduction:probe:sandbox:reproduc|return'
+  '^## .*probe:criterion 6, a probe follows a stated doubt that reaches the report:probe:doubt:report'
+  '^## .*probe:criterion 2, a probe never reaches the checkout, a commit or the diff:probe:checkout:commit:diff'
+  '^## .*probe:criterion 5, the closed list does not bind inside the sandbox:probe:closed:list'
+  '^## .*probe:criterion 3, a probe is evidence and the pinning test stays with the test-author:probe:test-author:classif|triag'
+  '^## .*reproduction:criterion 3, a reproduction is still a spec:reproduc:spec'
+  '^## what you record:criterion 4, the reproduction carries what the probe ran and returned:probe:return'
+)
+reviewer_probe_misses=""
+for rule in "${reviewer_probe_rules[@]}"; do
+  IFS=':' read -ra rule_fields <<<"$rule"
+  want="${rule_fields[0]}"
+  label="${rule_fields[1]}"
+  paragraphs="$(awk -v RS='' -v want="$want" '
+    /^## / { inside = tolower($0) ~ want; next }
+    inside { gsub(/\n/, " "); print }
+  ' "$reviewer_probe_page")"
+  matched="$paragraphs"
+  for ((field_index = 2; field_index < ${#rule_fields[@]}; field_index++)); do
+    term="${rule_fields[$field_index]}"
+    matched="$(echo "$matched" | grep -iE -- "$term" || true)"
+  done
+  if [ -z "$matched" ]; then
+    reviewer_probe_misses="${reviewer_probe_misses}${label}
+"
+  fi
+done
+if [ -z "$reviewer_probe_misses" ]; then
+  ok "every rule the probe licence needs stands in its own paragraph of agents/reviewer.md"
+else
+  no "these rules of the probe licence stand in no paragraph of agents/reviewer.md:"
+  echo "$reviewer_probe_misses" | sed 's/^/       /'
+fi
+
+# The rule above catches an incomplete licence, not a contradictory one: a
+# page that adds the probe section but leaves the old blanket prohibition
+# standing would pass every pattern above while still forbidding, in the
+# same breath, the thing it just allowed.
+reviewer_probe_old_ban="$(grep -inE 'not even a throwaway|never write a test' "$reviewer_probe_page" || true)"
+if [ -z "$reviewer_probe_old_ban" ]; then
+  ok "the old blanket prohibition on writing a test is gone from agents/reviewer.md"
+else
+  no "the old blanket prohibition is still on agents/reviewer.md:"
+  echo "$reviewer_probe_old_ban" | sed 's/^/       /'
+fi
+
+# Criterion 7 asks the review's summary to say how many probes ran and what
+# they showed, so a clean review still shows whether it looked. "probe"
+# pairing with "summary" anywhere on the page is too loose a test — the two
+# words could land in unrelated paragraphs — so this anchors on the
+# `summary` bullet itself and its continuation lines.
+reviewer_probe_summary_bullet="$(grep -A3 -- '- \*\*`summary`\*\*' "$reviewer_probe_page" || true)"
+if echo "$reviewer_probe_summary_bullet" | grep -qi 'probe'; then
+  ok "the summary bullet on agents/reviewer.md reports how many probes ran and what they showed"
+else
+  no "the summary bullet on agents/reviewer.md does not mention a probe:"
+  echo "$reviewer_probe_summary_bullet" | sed 's/^/       /'
+fi
+
+# The licence belongs on the reviewer's page alone — granting it in the
+# shared brief or on another agent's page would hand every agent the same
+# write permission the sandbox is meant to bound. Direct mirror of the
+# chain_depth_owners case above.
+reviewer_probe_owners="$(grep -lie 'probe' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$reviewer_probe_owners" = "$reviewer_probe_page" ]; then
+  ok "agents/reviewer.md is the only agent page or shipped skill naming a probe"
+else
+  no "the word \"probe\" is owned by more (or fewer) pages than agents/reviewer.md alone:"
+  echo "${reviewer_probe_owners:-       (none)}" | sed "s|^$root/|       |"
 fi
 
 echo
