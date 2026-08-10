@@ -260,6 +260,60 @@ else
 fi
 
 echo
+echo "=== the read barrier is wired, and decides from the payload alone"
+
+# 1. Wired at all. A PreToolUse hook nothing dispatches refuses nothing, and
+#    the barriers the pages only ask for stay honour-system. The matcher must
+#    name all three gated tools — Read, Bash and Grep — or a route through one
+#    of them would fire the hook never at all.
+if node -e '
+  const hooks = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+  const entries = (hooks.hooks && hooks.hooks.PreToolUse) || [];
+  const match = entries.find(function (e) {
+    return typeof e.matcher === "string" &&
+      e.matcher.includes("Read") && e.matcher.includes("Bash") && e.matcher.includes("Grep") &&
+      Array.isArray(e.hooks) &&
+      e.hooks.some(function (h) { return typeof h.command === "string" && h.command.endsWith("read-barrier.mjs"); });
+  });
+  process.exit(match ? 0 : 1);
+' "$root/hooks/hooks.json" >/dev/null 2>&1; then
+  ok "hooks.json subscribes read-barrier.mjs to PreToolUse on Read, Bash and Grep"
+else
+  no "hooks.json does not subscribe read-barrier.mjs to PreToolUse on Read, Bash and Grep — the barriers would be honour-system again"
+fi
+
+# 2. The script itself has to exist, parse, and be runnable as the command
+#    hooks.json names — it is invoked directly, so a lost executable bit is a
+#    hook that fails on every call.
+if [ -x "$root/hooks/read-barrier.mjs" ]; then
+  ok "hooks/read-barrier.mjs exists and is executable"
+else
+  no "hooks/read-barrier.mjs is missing or not executable, and hooks.json invokes it directly"
+fi
+
+# 3. It parses.
+if node --check "$root/hooks/read-barrier.mjs" >/dev/null 2>&1; then
+  ok "the read barrier parses"
+else
+  no "the read barrier does not parse (or does not exist)"
+fi
+
+# 4. It decides from agent_type and the tool input alone — a hook that started
+#    reading the state it guards would be guarding it by opening it.
+if grep -qE "node:fs|readFileSync|writeFileSync|\bfetch\(|node:https?" "$root/hooks/read-barrier.mjs" 2>/dev/null; then
+  no "hooks/read-barrier.mjs touches the filesystem or the network — it must decide from the payload alone"
+else
+  ok "hooks/read-barrier.mjs opens no file and no connection"
+fi
+
+# 5. The suite is listed in the one command behind "the suite is green".
+if grep -q 'hooks/read-barrier.test.mjs' "$root/test.sh"; then
+  ok "test.sh lists the read barrier suite"
+else
+  no "test.sh does not list the read barrier suite"
+fi
+
+echo
 echo "=== the run state is the channel, and no prose handoff is left"
 
 # The five handoff files used to be the channel between agents and the record
@@ -435,6 +489,8 @@ const DISJOINT_MARKERS = [
   'MARKER-STALE-CUT',
   'MARKER-FRESH-CUT',
   'MARKER-CUT-QUESTION',
+  'MARKER-BUILD-QUESTION',
+  'MARKER-HUMAN-ANSWER',
 ];
 
 // The read a prompt has to carry for its role to have a brief at all. Written
@@ -521,12 +577,13 @@ function idxIncrement(id, extra) {
   );
 }
 
-const noState = { exists: false, branch: 'issue-branch', increments: [], runSteps: [], summary: '' };
-const stateOf = (increments, runSteps) => ({
+const noState = { exists: false, branch: 'issue-branch', increments: [], runSteps: [], decisions: '', summary: '' };
+const stateOf = (increments, runSteps, decisions) => ({
   exists: true,
   branch: 'issue-branch',
   increments,
   runSteps,
+  decisions: decisions || '',
   summary: '',
 });
 
@@ -557,6 +614,25 @@ const questionState = () =>
       }),
     ],
     [idxStep('decompose', decomposeReturnOne)],
+  );
+
+// The implementer is the role this case is built on: its own page and
+// `hooks/read-barrier.mjs` close `issue.md` to it, so it is the role whose
+// resume the old prompt broke by pointing it there for the human's answer.
+const buildQuestionState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        branch: 'issue-branch--i1',
+        steps: [
+          idxStep('research:i1.0', planReturn),
+          idxStep('tests:i1.0', testsReturn),
+          idxStep('implement:i1.0', Object.assign({}, buildReturn, { questions: ['MARKER-BUILD-QUESTION'] })),
+        ],
+      }),
+    ],
+    [idxStep('decompose', decomposeReturnOne)],
+    'MARKER-HUMAN-ANSWER',
   );
 
 // A finished run. `close` archived the increment's steps and the run-level
@@ -644,6 +720,8 @@ function contextFor(m) {
       // Every review round finds the same needs-plan defect, so the increment
       // burns its correction rounds and closes blocked.
       return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: () => verdictReturnWithFinding };
+    case 'w19':
+      return { stateReturn: buildQuestionState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -709,6 +787,16 @@ async function main() {
       'the publish prompt sends the agent to read the run state instead of handing it the run');
   }
 
+  // `hooks/read-barrier.mjs` refuses the implementer every read of `issue.md`,
+  // so a prompt that ordered one would order a call the hook denies and strand
+  // the step mid-run. Checked in every mode.
+  for (const c of calls) {
+    if (!c.label.startsWith('implement:')) continue;
+    const ordered = c.prompt.split('\n').filter((line) => /issue\.md/.test(line) && /\bread\b/i.test(line));
+    assertTrue(ordered.length === 0,
+      c.label + ' is told to read the issue file its page closes: ' + JSON.stringify(ordered));
+  }
+
   if (mode === 'w1') {
     const expected = ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1',
       'research:i2.0', 'tests:i2.0', 'implement:i2.0', 'review:i2.0', 'replan:i2', 'publish'];
@@ -724,6 +812,8 @@ async function main() {
     assertTrue(!!loader && loader.prompt.includes(READ_INDEX), 'the state loader is not told to read the index');
     assertTrue(!!loader && !/\bread docs\/issues\/x\/backlog\.json/.test(loader.prompt),
       'the state loader is told to read the whole state file, which is what the index exists to avoid');
+    assertTrue(!!loader && /## Decisions/.test(loader.prompt) && loader.prompt.includes('docs/issues/x/issue.md'),
+      "the state loader is not asked for the human's answer under ## Decisions in issue.md, so a resumed step would have no route to it");
     // The planner said what files the issue changes; every researcher reads
     // that map out of the state, and the prompt asking for the cut asks for
     // the map too.
@@ -840,8 +930,8 @@ async function main() {
     const researchCall = calls.find((c) => c.label === 'research:i1.0');
     assertTrue(!!researchCall && researchCall.prompt.includes('MARKER-HUMAN-QUESTION'),
       "the repeated step's prompt does not carry the question it asked");
-    assertTrue(!!researchCall && /## Decisions/.test(researchCall.prompt) && /issue\.md/.test(researchCall.prompt),
-      "the repeated step's prompt does not send the agent to the answer under ## Decisions in issue.md");
+    assertTrue(!!researchCall && /The human recorded no answer/.test(researchCall.prompt),
+      "the repeated step is not told that no answer came back, so it cannot tell an empty answer from a missing one");
     assertTrue(!!result && Array.isArray(result.blockedOnHuman) && result.blockedOnHuman.length === 0,
       'the resumed run ended on the stale recorded question instead of making progress');
   } else if (mode === 'w10') {
@@ -1000,6 +1090,23 @@ async function main() {
       'the publish prompt does not forbid reading the run state it was just handed');
     assertTrue(!!publishCall && /[Ff]etch the default branch before you compare/.test(publishCall.prompt),
       'the publish prompt does not tell the agent to fetch the default branch before diffing against it');
+  } else if (mode === 'w19') {
+    // The finding: the old answeredBlock pointed the resumed implementer at
+    // `## Decisions` in `issue.md`, a read `hooks/read-barrier.mjs` refuses it.
+    // The human's answer now travels in the prompt itself, lifted out of
+    // `issue.md` once by the state loader — the one role the hook does not gate.
+    assertEqualArrays(labels,
+      ['load-state', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'the recorded researcher and test-author were not skipped, or the step that asked was not worked again');
+    const buildCall = calls.find((c) => c.label === 'implement:i1.0');
+    assertTrue(!!buildCall && buildCall.prompt.includes('MARKER-BUILD-QUESTION'),
+      "the repeated step's prompt does not carry the question it asked");
+    assertTrue(!!buildCall && buildCall.prompt.includes('MARKER-HUMAN-ANSWER'),
+      "the repeated step's prompt does not carry the human's answer");
+    assertTrue(!!buildCall && !/## Decisions/.test(buildCall.prompt),
+      'the repeated step is pointed at the ## Decisions heading instead of handed the answer');
+    assertTrue(!!result && Array.isArray(result.blockedOnHuman) && result.blockedOnHuman.length === 0,
+      'the resumed run did not carry on to a clean close');
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1044,6 +1151,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w16 "$wf_name: a correction round whose findings are all direct fixes skips the researcher and the test-author, and is still reviewed"
   run_driver "$wf" w17 "$wf_name: a blocked increment's branch is closed unmerged and named to the closing planner"
   run_driver "$wf" w18 "$wf_name: the publish prompt carries the run's outcome and sends the agent to read nothing"
+  run_driver "$wf" w19 "$wf_name: a resumed run hands the step that asked the human the answer in its prompt"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment

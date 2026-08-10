@@ -302,9 +302,9 @@ reads its input and stops.
 
 ## Tests
 
-`bash test.sh` — seven suites, one command: the repository's own rules, what a
-parallel run in a worktree needs, the backlog recorder, the run-state hook, and
-the three tools.
+`bash test.sh` — eight suites, one command: the repository's own rules, what a
+parallel run in a worktree needs, the backlog recorder, the run-state hook, the
+read barrier, and the three tools.
 
 ## Licence
 

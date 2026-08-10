@@ -164,9 +164,14 @@ const STATE = {
       description: 'The index\'s `run.steps`. Empty when there is no state.',
       items: INDEX_STEP,
     },
+    decisions: {
+      type: 'string',
+      description:
+        'Everything under the `## Decisions` heading of the issue file, verbatim and without the heading itself. Empty string when the file has no such heading.',
+    },
     summary: { type: 'string' },
   },
-  required: ['exists', 'branch', 'increments', 'runSteps', 'summary'],
+  required: ['exists', 'branch', 'increments', 'runSteps', 'decisions', 'summary'],
   additionalProperties: false,
 }
 
@@ -400,19 +405,24 @@ function readBlock(intro, lines) {
   )
 }
 
-// The question this step asked before the run stopped. The human records the
-// answer under `## Decisions` in issue.md, which is where this sends the agent.
+// The question this step asked before the run stopped, and the human's answer
+// to it. The answer is in the prompt and not behind a read, because `issue.md`
+// is closed to some of the roles that ask.
 function answeredBlock(label) {
   const asked = carriedQuestions.get(label)
-  return asked && asked.length
-    ? `This step ended the previous run with a question for the human:\n` +
+  return (
+    (asked && asked.length
+      ? `This step ended the previous run with a question for the human:\n` +
         asked.map((q) => `  - ${q}`).join('\n') +
-        '\n' +
-        `The answer is under \`## Decisions\` in ${dir}/issue.md. Read it there first, then ` +
-        `work this step again; ask again only what it does not answer.\n`
-    : `This step ended the previous run with a question for the human. The answer is under ` +
-      `\`## Decisions\` in ${dir}/issue.md, and your own earlier attempt is in the run state ` +
-      `under this step's label. Read both, then work this step again.\n`
+        '\n'
+      : `This step ended the previous run with a question for the human, and your own earlier ` +
+        `attempt is in the run state under this step's label.\n`) +
+    (decisions
+      ? `The human answered it, and the answer is here in full:\n${decisions}\n` +
+        `Work this step again from it, and ask again only what it does not settle.\n`
+      : `The human recorded no answer. Work this step again from what you have, and ask again ` +
+        `only what you still cannot settle.\n`)
+  )
 }
 
 function questionBlock(label) {
@@ -484,6 +494,11 @@ const state = await agent(
     `\`git show origin/<that branch>:${dir}/backlog.json\` to a file outside the repository, ` +
     `run the helper's \`index\` on that file, and return that index instead. A failed fetch, ` +
     `or any other exit, means the branch is an abandoned attempt: keep the checkout's copy.\n` +
+    `The human's answers to whatever ended an earlier run are under a \`## Decisions\` heading ` +
+    `in ${dir}/issue.md: return everything under that heading in decisions, verbatim and ` +
+    `without the heading itself, up to the next \`## \` heading or the end of the file. Return ` +
+    `an empty string when there is no such heading and when there is no such file, and read no ` +
+    `other part of it into your return.\n` +
     `Read nothing else, change nothing, run no git command beyond the read-only ones named ` +
     `here, and do not dispatch any subagent.`,
   { agentType: 'general-purpose', phase: 'Load state', label: 'load-state', schema: STATE },
@@ -501,9 +516,17 @@ if (!issueBranch) {
   log('The state loader named no branch — increments are worked on the current checkout.')
 }
 
+// The human's answer to whatever ended the last run, lifted out of `issue.md`
+// by the state loader — the one agent of the run that may open that file. It
+// travels in the prompt of the step that asked, because that file is closed to
+// the implementer by its own page and by `hooks/read-barrier.mjs`, so a prompt
+// that sent it there would order a call the hook refuses and strand the step.
+const decisions = state && typeof state.decisions === 'string' ? state.decisions.trim() : ''
+
 // A step that ended the run with a question for the human is not replayed from
-// its recorded return: the human answered in `issue.md`, so the step is worked
-// again with the question in front of it. Replaying it instead would re-raise
+// its recorded return: the state loader lifted the human's answer out of
+// `issue.md`, so the step is worked again with the question and the answer in
+// front of it. Replaying it instead would re-raise
 // the same question and end the resumed run at Publish without dispatching
 // anyone — the restart the rulebook promises would make no progress at all.
 //
@@ -527,6 +550,9 @@ if (savedIndex) {
 if (recorded.size) log(`Resuming: ${recorded.size} step(s) already recorded in the run state.`)
 if (carriedQuestions.size) {
   log(`${carriedQuestions.size} step(s) ended the last run with a question and are worked again.`)
+}
+if (carriedQuestions.size && !decisions) {
+  log('No answer came back from the issue file, so the steps that asked are worked again without one.')
 }
 
 // Which branch each increment is worked on, by id. Seeded from the state so a

@@ -1,11 +1,11 @@
 # hooks/
 
-The plugin's two hooks, declared in `hooks.json` and shipped by `plugin.json`.
+The plugin's three hooks, declared in `hooks.json` and shipped by `plugin.json`.
 
 `session-start.sh` puts the rulebook in front of a starting session and warns a
 cloud session running an outdated plugin. `backlog-changed.mjs` follows
 `backlog.json` and pushes a run's state to the telemetry collector as the run
-writes it.
+writes it. `read-barrier.mjs` refuses a read an agent's own page forbids it.
 
 That second one is the only place in uroboros that talks to a collector. The
 recorder every agent writes its step through used to do the send itself, which
@@ -27,6 +27,40 @@ state, then a document identical to the one already sent. A run reads its state
 several times for every write, and that last gate — a digest of the last
 accepted document, kept per file in the temp directory — is what keeps the
 reads off the wire.
+
+The third one is the only place in uroboros that stops an agent doing
+something. Three of the rules the agent pages carry are barriers between roles
+— the implementer does not read `issue.md`, the reviewer does not read
+`backlog.json`, no agent reads a field of a step its page does not grant it —
+and until this hook they were honour-system. A role that reads the document
+written for another role is a role whose fresh context was not fresh, and that
+is the one failure a run cannot see in its own result. The pages still own
+those rules; this is their shadow, and every entry in its table cites the page
+it comes from, so a rule that moves moves in one place.
+
+It hangs off `PreToolUse` on `Read`, `Bash` and `Grep`, because a file has more
+than one route into a context: a `Read` by path, a `cat`, a `git show
+<ref>:<path>`, a `Grep` and the backlog helper's own reading subcommands are
+all the same read. It decides from the event's `agent_type` and tool input
+alone — it opens no file, opens no connection and reads no environment
+variable, which is what makes it cheap enough to sit in front of every one of
+those calls, and the only honest position for a guard that would otherwise be
+opening the state it guards.
+
+It fails open everywhere, and that asymmetry is the whole design. A wrong
+refusal blocks an agent mid-run over a call its page allows and costs a human
+the run; a wrong pass costs nothing that was not already being paid before the
+file existed. So only a positive identification refuses — a known reader
+command naming a `docs/issues/` path with a gated basename — and everything
+else is silent: an unknown agent, an ungated tool, an unparseable payload, a
+command it cannot classify, and its own crash. `node -e`, `python -c` and a
+`cd` before a `cat` are known holes, left open on purpose, because closing them
+means guessing.
+
+A refusal is the documented `PreToolUse` deny decision on stdout, not a
+non-zero exit: the exit code stays 0 on every path, and the reason that reaches
+the agent names the file or field, the page that closes it, and the route to
+take instead.
 
 ## Tests for `backlog-changed.mjs`
 
@@ -121,3 +155,86 @@ and `node:path`.
 From the repository root:
 
     node --test hooks/backlog-changed.test.mjs
+
+## Tests for `read-barrier.mjs`
+
+`read-barrier.test.mjs` spawns the real hook as a child process — the event as
+JSON on stdin, exactly as Claude Code delivers it.
+
+### What the suite covers
+
+The three gated barriers, each pinned from both directions: the implementer's
+`Read` of `issue.md` refused, the researcher's and the test-author's `Read` of
+the same file passing; the reviewer refused on every one of the helper's
+reading subcommands against `backlog.json` (`index`, `steps`, `codemap`,
+`read`), its own `start` and `record` on the same file passing because the
+gate is on reads and not writes, and its staging and committing that file
+passing too; a field a role's page closes refused whether it is named in
+`--fields` or the whole step comes back with no `--fields` at all, and the
+three fields a page does grant passing; that no label ever decides, because
+the payload never carries which step or field a prompt named. The routes to
+the same file: a `Read` by path, a `cat`, a `git show <ref>:<path>` and a
+`Grep` all refused alike, a `Grep` of an unrelated file passing. The fail-open
+side: no `agent_type`, an `agent_type` that is not one of the three gated
+keys — including the bare role name, which is deliberately not the same
+string as the `uroboros:`-prefixed one the workflow dispatches with — a tool
+the hook does not gate (`Write`, `Edit`), a `Bash` call the hook cannot
+positively classify (`node -e`, a script it does not open), and every shape of
+stdin the hook cannot use (not JSON, an array, a missing or malformed
+`tool_input`) — all exiting 0 with empty stdout, several of them pinned on
+empty stderr too. Last, the shape of a refusal itself: the documented
+`PreToolUse` deny envelope on stdout, nothing besides it, and the process
+still exiting 0.
+
+The line the whole suite defends is that a wrong refusal is the expensive
+mistake and a wrong pass is not: every case that is not a positive
+identification of a forbidden read allows the call, and the suite never
+asserts a deny for a route the plan did not name explicitly.
+
+### Helpers and fixtures
+
+All defined at the top of the file; every case reuses them.
+
+- `hook` — absolute path to `read-barrier.mjs`, resolved relative to the test
+  file, so the suite runs the same way from a checkout and from a plugin
+  cache.
+- `ISSUE`, `STATE` — a fixed issue directory's `issue.md` and `backlog.json`,
+  absolute under `/repo`, which is the `cwd` every event below carries.
+- `runHook(input)` — spawns the hook with `input` on stdin (verbatim when it
+  is a string, so a case can hand it something that is not JSON) and resolves
+  to `{ code, stdout, stderr }`. No `env` argument: the hook reads no
+  environment.
+- `event(extra)` — a well-formed `PreToolUse` payload, common fields included,
+  defaulting to the implementer running an empty `Bash` call; spread `extra`
+  to override any field.
+- `readOf(agentType, filePath)`, `bashOf(agentType, command)`,
+  `grepOf(agentType, targetPath)` — thin wrappers over `event` for the three
+  gated tools.
+- `helper(args)` — the command line the backlog helper is really invoked
+  with, plugin-cache path and all — the string the hook has to find a
+  subcommand and a path in, not a convenient one.
+- `allows(result, context)` — asserts `code === 0` and `stdout === ''`;
+  `context` is folded into the assertion message so a case built from a loop
+  or a table says which entry failed.
+- `denies(result, ...substrings)` — asserts `code === 0`, that `stdout` parses
+  as the documented deny envelope, and that `permissionDecisionReason`
+  contains every one of `substrings`.
+
+### Where a new case belongs
+
+Flat top-level `test(...)` calls after the helpers, in the order the hook's
+own gates run: the roles and their files, then the fields, then everything
+that passes, then the shape of the refusal and the exit code.
+
+### Faked vs real
+
+Nothing is mocked and nothing is stubbed. Every case spawns the actual hook
+against a JSON payload built in the test; unlike the neighbouring suite, no
+temp directory and no server are needed at all, because the hook decides from
+the payload and never opens a file.
+
+### Running it
+
+From the repository root:
+
+    node --test hooks/read-barrier.test.mjs
