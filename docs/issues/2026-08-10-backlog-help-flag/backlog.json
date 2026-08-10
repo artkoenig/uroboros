@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "issue": "docs/issues/2026-08-10-backlog-help-flag/issue.md",
+  "workflow": "agile-loop",
+  "codemap": "skills/agent-brief/assets/backlog.mjs — the backlog CLI; its argument handling has to answer --help/-h on stdout with exit 0 while the unknown-command path keeps exiting 2 with the usage on stderr\nskills/agent-brief/assets/backlog.test.mjs — the suite that pins every CLI behavior end to end; the help flag and the preserved error path are verified here\nskills/agent-brief/assets/CLAUDE.md — describes what the suite covers; that description changes when new cases land",
+  "increments": [
+    {
+      "id": "help-flag",
+      "title": "backlog.mjs answers --help and -h",
+      "goal": "Asking the backlog helper for its usage works without provoking an error: the help flags print the usage to stdout and exit 0, and a wrong call keeps its exit-2 usage on stderr.",
+      "criteria": [
+        "`node skills/agent-brief/assets/backlog.mjs --help` prints the usage to stdout and exits 0.",
+        "`node skills/agent-brief/assets/backlog.mjs -h` behaves exactly like `--help`.",
+        "A call with an unknown command keeps exiting 2 with the usage on stderr."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-10T20:43:54.004Z",
+        "return": {
+          "questions": [],
+          "summary": "The issue is one change, so the backlog holds one increment, help-flag, carrying all three acceptance criteria: --help prints usage to stdout with exit 0, -h behaves identically, and an unknown command keeps exiting 2 with usage on stderr. I rejected splitting the flags from the preserved error path because neither half is worth its own review chain. Depth is full: the flag behavior can only be proven by tests that do not exist yet. The codemap names the CLI, its end-to-end suite, and the doc describing that suite's coverage."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-10-backlog-help-flag\nOpen the run state for docs/issues/2026-08-10-backlog-help-flag/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-10-backlog-help-flag/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-10-backlog-help-flag/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-10-backlog-help-flag/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
