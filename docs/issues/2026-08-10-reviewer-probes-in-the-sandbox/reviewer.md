@@ -144,3 +144,130 @@ Traced, nothing found that breaks:
   left the sentence unwrapped while the rest of the file sits at about 80.
 - The owners case compares `grep -l` output to one exact path, so any future
   page using "probe" in an unrelated sense turns it red. It is right today.
+
+## Round 1
+
+**Status: accepted, 0 findings.** Both Round 0 findings are answered: every one
+of the seven criteria now has a rule on `agents/reviewer.md` that turns
+`bash test-repo.sh` red when the paragraph carrying it is deleted, and I proved
+that by deleting each of them in a sandbox.
+
+### The listed command
+
+`bash test-repo.sh`, 75 cases, exit 0. Nothing skipped, nothing excluded. The
+four cases under `=== the reviewer proves a doubt with a probe in the sandbox`
+are green, and no case anywhere in the suite is red.
+
+### Sandbox runs
+
+Eleven further runs of that same command in a `git worktree` of HEAD on a
+temporary path outside the checkout, each mutating one sentence or paragraph of
+`agents/reviewer.md` to see whether the suite notices. No file in the checkout
+was touched, and the worktree was removed — `git worktree list` shows the
+checkout alone and `git status` is clean. These are the merge-base-style runs of
+the listed command against another state that the page already allows; no file
+was written into the sandbox, so no probe in the new sense ran.
+
+### The diff against the intent
+
+This round changed one file that is not a handoff: `test-repo.sh` (commit
+c48e8be). The implementer changed no file (428b42b), which is right — both
+findings were about what the suite fails to pin, and nothing on the pages was
+wrong. Over the issue as a whole the change is `README.md`,
+`agents/reviewer.md`, `agents/test-author.md` and `test-repo.sh`.
+
+Criterion by criterion, against the page as it stands:
+
+- **C1 — the licence to write a probe in the sandbox.** Met,
+  `agents/reviewer.md:114-116`.
+- **C2 — sandbox only, never the checkout, never committed, never in the
+  diff.** Met, `agents/reviewer.md:123-124`; the sandbox's removal stands at
+  `agents/reviewer.md:106-110`.
+- **C3 — a reproduction is still a spec, a probe is evidence and not the
+  pinning test, classification unchanged.** Met, `agents/reviewer.md:87` and
+  `agents/reviewer.md:130-132`; `agents/test-author.md:62-63` is narrowed to
+  match.
+- **C4 — the `reproduction` carries what the probe ran and returned.** Met,
+  `agents/reviewer.md:149-150`.
+- **C5 — the closed list does not bind inside the sandbox, and binds outside as
+  before.** Met, `agents/reviewer.md:126-128`, with `README.md:84-87` kept true
+  beside it.
+- **C6 — probe from a stated doubt, one sentence, into the report.** Met,
+  `agents/reviewer.md:118-121`.
+- **C7 — the `summary` says how many probes ran and what they showed.** Met,
+  `agents/reviewer.md:168-169`.
+
+Nothing in the diff goes beyond the criteria. The rewritten case in
+`test-repo.sh:1497-1546` replaces the flat pattern table with a per-section,
+per-paragraph conjunction; the three other cases in the section are unchanged
+from Round 0.
+
+### The tests against the intent
+
+Every criterion now fails the suite when its rule leaves the page. Each step
+below was a separate `git worktree` of HEAD outside the checkout, followed by
+`bash test-repo.sh`:
+
+- Delete `agents/reviewer.md:114-116` (C1). `FAIL: 1 of 75`, exit 1, naming
+  "criterion 1".
+- Delete `agents/reviewer.md:118-121` (C6). `FAIL: 1 of 75`, exit 1, naming
+  "criterion 6".
+- Delete `agents/reviewer.md:123-124` (C2). `FAIL: 1 of 75`, exit 1, naming
+  "criterion 2".
+- Delete `agents/reviewer.md:126-128` (C5). `FAIL: 1 of 75`, exit 1, naming
+  "criterion 5".
+- Delete `agents/reviewer.md:130-132` (C3, second half). `FAIL: 1 of 75`,
+  exit 1.
+- Delete the clause " — and a finding a probe produced is classified like any
+  other" alone, leaving the rest of that paragraph. `FAIL: 1 of 75`, exit 1 —
+  the exact Round 0 reproduction, now red.
+- Delete "A reproduction is a spec, not a file you wrote. " from
+  `agents/reviewer.md:87` (C3, first half). `FAIL: 1 of 75`, exit 1 — the other
+  Round 0 reproduction, now red.
+- Delete `agents/reviewer.md:149-150` (C4). `FAIL: 1 of 75`, exit 1.
+- Replace the `summary` bullet with one that drops the probe clause (C7).
+  `FAIL: 1 of 75`, exit 1.
+
+The frontmatter no longer masks anything: the `awk` scan starts at a `## `
+heading, so the `description` on line 3 is outside every rule's search space.
+
+### Beyond the criteria
+
+Traced, nothing found that breaks:
+
+- `workflows/agile-loop.js:359-365` builds the reviewer's prompt with
+  `checkList()`, whose wording is "The commands that count for this increment:"
+  and claims no exclusivity, so nothing in the dispatch contradicts the sandbox
+  exception. The `VERDICT` schema leaves `summary` a free string, so C7 needs
+  nothing there.
+- The one place that did claim exclusivity, "the only ones anyone runs" in
+  `workflows/loop.js:121`, is not on this branch — that file is deleted in the
+  diff, by earlier work outside this issue.
+- No page outside `agents/reviewer.md` names a probe: `grep -i probe` over
+  `agents/`, `skills/`, `rulebook.md` and `workflows/` finds only the reviewer's
+  page, `README.md:86`, the new suite cases, and unrelated senses under
+  `tools/argus*` and `.claude/rules/agents.md:18`, none of which the owners case
+  scans.
+- No other page still says the reviewer writes nothing at all;
+  `agents/test-author.md:63` now says only that the reviewer never writes the
+  test that pins a behaviour.
+- The rewritten case uses `awk -v RS=''`, `tolower` and `gsub` only, all POSIX,
+  and `declare -a` inside a suite that is already `#!/bin/bash`. It reads
+  `agents/reviewer.md` and writes nothing.
+
+### Observations, no correction needed
+
+- C4's pin is the pair "probe" and "return" inside the `reproduction`
+  paragraph. Rewriting `agents/reviewer.md:149-150` to "its `reproduction`
+  carries the doubt you stated and what it returned" — dropping "what the probe
+  ran" — leaves `PASS: 75 cases`, exit 0. Half a clause, and the paragraph as a
+  whole is pinned; not worth a round.
+- Deleting "and remove it afterwards" from `agents/reviewer.md:109` leaves
+  `PASS: 75 cases`, exit 0. C2's closing clause says "as it already is today",
+  so that sentence is pre-existing text this change never touched, and "gone
+  when you remove it" in the probe section is pinned.
+- The rules are conjunctions scoped to one paragraph, so a future rewrite that
+  splits one rule across two paragraphs turns the case red without the rule
+  having gone. Merging paragraphs is safe. It is right today.
+- `agents/reviewer.md:106` is still 96 characters, unwrapped where the rest of
+  the file sits at about 80 — carried over from Round 0.
