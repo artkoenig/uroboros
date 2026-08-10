@@ -146,3 +146,83 @@ alone.
   `test-author.md`; it is a process note for the researcher, not something my
   work depends on.
 - I am blocked on nothing.
+
+## Round 1
+
+Both findings of the Round 1 plan are implemented in `workflows/agile-loop.js`
+alone. No page, no README, no `backlog.mjs`, no test file was touched.
+
+### Finding 1 — a correction round of a `direct` increment always runs the full chain
+
+- `workflows/agile-loop.js`, the round loop: `const directFix = round > 0 &&
+  isDirectFixRound(verdict)` became `const directFix = round > 0 && depth !==
+  'direct' && isDirectFixRound(verdict)`.
+- Rewrote the comment above `directFix`: it keeps its point that only the round
+  before's verdict decides, and gains the clause that an increment this attempt
+  is working direct is never a direct-fix round, because a review that filed
+  anything against it has already shown the classification was wrong.
+- Rewrote the comment above `directRound`: the planner's classification governs
+  round 0 alone, every later round of that attempt is a full round, and the
+  reviewer-driven fast path stays open only to increments the planner cut
+  `full`.
+- Nothing else in the round moved: `isDirectFixRound`, the direct-fix
+  implementer brief and its `{ effort: 'low' }` are untouched.
+
+### Finding 2 — a hand-back the state remembers forces `full` across a restart
+
+Three edits, all in `workflows/agile-loop.js`:
+
+1. `STATE`, `increments.items`: added `attempts: { type: 'integer' },` after
+   `steps` in `properties` and `'attempts'` at the end of `required`, with no
+   description, matching its neighbours.
+2. Beside the `branches` seed: added `const closedAttempts = new Map()`, filled
+   from the same loop over `savedIndex.increments` with
+   `if (Number(t.attempts) > 0) closedAttempts.set(t.id, Number(t.attempts))`,
+   commented in the file's voice as holding how many attempts the state says the
+   increment has already closed, for one decision only.
+3. The per-attempt depth line became
+   `const depth = task.depth === 'direct' && attempt === 1 &&
+   !closedAttempts.get(task.id) ? 'direct' : 'full'`, and its comment gained the
+   sentence that the session counter catches a hand-back inside one session, the
+   archived count catches one across a restart, and between them a second
+   attempt is never direct.
+
+The head comment on the backstops was corrected: the false clause "closing an
+increment ends its attempt in the state, so nothing there counts attempts" is
+gone; `MAX_ATTEMPTS` is still stated as session-local with the restart-is-cheaper
+sentence intact, plus the new sentence that the count the index does carry is
+read for one thing only — never working an increment direct twice.
+
+### Files changed
+
+- `workflows/agile-loop.js` (the only production file this round).
+
+### Tests
+
+I ran `bash test-repo.sh` before changing anything: 71 cases, 69 ok, 2 FAIL,
+exit 1. The two failures were W24 and W25, red for exactly the reasons the plan
+recorded — W24's labels came back
+`["load-state","decompose","implement:i1.0","review:i1.0","implement:i1.1","review:i1.1","replan:i1","publish"]`
+(the correction round took the direct-fix path) and W25's came back
+`["load-state","implement:i1.0","review:i1.0","replan:i1","publish"]` (the
+restarted attempt was still classified direct). I wrote and edited no test.
+
+### Commands run — what counts as done
+
+```
+bash test-repo.sh
+```
+71 cases, all ok, exit 0. Nothing skipped, nothing excluded. That is the whole
+closed list for this round; `node --test skills/agent-brief/assets/backlog.test.mjs`
+is excluded by the plan because no file that suite covers changed, and I did not
+run it.
+
+### Notes for the reviewer
+
+- The `STATE` addition of `attempts` is unreachable from any test — the driver
+  stubs `agent()` and validates no schema — exactly as the Round 1 test plan
+  records. It is the review that reads it.
+- `closedAttempts` is read with `!closedAttempts.get(task.id)`, so any non-zero
+  archived count forces `full`; an absent id and a zero both leave the planner's
+  classification standing, as the plan intends.
+- I am blocked on nothing.

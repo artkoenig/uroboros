@@ -63,10 +63,10 @@ const MAX_CORRECTIONS = 2
 // stops the loop and hands back to the human rather than burning the budget.
 //
 // MAX_BLOCKED is derived from the statuses in the run state, so it survives a
-// restart. MAX_ATTEMPTS is deliberately session-local: closing an increment
-// ends its attempt in the state, so nothing there counts attempts, and a
-// restart granting one more attempt is cheaper than a second counter in the
-// file that every writer would have to maintain.
+// restart. MAX_ATTEMPTS is deliberately session-local: a restart granting one
+// more attempt is cheaper than a second counter in the file that every writer
+// would have to maintain. The count of closed attempts the index does carry is
+// read for one thing only — never working an increment direct twice.
 const MAX_INCREMENTS = 8
 const MAX_ATTEMPTS = 2
 const MAX_BLOCKED = 2
@@ -156,8 +156,9 @@ const STATE = {
           note: { type: 'string' },
           branch: { type: 'string' },
           steps: { type: 'array', items: INDEX_STEP },
+          attempts: { type: 'integer' },
         },
-        required: ['id', 'title', 'goal', 'criteria', 'depth', 'status', 'note', 'branch', 'steps'],
+        required: ['id', 'title', 'goal', 'criteria', 'depth', 'status', 'note', 'branch', 'steps', 'attempts'],
         additionalProperties: false,
       },
     },
@@ -566,9 +567,14 @@ if (carriedQuestions.size && !decisions) {
 // resumed run continues on the branch the dead session recorded; kept current
 // in-session so a fresh attempt gets a fresh name.
 const branches = new Map()
+// How many attempts the state says each increment has already closed. It exists
+// for one decision only: an increment that has closed an attempt is never worked
+// direct again, however the re-cut classified it.
+const closedAttempts = new Map()
 if (savedIndex) {
   for (const t of savedIndex.increments || []) {
     if (typeof t.branch === 'string' && t.branch) branches.set(t.id, t.branch)
+    if (Number(t.attempts) > 0) closedAttempts.set(t.id, Number(t.attempts))
   }
 }
 
@@ -759,8 +765,11 @@ if (!blockedOnHuman.length) {
     attempts.set(task.id, attempt)
     // The one place the loop overrides the planner: a second attempt is worked
     // in full whatever the re-cut classified it as, so a misclassification the
-    // first attempt already paid for cannot be repeated.
-    const depth = task.depth === 'direct' && attempt === 1 ? 'direct' : 'full'
+    // first attempt already paid for cannot be repeated. The session counter
+    // catches a hand-back inside one session, the archived count catches one
+    // across a restart, and between them a second attempt is never direct.
+    const depth =
+      task.depth === 'direct' && attempt === 1 && !closedAttempts.get(task.id) ? 'direct' : 'full'
     if (attempt > MAX_ATTEMPTS) {
       stopped =
         `"${task.title}" was worked ${MAX_ATTEMPTS} times and the planner handed it back ` +
@@ -798,11 +807,14 @@ if (!blockedOnHuman.length) {
       previousTestsLabel = testsLabel
       // Decided before anything is dispatched, and only from the verdict of the
       // round before: round 0 is never a direct-fix round, so `plan` is always
-      // the one an earlier round produced by the time this is true.
-      const directFix = round > 0 && isDirectFixRound(verdict)
-      // The planner's own classification governs round 0 alone: a correction
-      // round of a direct increment is an ordinary round unless the reviewer's
-      // verdict makes it a direct-fix one.
+      // the one an earlier round produced by the time this is true. An increment
+      // this attempt is working direct is never a direct-fix round either: a
+      // review that filed anything against it has already shown the
+      // classification was wrong, so the round that answers it is a full one.
+      const directFix = round > 0 && depth !== 'direct' && isDirectFixRound(verdict)
+      // The planner's own classification governs round 0 alone: every later
+      // round of that attempt is a full round, and the reviewer-driven fast path
+      // above stays open only to increments the planner cut `full`.
       const directRound = round === 0 && depth === 'direct'
 
       if (directFix || directRound) {
