@@ -118,8 +118,9 @@ verbatim and whole — to a file outside the repository, then run
 node "<base>/assets/backlog.mjs" start <issueDir>/backlog.json <incrementId> <label> <promptFile>
 ```
 
-before any other work, with the increment id and the label your prompt gives
-you. `<base>` is the base directory of the `agent-brief` skill, which your
+before any other work — after only the branch steps your prompt names, so the
+announcement lands on the branch your step commits to — with the increment id
+and the label your prompt gives you. `<base>` is the base directory of the `agent-brief` skill, which your
 context names on its `Base directory for this skill:` line; where no such line
 is there, find the helper with `find "$HOME/.claude/plugins" -path
 '*agent-brief/assets/backlog.mjs' | head -1`. That helper is the only writer of
