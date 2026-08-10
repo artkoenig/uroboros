@@ -121,3 +121,86 @@ and `node:path`.
 From the repository root:
 
     node --test hooks/backlog-changed.test.mjs
+
+## Tests for `read-barrier.mjs`
+
+`read-barrier.test.mjs` spawns the real hook as a child process — the event as
+JSON on stdin, exactly as Claude Code delivers it.
+
+### What the suite covers
+
+The three gated barriers, each pinned from both directions: the implementer's
+`Read` of `issue.md` refused, the researcher's and the test-author's `Read` of
+the same file passing; the reviewer refused on every one of the helper's
+reading subcommands against `backlog.json` (`index`, `steps`, `codemap`,
+`read`), its own `start` and `record` on the same file passing because the
+gate is on reads and not writes, and its staging and committing that file
+passing too; a field a role's page closes refused whether it is named in
+`--fields` or the whole step comes back with no `--fields` at all, and the
+three fields a page does grant passing; that no label ever decides, because
+the payload never carries which step or field a prompt named. The routes to
+the same file: a `Read` by path, a `cat`, a `git show <ref>:<path>` and a
+`Grep` all refused alike, a `Grep` of an unrelated file passing. The fail-open
+side: no `agent_type`, an `agent_type` that is not one of the three gated
+keys — including the bare role name, which is deliberately not the same
+string as the `uroboros:`-prefixed one the workflow dispatches with — a tool
+the hook does not gate (`Write`, `Edit`), a `Bash` call the hook cannot
+positively classify (`node -e`, a script it does not open), and every shape of
+stdin the hook cannot use (not JSON, an array, a missing or malformed
+`tool_input`) — all exiting 0 with empty stdout, several of them pinned on
+empty stderr too. Last, the shape of a refusal itself: the documented
+`PreToolUse` deny envelope on stdout, nothing besides it, and the process
+still exiting 0.
+
+The line the whole suite defends is that a wrong refusal is the expensive
+mistake and a wrong pass is not: every case that is not a positive
+identification of a forbidden read allows the call, and the suite never
+asserts a deny for a route the plan did not name explicitly.
+
+### Helpers and fixtures
+
+All defined at the top of the file; every case reuses them.
+
+- `hook` — absolute path to `read-barrier.mjs`, resolved relative to the test
+  file, so the suite runs the same way from a checkout and from a plugin
+  cache.
+- `ISSUE`, `STATE` — a fixed issue directory's `issue.md` and `backlog.json`,
+  absolute under `/repo`, which is the `cwd` every event below carries.
+- `runHook(input)` — spawns the hook with `input` on stdin (verbatim when it
+  is a string, so a case can hand it something that is not JSON) and resolves
+  to `{ code, stdout, stderr }`. No `env` argument: the hook reads no
+  environment.
+- `event(extra)` — a well-formed `PreToolUse` payload, common fields included,
+  defaulting to the implementer running an empty `Bash` call; spread `extra`
+  to override any field.
+- `readOf(agentType, filePath)`, `bashOf(agentType, command)`,
+  `grepOf(agentType, targetPath)` — thin wrappers over `event` for the three
+  gated tools.
+- `helper(args)` — the command line the backlog helper is really invoked
+  with, plugin-cache path and all — the string the hook has to find a
+  subcommand and a path in, not a convenient one.
+- `allows(result, context)` — asserts `code === 0` and `stdout === ''`;
+  `context` is folded into the assertion message so a case built from a loop
+  or a table says which entry failed.
+- `denies(result, ...substrings)` — asserts `code === 0`, that `stdout` parses
+  as the documented deny envelope, and that `permissionDecisionReason`
+  contains every one of `substrings`.
+
+### Where a new case belongs
+
+Flat top-level `test(...)` calls after the helpers, in the order the hook's
+own gates run: the roles and their files, then the fields, then everything
+that passes, then the shape of the refusal and the exit code.
+
+### Faked vs real
+
+Nothing is mocked and nothing is stubbed. Every case spawns the actual hook
+against a JSON payload built in the test; unlike the neighbouring suite, no
+temp directory and no server are needed at all, because the hook decides from
+the payload and never opens a file.
+
+### Running it
+
+From the repository root:
+
+    node --test hooks/read-barrier.test.mjs

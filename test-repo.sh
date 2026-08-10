@@ -260,6 +260,60 @@ else
 fi
 
 echo
+echo "=== the read barrier is wired, and decides from the payload alone"
+
+# 1. Wired at all. A PreToolUse hook nothing dispatches refuses nothing, and
+#    the barriers the pages only ask for stay honour-system. The matcher must
+#    name all three gated tools — Read, Bash and Grep — or a route through one
+#    of them would fire the hook never at all.
+if node -e '
+  const hooks = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+  const entries = (hooks.hooks && hooks.hooks.PreToolUse) || [];
+  const match = entries.find(function (e) {
+    return typeof e.matcher === "string" &&
+      e.matcher.includes("Read") && e.matcher.includes("Bash") && e.matcher.includes("Grep") &&
+      Array.isArray(e.hooks) &&
+      e.hooks.some(function (h) { return typeof h.command === "string" && h.command.endsWith("read-barrier.mjs"); });
+  });
+  process.exit(match ? 0 : 1);
+' "$root/hooks/hooks.json" >/dev/null 2>&1; then
+  ok "hooks.json subscribes read-barrier.mjs to PreToolUse on Read, Bash and Grep"
+else
+  no "hooks.json does not subscribe read-barrier.mjs to PreToolUse on Read, Bash and Grep — the barriers would be honour-system again"
+fi
+
+# 2. The script itself has to exist, parse, and be runnable as the command
+#    hooks.json names — it is invoked directly, so a lost executable bit is a
+#    hook that fails on every call.
+if [ -x "$root/hooks/read-barrier.mjs" ]; then
+  ok "hooks/read-barrier.mjs exists and is executable"
+else
+  no "hooks/read-barrier.mjs is missing or not executable, and hooks.json invokes it directly"
+fi
+
+# 3. It parses.
+if node --check "$root/hooks/read-barrier.mjs" >/dev/null 2>&1; then
+  ok "the read barrier parses"
+else
+  no "the read barrier does not parse (or does not exist)"
+fi
+
+# 4. It decides from agent_type and the tool input alone — a hook that started
+#    reading the state it guards would be guarding it by opening it.
+if grep -qE "node:fs|readFileSync|writeFileSync|\bfetch\(|node:https?" "$root/hooks/read-barrier.mjs" 2>/dev/null; then
+  no "hooks/read-barrier.mjs touches the filesystem or the network — it must decide from the payload alone"
+else
+  ok "hooks/read-barrier.mjs opens no file and no connection"
+fi
+
+# 5. The suite is listed in the one command behind "the suite is green".
+if grep -q 'hooks/read-barrier.test.mjs' "$root/test.sh"; then
+  ok "test.sh lists the read barrier suite"
+else
+  no "test.sh does not list the read barrier suite"
+fi
+
+echo
 echo "=== the run state is the channel, and no prose handoff is left"
 
 # The five handoff files used to be the channel between agents and the record
