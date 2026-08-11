@@ -116,6 +116,11 @@ things:
    succeed, or drop it and say what the run cannot deliver. Handing the same
    increment back unchanged repeats the failure.
 
+   Where your prompt says the review accepted the increment and nothing else
+   is open, the run is at its end: land the branch as the prompt says, close,
+   read nothing, and return an empty `increments` list — there is nothing left
+   to re-cut.
+
 Change nothing you have no reason to change. Churn in the backlog costs a reader
 the ability to see what actually moved.
 

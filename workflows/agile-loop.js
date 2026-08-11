@@ -509,7 +509,7 @@ const state = await agent(
     `other part of it into your return.\n` +
     `Read nothing else, change nothing, run no git command beyond the read-only ones named ` +
     `here, and do not dispatch any subagent.`,
-  { agentType: 'general-purpose', phase: 'Load state', label: 'load-state', schema: STATE },
+  { agentType: 'general-purpose', phase: 'Load state', label: 'load-state', schema: STATE, effort: 'low' },
 )
 
 const savedIndex = state && state.exists ? state : null
@@ -1008,6 +1008,12 @@ if (!blockedOnHuman.length) {
     // Runs whether the review accepted or not: the planner owns the answer to a
     // blocked increment as much as to a finished one, and a state that never
     // records the failure sends the next call in blind.
+    //
+    // With the review accepting and no other increment open there is nothing
+    // to re-cut, so the prompt trims to close-and-merge: the reads and the
+    // re-cut would be pure cost, and the loop falls through on the empty list
+    // the planner returns for it.
+    const othersOpen = increments.filter((t) => t.status === 'todo' && t.id !== task.id).length
     const replanLabel = `replan:${task.id}`
     const recut = await step(replanLabel, 'Replan', () =>
       agent(
@@ -1027,15 +1033,19 @@ if (!blockedOnHuman.length) {
                 `\`${incrementBranch}\`. Check out \`${issueBranch}\` first, so the state you ` +
                 `write lands there, and name that unmerged branch in the note you close with.\n`
             : '') +
-          `What this increment turned up is what you re-cut against, and it is in the run ` +
-          `state. Read it with the backlog helper your shared brief names:\n` +
-          `  - \`steps ${dir}/backlog.json ${task.id}\` — every step this increment recorded, ` +
-          `whole.\n` +
-          `  - \`index ${dir}/backlog.json\` — the rest of the cut, with no step content in it.\n` +
-          `  - \`codemap ${dir}/backlog.json\` — the map as it stands.\n` +
-          `Then close that increment with \`close\` and re-cut what is still open with ` +
-          `\`init\`, the whole codemap in its \`codemap\` field. ${n} of at most ` +
-          `${maxIncrements} increments are spent.\n` +
+          (accepted && !othersOpen
+            ? `Nothing else in the backlog is open, so there is nothing to re-cut: close this ` +
+              `increment with \`close\`, leave the cut and the codemap as they stand, read ` +
+              `nothing, and return an empty \`increments\` list.\n`
+            : `What this increment turned up is what you re-cut against, and it is in the run ` +
+              `state. Read it with the backlog helper your shared brief names:\n` +
+              `  - \`steps ${dir}/backlog.json ${task.id}\` — every step this increment recorded, ` +
+              `whole.\n` +
+              `  - \`index ${dir}/backlog.json\` — the rest of the cut, with no step content in it.\n` +
+              `  - \`codemap ${dir}/backlog.json\` — the map as it stands.\n` +
+              `Then close that increment with \`close\` and re-cut what is still open with ` +
+              `\`init\`, the whole codemap in its \`codemap\` field. ${n} of at most ` +
+              `${maxIncrements} increments are spent.\n`) +
           recordStep('-', replanLabel, CUT_PAYLOAD),
         { agentType: 'uroboros:planner', phase: 'Replan', label: replanLabel, schema: BACKLOG },
       ),
@@ -1171,7 +1181,7 @@ const push = await agent(
     'branches. If the working tree is dirty, leave it dirty and report it.\n' +
     'You are running inside a workflow script. Do NOT dispatch any subagent.\n\n' +
     runOutcome(),
-  { agentType: 'general-purpose', phase: 'Publish', label: 'publish', schema: PUSH },
+  { agentType: 'general-purpose', phase: 'Publish', label: 'publish', schema: PUSH, effort: 'low' },
 )
 log(`Push: ${push.pushed ? 'ok' : 'FAILED'} — ${push.summary}`)
 log(`Pull request: ${push.prUrl || 'none'}${push.prCreated ? ' (opened by this run)' : ''}`)
