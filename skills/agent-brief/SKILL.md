@@ -111,16 +111,20 @@ one sentence, write that sentence in the imperative, and state each thing once:
 two wordings of one rule disagree after the first edit, and the reader follows
 whichever it saw last.
 
-**Announce yourself before you begin.** Write the prompt you were given —
-verbatim and whole — to a file outside the repository, then run
+**Announce yourself before you begin.** In one `Bash` call: write the prompt
+you were given — verbatim and whole — to a file outside the repository through
+a quoted heredoc, and run the helper behind it in the same call:
 
 ```
+cat > <promptFile> <<'UROBOROS_PROMPT'
+<the prompt, verbatim>
+UROBOROS_PROMPT
 node "<base>/assets/backlog.mjs" start <issueDir>/backlog.json <incrementId> <label> <promptFile>
 ```
 
-before any other work — after only the branch steps your prompt names, so the
-announcement lands on the branch your step commits to — with the increment id
-and the label your prompt gives you. `<base>` is the base directory of the `agent-brief` skill, which your
+Announce before any other work — after only the branch steps your prompt
+names, so the announcement lands on the branch your step commits to — with
+the increment id and the label your prompt gives you. `<base>` is the base directory of the `agent-brief` skill, which your
 context names on its `Base directory for this skill:` line; where no such line
 is there, find the helper with `find "$HOME/.claude/plugins" -path
 '*agent-brief/assets/backlog.mjs' | head -1`. That helper is the only writer of
@@ -131,14 +135,21 @@ watching sees what you were asked while you are still working on it. It commits
 nothing of its own: the change rides along with the commit you make at the end.
 Keep that prompt file — the record below takes the same one.
 
-**Record it before you finish, and before you return.** Write your return to a
-JSON file outside the repository, then run
+**Record it before you finish, and before you return.** One `Bash` call again:
+write your return to a JSON file outside the repository through a quoted
+heredoc, run the helper's `record` behind it, and chain your `git add`, your
+commit and your push after that — the record, the commit and the push are one
+call, not four turns:
 
 ```
-node "<base>/assets/backlog.mjs" record <issueDir>/backlog.json <incrementId> <label> <returnFile> <promptFile>
+cat > <returnFile> <<'UROBOROS_RETURN'
+<your return, as JSON>
+UROBOROS_RETURN
+node "<base>/assets/backlog.mjs" record <issueDir>/backlog.json <incrementId> <label> <returnFile> <promptFile> \
+  && git add <what your step changed> && git commit -m "<message>" && git push
 ```
 
-with the same increment id, label and prompt file. Recording before you return
+Use the same increment id, label and prompt file. Recording before you return
 is what makes the file authoritative: a step that ends between the two leaves
 the state complete rather than stale. It also clears your running marker — the
 step has landed, and the state says so.
