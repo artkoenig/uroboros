@@ -71,6 +71,15 @@ const MAX_INCREMENTS = 8
 const MAX_ATTEMPTS = 2
 const MAX_BLOCKED = 2
 
+// The reasoning effort each dispatch runs at, tiered by where its decisions
+// sit: design and judgment run high — the researcher designs the change, the
+// reviewer judges it — bounded work runs medium — the planner cuts, the
+// test-author writes the planned cases, the implementer builds from a plan —
+// and bookkeeping runs low — the state loader, the direct fix, the close with
+// nothing left to re-cut, publish. Set here and not on the agent pages
+// because effort is dispatch steering, like the schema: the same role is
+// cheap on one dispatch and not on the next.
+
 // The caller may hand us the object, a JSON string of it, or the bare path —
 // the harness stringifies args on some paths, and a run must not die on that.
 const parsed =
@@ -683,7 +692,7 @@ const backlog = await step('decompose', 'Decompose', () =>
       `This run works at most ${maxIncrements} increments, so a cut that needs more than ` +
       `that is a cut that is too fine.\n` +
       recordStep('-', 'decompose', CUT_PAYLOAD),
-    { agentType: 'uroboros:planner', phase: 'Decompose', label: 'decompose', schema: BACKLOG },
+    { agentType: 'uroboros:planner', phase: 'Decompose', label: 'decompose', schema: BACKLOG, effort: 'medium' },
   ),
 )
 asksTheHuman('decompose', backlog)
@@ -859,7 +868,7 @@ if (!blockedOnHuman.length) {
                     ].filter(Boolean),
                   )) +
               recordStep(task.id, researchLabel, PLAN_PAYLOAD),
-            { agentType: 'uroboros:researcher', phase: 'Research', label: researchLabel, schema: PLAN },
+            { agentType: 'uroboros:researcher', phase: 'Research', label: researchLabel, schema: PLAN, effort: 'high' },
           ),
         )
         planLabel = researchLabel
@@ -884,7 +893,7 @@ if (!blockedOnHuman.length) {
                 ]) +
                 (round === 0 ? '' : `This is correction round ${round} of this increment.\n`) +
                 recordStep(task.id, label, TESTS_PAYLOAD),
-              { agentType: 'uroboros:test-author', phase: 'Tests', label, schema: TESTS },
+              { agentType: 'uroboros:test-author', phase: 'Tests', label, schema: TESTS, effort: 'medium' },
             ),
           )
           testsLabel = label
@@ -938,12 +947,15 @@ if (!blockedOnHuman.length) {
             // code being judged.
             checkList(lastChecks) +
             recordStep(task.id, buildLabel, BUILD_PAYLOAD),
-          Object.assign(
-            { agentType: 'uroboros:implementer', phase: 'Implement', label: buildLabel, schema: BUILD },
+          {
+            agentType: 'uroboros:implementer',
+            phase: 'Implement',
+            label: buildLabel,
+            schema: BUILD,
             // A fix whose whole brief is "this line, this word" has nothing to
             // reason about, and the round exists to be cheap.
-            directFix ? { effort: 'low' } : {},
-          ),
+            effort: directFix ? 'low' : 'medium',
+          },
         ),
       )
       if (asksTheHuman(buildLabel, build)) break
@@ -972,7 +984,7 @@ if (!blockedOnHuman.length) {
             // instruction arrive with the dispatch that could break it.
             `Read nothing out of ${dir}/backlog.json — not with the helper, not by hand.\n` +
             recordStep(task.id, reviewLabel, VERDICT_PAYLOAD),
-          { agentType: 'uroboros:reviewer', phase: 'Review', label: reviewLabel, schema: VERDICT },
+          { agentType: 'uroboros:reviewer', phase: 'Review', label: reviewLabel, schema: VERDICT, effort: 'high' },
         ),
       )
       verdictLabel = reviewLabel
@@ -1047,7 +1059,13 @@ if (!blockedOnHuman.length) {
               `\`init\`, the whole codemap in its \`codemap\` field. ${n} of at most ` +
               `${maxIncrements} increments are spent.\n`) +
           recordStep('-', replanLabel, CUT_PAYLOAD),
-        { agentType: 'uroboros:planner', phase: 'Replan', label: replanLabel, schema: BACKLOG },
+        {
+          agentType: 'uroboros:planner',
+          phase: 'Replan',
+          label: replanLabel,
+          schema: BACKLOG,
+          effort: accepted && !othersOpen ? 'low' : 'medium',
+        },
       ),
     )
 
