@@ -56,6 +56,8 @@ The requirements are yours, the work is the subagents'.
 
 5. **Say why the loop turned back:** The result carries an entry per worked increment in `increments`. For every one the reviewer did not accept, give the human one line in the chat with its reason, before you say anything about the pull request. That line is the reason itself, and it stands on its own. Say in one more line what the backlog still holds, if anything.
 
+6. **Name the pull request that gets merged:** The run opens exactly one, for the issue branch, and its URL is in the result. Give the human that URL and say it is the one. A run also leaves an increment branch on the remote per increment, and a pull request can appear for one of them — the platform offers it, and it looks like the change. Merging it lands the same work a second time and leaves the issue branch conflicting with the default branch over the run state. So: any other pull request for this issue is closed, not merged.
+
 And what you do not do here:
 
 - **No Implementation Plan:** You do NOT write implementation plans.
