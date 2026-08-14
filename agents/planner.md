@@ -96,8 +96,10 @@ the review made of it and how many findings stand — that verdict is everything
 you are told about it. Where the increment was worked on its own branch, your
 prompt names it, and landing it comes first: an accepted increment's branch you
 merge into the issue branch and push, before you read or close anything, so the
-issue branch only ever holds accepted work; a blocked increment's branch you
-never merge — it stays on the remote, and the note you close with names it. A
+issue branch only ever holds accepted work, and once your close is committed and
+pushed you delete that merged branch from the remote — one issue, one pull
+request; a blocked increment's branch you never merge — it stays on the remote,
+and the note you close with names it. A
 merge conflict is a blocker, not yours to resolve: merge nothing, close
 nothing, and put it in your summary. Then read the current cut with the `index`
 subcommand and what the increment produced with the `steps` one, and do two

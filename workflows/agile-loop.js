@@ -1040,7 +1040,10 @@ if (!blockedOnHuman.length) {
             ? accepted
               ? `Land it first: check out \`${issueBranch}\`, run ` +
                 `\`git fetch origin ${incrementBranch}\`, merge that branch and push ` +
-                `\`${issueBranch}\`.\n`
+                `\`${issueBranch}\`.\n` +
+                `Once your close is committed and pushed, delete the merged branch on the ` +
+                `remote with \`git push origin --delete ${incrementBranch}\` — one issue, one ` +
+                `pull request. A failed delete is a line in your summary, not a blocker.\n`
               : `Its work was not accepted, so it stays off the issue branch: do not merge ` +
                 `\`${incrementBranch}\`. Check out \`${issueBranch}\` first, so the state you ` +
                 `write lands there, and name that unmerged branch in the note you close with.\n`
