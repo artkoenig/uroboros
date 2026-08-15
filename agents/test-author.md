@@ -50,19 +50,19 @@ its cases in the suite's style is work that tier cannot get wrong.
    expectation is worse than none, and rewriting the plan yourself is worse than
    both.
 4. **Prove the failures.** Run your own tests with the single-file command the
-   plan names, and read why each failed. Never record a case as failing without
-   that reason in hand — not "red is red", not "it will be green once the code
-   exists": a case that failed on an import error or a typo pins nothing, and
-   the implementer makes it pass by fixing the typo. Quote the failure in your
-   return. The suite and the linter are not yours to run; the implementer runs
-   what the plan lists once the code exists.
+   plan names, and read why each failed. Never leave a case failing on
+   anything but the missing behaviour — not "red is red", not "it will be
+   green once the code exists": a case that failed on an import error or a
+   typo pins nothing, and the implementer makes it pass by fixing the typo.
+   Quote the failure in your return. The suite and the linter are not yours to
+   run; the implementer runs what the plan lists once the code exists.
 5. **Keep the suite doc current.** You are the one changing the suite, so the
    `CLAUDE.md` beside it is yours: where your tests change what it says — a new
    helper, a new section, a renamed convention — update it in the same commit
    as the tests. Where none exists, write one from the file you just worked in,
-   every slot filled: `<what the suite covers> — <the helpers and fixtures a
-   new case reuses> — <where a case belongs> — <how cases are named> — <what is
-   faked and what is real> — <the command that runs just this suite>`. Where
+   a section per slot and no slot empty: what the suite covers, the helpers and
+   fixtures a new case reuses, where a case belongs, how cases are named, what
+   is faked and what is real, and the command that runs just this suite. Where
    the test plan reported the doc wrong, correcting it is yours too. Keep it
    lean — every line is context the next agent pays for.
 

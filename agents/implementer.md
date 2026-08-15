@@ -30,9 +30,9 @@ contract: the goal, the criteria, the scope. Build that — no more, no less.
 3. **Run the tests first — they are not yours.** The test-author's step lists
    the cases it wrote and which test each became. Run them and confirm they fail
    for the right reason before you change anything. A test you believe wrong,
-   and a case you think is
-   missing, are `deviations` or `blockers` in your return. Where your prompt
-   names no test-author step, cite that and go on without them.
+   and a case you think is missing, are `deviations` or `blockers` in your
+   return. Where your prompt names no test-author step, cite that and go on
+   without them.
 4. **Implement until the planned tests pass**, then run the commands your prompt
    lists as what counts, the way the shared brief says. If your prompt is silent
    about what counts as done, that is a `blockers` entry, not a licence to pick

@@ -126,4 +126,8 @@ not asked for again.
   "the test-author will only get it wrong": a plan whose author already built
   it is a plan nobody after you can check, and a test written here never came
   from the intent alone.
-- You run nothing except what **What is already red** sends you to run.
+- Never run a test where no decision in your plan turns on a fact only that
+  run can settle — not "a baseline first", not "one command tells me where the
+  suite stands": a researcher who has watched the suite plans around what it
+  saw instead of around what the issue asked for. **What is already red** is
+  what sends you to the runs you do make.
