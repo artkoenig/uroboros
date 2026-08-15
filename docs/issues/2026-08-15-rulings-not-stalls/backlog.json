@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "issue": "docs/issues/2026-08-15-rulings-not-stalls/issue.md",
+  "workflow": "agile-loop",
+  "codemap": "",
+  "increments": [
+    {
+      "id": "i1",
+      "title": "Rulings replace stalls in the shared brief and every role page",
+      "goal": "Every subagent gets the same material-versus-decidable test the session already has: a material question still goes into `questions` and still ends the run, and a decidable one is decided, defaulted and recorded in a new step-return field `rulings` instead.",
+      "criteria": [
+        "The shared brief distinguishes a material question from a decidable one in the same terms the rulebook gives the session: user-visible behaviour, a public contract, the data model, the dependency footprint, or anything irreversible is material; everything else is decidable.",
+        "The brief keeps a material question in `questions` and keeps a non-empty `questions` ending the run.",
+        "The brief forbids a decidable question in `questions` and requires the agent to pick a default and record it in the step-return field `rulings`.",
+        "The brief states that each ruling is one string naming the decision, the reason, and what it costs if the default is wrong, short enough to survive the steering projection.",
+        "Every role that produces a step return carries `rulings` in that return, and each role page says so consistently with the brief without restating the rule the brief owns.",
+        "The repository suite that guards these pages passes, and it fails if the rule or the field is removed from them."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "Load-bearing and first: it fixes the definition of `rulings` that everything downstream carries. The workflow plumbing in i2 is unusable until the roles are told to produce the field.",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "i2",
+      "title": "The run's rulings reach the human through the result and the pull request",
+      "goal": "Every ruling any step of a run recorded comes back in the workflow result and is listed under its own heading in the pull-request body, so a decision taken on the human's behalf never reaches them only through `backlog.json`.",
+      "criteria": [
+        "Every role's structured return to the workflow carries its rulings, and the dispatch prompts name `rulings` among the fields the step records.",
+        "The workflow result carries every ruling recorded by any step of the run, each traceable to the step that made it.",
+        "A resumed run recovers the rulings of steps it skips, so the result of a resumed run is not poorer than that of an uninterrupted one.",
+        "The pull-request body lists the run's rulings under their own heading, built from what the workflow already holds and without the publishing agent reading `backlog.json`.",
+        "A run with no rulings adds no empty heading and no noise anywhere.",
+        "The repository suite covers the collection, the result and the body text, and each of those cases fails if the corresponding behaviour is removed."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "Depends on i1 for the field's definition. Delivers criteria 5 and 6 of the issue.",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-15T08:47:15.078Z",
+        "return": {
+          "questions": [],
+          "summary": "Cut the rulings-not-stalls issue into two increments: the shared brief and the role pages define the material-versus-decidable test and the `rulings` step-return field, then the workflow carries every ruling into its result and into a heading of its own in the pull-request body."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-15-rulings-not-stalls\nOpen the run state for docs/issues/2026-08-15-rulings-not-stalls/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-15-rulings-not-stalls/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-rulings-not-stalls/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-rulings-not-stalls/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
