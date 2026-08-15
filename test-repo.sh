@@ -2914,15 +2914,24 @@ fi
 
 # Case 9: a red run is one predicate with each branch stated, and the
 # exemption clause is gone (row 4; failure class: an exemption clause).
-# Break, either direction: restore the old paragraph, or re-append "unless
-# the change was supposed to fix it" to the new branches.
-if echo "$reviewer_form" | grep -q 'Where the diff touched the code that failed' &&
-  echo "$reviewer_form" | grep -q 'Where the diff never touched it' &&
-  echo "$reviewer_form" | grep -q 'Where the increment was supposed to fix that red' &&
-  ! echo "$reviewer_form" | grep -q 'unless the change was supposed to fix it'; then
-  ok "the reviewer's red-run rule is one predicate with each branch stated"
+# Two earlier wordings have to be rejected: the merge-base wording at
+# commit 67ee04d ("a finding only when this change caused it ... unless
+# the change was supposed to fix it") drops the three presence markers
+# and fails the first absence assertion; the round-0 wording ("Where the
+# diff touched the code that failed, it is a finding, your first one ...
+# Where you cannot tell which of these you are in") drops presence
+# markers 1 and 3 and fails the last two absence assertions; putting back
+# only the unreachable escape sentence fails the last absence assertion
+# alone.
+if echo "$reviewer_form" | grep -q 'Where an acceptance criterion asked this increment to fix that red' &&
+  echo "$reviewer_form" | grep -q 'Where the diff never touched the code that failed' &&
+  echo "$reviewer_form" | grep -q 'Where the diff touched that code, run the same listed command at the merge base in a sandbox' &&
+  ! echo "$reviewer_form" | grep -q 'unless the change was supposed to fix it' &&
+  ! echo "$reviewer_form" | grep -q 'Where the diff touched the code that failed, it is a finding' &&
+  ! echo "$reviewer_form" | grep -q 'Where you cannot tell which of these you are in'; then
+  ok "the reviewer's red-run rule keys each branch on an observable predicate and still turns on whether this change caused the red"
 else
-  no "the reviewer's red-run rule still carries an exemption clause"
+  no "the reviewer's red-run rule carries an exemption clause, or decides on the diff alone"
 fi
 
 # Case 10: the run state is a branch on a predicate, not an exception to
