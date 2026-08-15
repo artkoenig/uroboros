@@ -3032,6 +3032,328 @@ else
 fi
 
 echo
+echo "=== every rule on the researcher, test-author and implementer pages is written in its winning form"
+
+# Three collapsed copies of the pages for the whole section — every marker
+# below wraps across lines in the pages' prose, so a case tests the collapsed
+# copy, never a bare grep on the file. These are this section's own
+# variables: not implementer_collapsed, which "a decidable question gets a
+# ruling" owns.
+researcher_form="$(tr '\n' ' ' <"$root/agents/researcher.md" | tr -s ' ')"
+testauthor_form="$(tr '\n' ' ' <"$root/agents/test-author.md" | tr -s ' ')"
+implementer_form="$(tr '\n' ' ' <"$root/agents/implementer.md" | tr -s ' ')"
+
+# Case 1: researcher, R-1, row 1 — the read-before-question rule is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "opening files before you have the question is
+# how a one-file change costs an afternoon." — the first two markers vanish
+# and the absence assertion fails; bolting it back beside the new prohibition
+# fails the absence assertion alone.
+if echo "$researcher_form" | grep -q 'Never open a file before you have named the question it answers' &&
+  echo "$researcher_form" | grep -q '"one pass over the module first"' &&
+  echo "$researcher_form" | grep -q 'costs an afternoon' &&
+  ! echo "$researcher_form" | grep -q 'opening files before you have the question'; then
+  ok "the researcher's read-before-question rule is a priced prohibition quoting its excuse"
+else
+  no "the researcher's read-before-question rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 2: researcher, R-2, row 1 — trusting the map for design is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "trust the map for where and never for design.",
+# or append it beside the new prohibition.
+if echo "$researcher_form" | grep -q 'Never take a design decision from the map' &&
+  echo "$researcher_form" | grep -q '"the map already says how"' &&
+  echo "$researcher_form" | grep -q 'the one agent that could have checked it was you' &&
+  ! echo "$researcher_form" | grep -q 'trust the map for where and never for design'; then
+  ok "the researcher's map-for-design rule is a priced prohibition quoting its excuse"
+else
+  no "the researcher's map-for-design rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 3: researcher, R-3, row 3 — the moduleMap shape is a recipe, not prose
+# (failure class: an omitted required element asked for in prose). Break:
+# restore "path, what each holds, the entry points."
+if echo "$researcher_form" | grep -q '<path> — <what it holds> — <the entry points>' &&
+  ! echo "$researcher_form" | grep -q 'path, what each holds, the entry points'; then
+  ok "the researcher's moduleMap shape is a recipe, not prose"
+else
+  no "the researcher's moduleMap shape still reads as prose"
+fi
+
+# Case 4: researcher, R-4, row 1 — the environment list's closing rule is a
+# priced prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "List nothing else — a command you mention for
+# completeness reads downstream as a command to run."
+if echo "$researcher_form" | grep -q 'Never list a command your test plan does not ask for' &&
+  echo "$researcher_form" | grep -q '"for completeness"' &&
+  echo "$researcher_form" | grep -q 'the run pays for it' &&
+  ! echo "$researcher_form" | grep -q 'List nothing else'; then
+  ok "the researcher's environment-list rule is a priced prohibition quoting its excuse"
+else
+  no "the researcher's environment-list rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 5: researcher, R-5, row 3 — a case's shape is a template, not four
+# elements asked for in prose (failure class: an omitted required element).
+# Break: restore the prose sentence and the "each case states, as part of the
+# case, the break" clause. The four older cases on this bullet (lines 481,
+# 490, 518, 544 of this file) must stay green — a run of the whole file is
+# what shows it.
+if echo "$researcher_form" | grep -q '<criterion> — <input and state> → <expected result> — break: <the production change that would make it fail>' &&
+  ! echo "$researcher_form" | grep -q 'input, state, expected result, and the edges'; then
+  ok "the researcher's case shape is a template, not prose"
+else
+  no "the researcher's case shape still reads as prose"
+fi
+
+# Case 6: researcher, R-6, row 3 — the "How" per-case shape is a template,
+# not prose (failure class: an omitted required element). Break: restore
+# "Per case: the level (unit, integration, end-to-end), the test file by
+# path, the framework, and the command that runs just that file." The
+# existing "suite doc" case (line 2179) must stay green.
+if echo "$researcher_form" | grep -q '<level: unit, integration or end-to-end> — <test file by path> — <framework> — <the command that runs just that file>' &&
+  ! echo "$researcher_form" | grep -q 'Per case: the level'; then
+  ok "the researcher's per-case How shape is a template, not prose"
+else
+  no "the researcher's per-case How shape still reads as prose"
+fi
+
+# Case 7: researcher, R-7, row 1 — weighing what counts as done is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "Weigh what each entry buys against what it
+# costs.", or append it beside the new prohibition.
+if echo "$researcher_form" | grep -q 'Never list a command you have not weighed' &&
+  echo "$researcher_form" | grep -q '"the whole suite is safer"' &&
+  echo "$researcher_form" | grep -q 'by the implementer and the reviewer both' &&
+  ! echo "$researcher_form" | grep -q 'Weigh what each entry buys against what it costs'; then
+  ok "the researcher's what-counts-as-done rule is a priced prohibition quoting its excuse"
+else
+  no "the researcher's what-counts-as-done rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 8: researcher, R-8, row 4 — the exemption clause on "What is already
+# red" is re-cut into a rule keyed to an observable predicate, with each
+# branch stated on its own (failure class: an exemption clause). Break,
+# either direction: restore the old bullet body (all four presence markers
+# vanish and both absence assertions fail), or re-append the exception
+# sentence beside the new branches (the first absence assertion alone
+# fails).
+if echo "$researcher_form" | grep -q 'does a decision in your plan turn on a fact only a run can settle' &&
+  echo "$researcher_form" | grep -q 'Where none does, run nothing' &&
+  echo "$researcher_form" | grep -q 'Where one does, run what settles that fact' &&
+  echo "$researcher_form" | grep -q 'Wanting to know where the list stands is not such a fact' &&
+  ! echo "$researcher_form" | grep -q 'that is the exception, not a habit' &&
+  ! echo "$researcher_form" | grep -q 'You do not run the list yourself'; then
+  ok "the researcher's what-is-already-red rule is keyed to an observable predicate, not an exemption clause"
+else
+  no "the researcher's what-is-already-red rule still carries an exemption clause, present or bolted on"
+fi
+
+# Case 9: researcher, R-9, row 1, and the tail of the R-8 re-cut — the
+# boundaries are priced prohibitions quoting their excuses (failure class: a
+# rule skipped under pressure). Break: restore either boundary bullet ("You
+# do not write production code or tests." or "You do not run tests.").
+if echo "$researcher_form" | grep -q 'Never write production code or a test' &&
+  echo "$researcher_form" | grep -q '"the fix is three lines"' &&
+  echo "$researcher_form" | grep -q 'a plan whose author already built it' &&
+  echo "$researcher_form" | grep -q 'You run nothing except what \*\*What is already red\*\* sends you to run' &&
+  ! echo "$researcher_form" | grep -q 'You do not write production code or tests' &&
+  ! echo "$researcher_form" | grep -q 'You do not run tests'; then
+  ok "the researcher's boundaries are priced prohibitions quoting their excuses"
+else
+  no "the researcher's boundaries still read as unpriced reminders, present or bolted on"
+fi
+
+# Case 10: test-author, T-1, row 1 — never opening production code is a
+# priced prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "so you do not open production code at all."
+if echo "$testauthor_form" | grep -q 'Never open production code' &&
+  echo "$testauthor_form" | grep -q '"just to see what it is called"' &&
+  echo "$testauthor_form" | grep -q 'nobody downstream can tell the difference' &&
+  ! echo "$testauthor_form" | grep -q 'so you do not open production code at all'; then
+  ok "the test-author's no-production-code rule is a priced prohibition quoting its excuse"
+else
+  no "the test-author's no-production-code rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 11: test-author, T-2, row 1 — adding no unasked coverage is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "Add no coverage the plan did not ask for.", or
+# append it beside the new prohibition.
+if echo "$testauthor_form" | grep -q 'Never add a case the plan did not ask for' &&
+  echo "$testauthor_form" | grep -q '"this edge obviously needs a test"' &&
+  echo "$testauthor_form" | grep -q 'nobody to settle it' &&
+  ! echo "$testauthor_form" | grep -q 'Add no coverage the plan did not ask for'; then
+  ok "the test-author's no-unasked-coverage rule is a priced prohibition quoting its excuse"
+else
+  no "the test-author's no-unasked-coverage rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 12: test-author, T-3, row 1 — proving a failure's reason is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore that clause ("confirm each fails because the
+# behaviour is missing").
+if echo "$testauthor_form" | grep -q 'Never record a case as failing without that reason in hand' &&
+  echo "$testauthor_form" | grep -q '"red is red"' &&
+  echo "$testauthor_form" | grep -q 'makes it pass by fixing the typo' &&
+  ! echo "$testauthor_form" | grep -q 'confirm each fails because the behaviour is missing'; then
+  ok "the test-author's prove-the-failure rule is a priced prohibition quoting its excuse"
+else
+  no "the test-author's prove-the-failure rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 13: test-author, T-4, row 3 — the suite doc's contents are a template,
+# not a prose list (failure class: an omitted required element). Break:
+# restore the prose list. The existing "CLAUDE.md" case (line 2174) must
+# stay green.
+if echo "$testauthor_form" | grep -q '<what the suite covers> — <the helpers and fixtures a new case reuses>' &&
+  echo "$testauthor_form" | grep -q '<the command that runs just this suite>' &&
+  ! echo "$testauthor_form" | grep -q 'what the suite covers, the helpers and fixtures a new case reuses'; then
+  ok "the test-author's suite-doc contents are a template, not prose"
+else
+  no "the test-author's suite-doc contents still read as prose"
+fi
+
+# Case 14: test-author, T-5 first bullet, row 1 — the production-code
+# boundary is a priced prohibition quoting its excuse (failure class: a rule
+# skipped under pressure). Break: restore that bullet ("Production code is
+# off limits, even a one-line stub.").
+if echo "$testauthor_form" | grep -q 'Never write outside the test files and the suite doc beside them' &&
+  echo "$testauthor_form" | grep -q '"it is a one-line stub"' &&
+  echo "$testauthor_form" | grep -q 'built the thing its own test was meant to judge' &&
+  ! echo "$testauthor_form" | grep -q 'Production code is off limits'; then
+  ok "the test-author's production-code boundary is a priced prohibition quoting its excuse"
+else
+  no "the test-author's production-code boundary still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 15: test-author, T-5 second bullet, row 1 — never making a test pass
+# is a priced prohibition quoting its excuse (failure class: a rule skipped
+# under pressure). Break: restore that bullet — note the third presence
+# marker is the interface declaration the rewrite keeps, so it alone would
+# not catch the restore, which is why the absence assertion carries the
+# case.
+if echo "$testauthor_form" | grep -q 'Never make a test pass — not "it was one line from green"' &&
+  echo "$testauthor_form" | grep -q 'inherits a suite that proves nothing' &&
+  echo "$testauthor_form" | grep -q 'may not edit what you wrote' &&
+  ! echo "$testauthor_form" | grep -q 'You never make a test pass'; then
+  ok "the test-author's never-make-it-pass rule is a priced prohibition quoting its excuse"
+else
+  no "the test-author's never-make-it-pass rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 16: test-author, T-6, row 3 — the `cases` field's shape is a template,
+# not prose (failure class: an omitted required element). Break: restore the
+# prose bullet ("the test file by path, the test's name, ...").
+if echo "$testauthor_form" | grep -q 'one entry per planned case, every slot filled' &&
+  echo "$testauthor_form" | grep -q '`want` what the case demands' &&
+  echo "$testauthor_form" | grep -q '`got` the failure it produced' &&
+  ! echo "$testauthor_form" | grep -q 'the test file by path, the test'; then
+  ok "the test-author's cases-field shape is a template, not prose"
+else
+  no "the test-author's cases-field shape still reads as prose"
+fi
+
+# Case 17: implementer, I-1, row 1 — never reading issue.md is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "You do not read \`issue.md\`.", or append it
+# beside the new prohibition.
+if echo "$implementer_form" | grep -q 'Never open `issue.md`' &&
+  echo "$implementer_form" | grep -q '"the criteria are right there"' &&
+  echo "$implementer_form" | grep -q 'builds what the plan never asked for' &&
+  ! echo "$implementer_form" | grep -q 'You do not read `issue.md`'; then
+  ok "the implementer's never-read-issue rule is a priced prohibition quoting its excuse"
+else
+  no "the implementer's never-read-issue rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 18: implementer, I-3, row 1 — the research ban, priced once and
+# removed from step 1, is a priced prohibition quoting its excuse (failure
+# class: a rule skipped under pressure). Break: restore either wording ("you
+# do no research in the codebase" from step 1, or "You never research the
+# codebase yourself." from the boundaries).
+if echo "$implementer_form" | grep -q 'Never research the codebase' &&
+  echo "$implementer_form" | grep -q '"a quick look at the caller settles it"' &&
+  echo "$implementer_form" | grep -q 'the work rests on it anyway' &&
+  ! echo "$implementer_form" | grep -q 'You never research the codebase yourself' &&
+  ! echo "$implementer_form" | grep -q 'and you do no research in the codebase'; then
+  ok "the implementer's research ban is a single priced prohibition quoting its excuse"
+else
+  no "the implementer's research ban still reads as an unpriced reminder, present or bolted on, in either place it used to live"
+fi
+
+# Case 19: implementer, I-2 and I-4 — one rule, the test ban, priced once and
+# removed from step 3, is a priced prohibition quoting its excuse (failure
+# class: a rule skipped under pressure). Break: restore either wording ("You
+# may not edit a test and you may not write one." from step 3, or "You never
+# write or edit a test, and you never decide whether one is needed." from
+# the boundaries). The existing case pinning "need a material decision" and
+# "leave a material decision open" (lines 674-686) must stay green.
+if echo "$implementer_form" | grep -q 'Never write or edit a test' &&
+  echo "$implementer_form" | grep -q '"the assertion is obviously wrong"' &&
+  echo "$implementer_form" | grep -q 'no longer pins what was asked for' &&
+  echo "$implementer_form" | grep -q 'which the test plan settled' &&
+  ! echo "$implementer_form" | grep -q 'You never write or edit a test, and you never decide whether one is needed' &&
+  ! echo "$implementer_form" | grep -q 'You may not edit a test'; then
+  ok "the implementer's test ban is a single priced prohibition quoting its excuse"
+else
+  no "the implementer's test ban still reads as an unpriced reminder, present or bolted on, in either place it used to live"
+fi
+
+# Case 20: implementer, I-5, row 1 — never accepting your own work is a
+# priced prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore that bullet ("You never review or accept your
+# own work.").
+if echo "$implementer_form" | grep -q 'Never accept your own work' &&
+  echo "$implementer_form" | grep -q '"it is obviously right"' &&
+  echo "$implementer_form" | grep -q 'a fresh one is the whole point of the review' &&
+  ! echo "$implementer_form" | grep -q 'You never review or accept your own work'; then
+  ok "the implementer's never-accept-own-work rule is a priced prohibition quoting its excuse"
+else
+  no "the implementer's never-accept-own-work rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 21: implementer, I-6, row 1 — scope being the brief is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore that bullet ("Scope is the brief."). The fourth
+# presence marker is the clause the rewrite keeps; the absence assertion is
+# what catches the restore.
+if echo "$implementer_form" | grep -q 'Never build what the brief did not ask for' &&
+  echo "$implementer_form" | grep -q '"it is two lines while I am in the file"' &&
+  echo "$implementer_form" | grep -q 'the review has no criterion to judge it by' &&
+  echo "$implementer_form" | grep -q 'goes in your return as a note' &&
+  ! echo "$implementer_form" | grep -q 'Scope is the brief'; then
+  ok "the implementer's scope-is-the-brief rule is a priced prohibition quoting its excuse"
+else
+  no "the implementer's scope-is-the-brief rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 22: implementer, I-7, row 3 — a deviation's shape is a template, not
+# prose (failure class: an omitted required element). Break: restore the
+# prose bullet ("what it said, what you did, why").
+if echo "$implementer_form" | grep -q '<what the plan said> → <what you built> — <why>' &&
+  ! echo "$implementer_form" | grep -q 'what it said, what you did, why'; then
+  ok "the implementer's deviation shape is a template, not prose"
+else
+  no "the implementer's deviation shape still reads as prose"
+fi
+
+# Case 23: the stale citation — this pins that the rewrite of I-1 moves the
+# sentence hooks/read-barrier.mjs quotes, which hooks/CLAUDE.md requires
+# ("every entry in its table cites the page it comes from"). Not an
+# acceptance criterion of this increment. Read the file directly, no
+# collapsing needed — the comment is one line. Break: leave the comment as it
+# stands while the page changes, or change the comment without changing the
+# page.
+if grep -q 'Never open `issue.md`' "$root/hooks/read-barrier.mjs" &&
+  ! grep -q 'You do not read' "$root/hooks/read-barrier.mjs"; then
+  ok "hooks/read-barrier.mjs cites the implementer.md sentence the rewrite of I-1 leaves current"
+else
+  no "hooks/read-barrier.mjs still cites the pre-rewrite implementer.md wording"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else

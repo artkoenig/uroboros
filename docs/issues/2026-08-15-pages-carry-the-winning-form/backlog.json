@@ -550,6 +550,180 @@
             "summary": "Audited every rule on the researcher, test-author and implementer pages against the four-row form table and the exemption ban: 22 rules lose their form and get exact replacement wordings (9, 7 and 6), one of them the researcher's \"that is the exception, not a habit\" clause re-cut into two branches on an observable predicate, and every other rule is recorded unchanged with its reason. No rule needed a requirement change, so nothing goes to the human."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on its own branch: `claude/pages-carry-winning-issue-ng2pk5--INC-03`, off `claude/pages-carry-winning-issue-ng2pk5`.\nBefore anything else, on `claude/pages-carry-winning-issue-ng2pk5`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-03 claude/pages-carry-winning-issue-ng2pk5--INC-03`, commit that state change and push `claude/pages-carry-winning-issue-ng2pk5`. Then create the branch with `git checkout -b claude/pages-carry-winning-issue-ng2pk5--INC-03`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 3 is yours:\n  The researcher, test-author and implementer pages carry the winning form — The same audit and rewrite, with its tests and its verdict, for agents/researcher.md, agents/test-author.md and agents/implementer.md — the three remaining role pages, 304 lines together, less than INC-02 covered.\nWhat it has to satisfy:\n  - Every rule on agents/researcher.md, agents/test-author.md and agents/implementer.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own, and every case the replaced wording decided comes out the same way under the replacement.\n  - A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - The verdict is recorded page by page and rule by rule in this increment's step return, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The argus, grill and retro skill pages carry the winning form; The two pages carrying the authoring rules carry the winning form.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-03 research:INC-03.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-03 research:INC-03.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:INC-03.0",
+          "at": "2026-08-15T20:20:36.106Z",
+          "return": {
+            "cases": [
+              {
+                "case": "researcher, R-1, row 1: the read-before-question rule as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the researcher's read-before-question rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never open a file before you have named the question it answers', '\"one pass over the module first\"', 'costs an afternoon', and absence of 'opening files before you have the question' in agents/researcher.md",
+                "got": "FAIL — the researcher's read-before-question rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "researcher, R-2, row 1: trusting the map for design as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the researcher's map-for-design rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never take a design decision from the map', '\"the map already says how\"', 'the one agent that could have checked it was you', and absence of 'trust the map for where and never for design'",
+                "got": "FAIL — the researcher's map-for-design rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "researcher, R-3, row 3: the moduleMap shape as a recipe, not prose",
+                "file": "test-repo.sh",
+                "testName": "the researcher's moduleMap shape is a recipe, not prose",
+                "want": "presence of '<path> — <what it holds> — <the entry points>', and absence of 'path, what each holds, the entry points'",
+                "got": "FAIL — the researcher's moduleMap shape still reads as prose"
+              },
+              {
+                "case": "researcher, R-4, row 1: the environment list's closing rule as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the researcher's environment-list rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never list a command your test plan does not ask for', '\"for completeness\"', 'the run pays for it', and absence of 'List nothing else'",
+                "got": "FAIL — the researcher's environment-list rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "researcher, R-5, row 3: a case's shape as a template, not four elements in prose",
+                "file": "test-repo.sh",
+                "testName": "the researcher's case shape is a template, not prose",
+                "want": "presence of '<criterion> — <input and state> → <expected result> — break: <the production change that would make it fail>', and absence of 'input, state, expected result, and the edges'; the four older cases on this bullet (test-repo.sh lines 481, 490, 518, 544) must stay green",
+                "got": "FAIL — the researcher's case shape still reads as prose"
+              },
+              {
+                "case": "researcher, R-6, row 3: the How per-case shape as a template, not prose",
+                "file": "test-repo.sh",
+                "testName": "the researcher's per-case How shape is a template, not prose",
+                "want": "presence of '<level: unit, integration or end-to-end> — <test file by path> — <framework> — <the command that runs just that file>', and absence of 'Per case: the level'; the existing 'suite doc' case (test-repo.sh line 2179) must stay green",
+                "got": "FAIL — the researcher's per-case How shape still reads as prose"
+              },
+              {
+                "case": "researcher, R-7, row 1: weighing what counts as done as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the researcher's what-counts-as-done rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never list a command you have not weighed', '\"the whole suite is safer\"', 'by the implementer and the reviewer both', and absence of 'Weigh what each entry buys against what it costs'",
+                "got": "FAIL — the researcher's what-counts-as-done rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "researcher, R-8, row 4: the exemption clause on What is already red re-cut into a rule keyed to an observable predicate",
+                "file": "test-repo.sh",
+                "testName": "the researcher's what-is-already-red rule is keyed to an observable predicate, not an exemption clause",
+                "want": "presence of 'does a decision in your plan turn on a fact only a run can settle', 'Where none does, run nothing', 'Where one does, run what settles that fact', 'Wanting to know where the list stands is not such a fact', and absence of both 'that is the exception, not a habit' and 'You do not run the list yourself'",
+                "got": "FAIL — the researcher's what-is-already-red rule still carries an exemption clause, present or bolted on"
+              },
+              {
+                "case": "researcher, R-9, row 1, and the tail of the R-8 re-cut: the boundaries as priced prohibitions quoting their excuses",
+                "file": "test-repo.sh",
+                "testName": "the researcher's boundaries are priced prohibitions quoting their excuses",
+                "want": "presence of 'Never write production code or a test', '\"the fix is three lines\"', 'a plan whose author already built it', 'You run nothing except what **What is already red** sends you to run', and absence of both 'You do not write production code or tests' and 'You do not run tests'",
+                "got": "FAIL — the researcher's boundaries still read as unpriced reminders, present or bolted on"
+              },
+              {
+                "case": "test-author, T-1, row 1: never opening production code as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the test-author's no-production-code rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never open production code', '\"just to see what it is called\"', 'nobody downstream can tell the difference', and absence of 'so you do not open production code at all'",
+                "got": "FAIL — the test-author's no-production-code rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "test-author, T-2, row 1: adding no unasked coverage as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the test-author's no-unasked-coverage rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never add a case the plan did not ask for', '\"this edge obviously needs a test\"', 'nobody to settle it', and absence of 'Add no coverage the plan did not ask for'",
+                "got": "FAIL — the test-author's no-unasked-coverage rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "test-author, T-3, row 1: proving a failure's reason as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the test-author's prove-the-failure rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never record a case as failing without that reason in hand', '\"red is red\"', 'makes it pass by fixing the typo', and absence of 'confirm each fails because the behaviour is missing'",
+                "got": "FAIL — the test-author's prove-the-failure rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "test-author, T-4, row 3: the suite doc's contents as a template, not a prose list",
+                "file": "test-repo.sh",
+                "testName": "the test-author's suite-doc contents are a template, not prose",
+                "want": "presence of '<what the suite covers> — <the helpers and fixtures a new case reuses>' and '<the command that runs just this suite>', and absence of 'what the suite covers, the helpers and fixtures a new case reuses'; the existing 'CLAUDE.md' case (test-repo.sh line 2174) must stay green",
+                "got": "FAIL — the test-author's suite-doc contents still read as prose"
+              },
+              {
+                "case": "test-author, T-5 first bullet, row 1: the production-code boundary as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the test-author's production-code boundary is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never write outside the test files and the suite doc beside them', '\"it is a one-line stub\"', 'built the thing its own test was meant to judge', and absence of 'Production code is off limits'",
+                "got": "FAIL — the test-author's production-code boundary still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "test-author, T-5 second bullet, row 1: never making a test pass as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the test-author's never-make-it-pass rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never make a test pass — not \"it was one line from green\"', 'inherits a suite that proves nothing', 'may not edit what you wrote', and absence of 'You never make a test pass'",
+                "got": "FAIL — the test-author's never-make-it-pass rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "test-author, T-6, row 3: the cases field's shape as a template, not prose",
+                "file": "test-repo.sh",
+                "testName": "the test-author's cases-field shape is a template, not prose",
+                "want": "presence of 'one entry per planned case, every slot filled', '`want` what the case demands', '`got` the failure it produced', and absence of 'the test file by path, the test'",
+                "got": "FAIL — the test-author's cases-field shape still reads as prose"
+              },
+              {
+                "case": "implementer, I-1, row 1: never reading issue.md as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the implementer's never-read-issue rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never open `issue.md`', '\"the criteria are right there\"', 'builds what the plan never asked for', and absence of 'You do not read `issue.md`'",
+                "got": "FAIL — the implementer's never-read-issue rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "implementer, I-3, row 1: the research ban, priced once and removed from step 1, as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the implementer's research ban is a single priced prohibition quoting its excuse",
+                "want": "presence of 'Never research the codebase', '\"a quick look at the caller settles it\"', 'the work rests on it anyway', and absence of both 'You never research the codebase yourself' and 'and you do no research in the codebase'",
+                "got": "FAIL — the implementer's research ban still reads as an unpriced reminder, present or bolted on, in either place it used to live"
+              },
+              {
+                "case": "implementer, I-2 and I-4, one rule: the test ban, priced once and removed from step 3, as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the implementer's test ban is a single priced prohibition quoting its excuse",
+                "want": "presence of 'Never write or edit a test', '\"the assertion is obviously wrong\"', 'no longer pins what was asked for', 'which the test plan settled', and absence of both 'You never write or edit a test, and you never decide whether one is needed' and 'You may not edit a test'; the existing case pinning 'need a material decision' and 'leave a material decision open' (test-repo.sh lines 674-686) must stay green",
+                "got": "FAIL — the implementer's test ban still reads as an unpriced reminder, present or bolted on, in either place it used to live"
+              },
+              {
+                "case": "implementer, I-5, row 1: never accepting your own work as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the implementer's never-accept-own-work rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never accept your own work', '\"it is obviously right\"', 'a fresh one is the whole point of the review', and absence of 'You never review or accept your own work'",
+                "got": "FAIL — the implementer's never-accept-own-work rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "implementer, I-6, row 1: scope being the brief as a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the implementer's scope-is-the-brief rule is a priced prohibition quoting its excuse",
+                "want": "presence of 'Never build what the brief did not ask for', '\"it is two lines while I am in the file\"', 'the review has no criterion to judge it by', 'goes in your return as a note', and absence of 'Scope is the brief'",
+                "got": "FAIL — the implementer's scope-is-the-brief rule still reads as an unpriced reminder, present or bolted on"
+              },
+              {
+                "case": "implementer, I-7, row 3: a deviation's shape as a template, not prose",
+                "file": "test-repo.sh",
+                "testName": "the implementer's deviation shape is a template, not prose",
+                "want": "presence of '<what the plan said> → <what you built> — <why>', and absence of 'what it said, what you did, why'",
+                "got": "FAIL — the implementer's deviation shape still reads as prose"
+              },
+              {
+                "case": "the stale citation: the I-1 rewrite moves the sentence hooks/read-barrier.mjs quotes",
+                "file": "test-repo.sh",
+                "testName": "hooks/read-barrier.mjs cites the implementer.md sentence the rewrite of I-1 leaves current",
+                "want": "presence of 'Never open `issue.md`' and absence of 'You do not read' in hooks/read-barrier.mjs's comment",
+                "got": "FAIL — hooks/read-barrier.mjs still cites the pre-rewrite implementer.md wording"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added the 23 cases the test plan named to test-repo.sh, one section keyed off collapsed copies of agents/researcher.md, agents/test-author.md and agents/implementer.md, plus the stale-citation case against hooks/read-barrier.mjs; bash test-repo.sh shows all 23 red against the unrewritten pages and the 169 prior cases still green."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on branch `claude/pages-carry-winning-issue-ng2pk5--INC-03`. Before anything else make sure you are on it: `git fetch origin claude/pages-carry-winning-issue-ng2pk5--INC-03` and check it out; if the remote does not have it, create it from `claude/pages-carry-winning-issue-ng2pk5` and push it with `-u`.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 3 is yours:\n  The researcher, test-author and implementer pages carry the winning form — The same audit and rewrite, with its tests and its verdict, for agents/researcher.md, agents/test-author.md and agents/implementer.md — the three remaining role pages, 304 lines together, less than INC-02 covered.\nWhat it has to satisfy:\n  - Every rule on agents/researcher.md, agents/test-author.md and agents/implementer.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own, and every case the replaced wording decided comes out the same way under the replacement.\n  - A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - The verdict is recorded page by page and rule by rule in this increment's step return, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The argus, grill and retro skill pages carry the winning form; The two pages carrying the authoring rules carry the winning form.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-03 research:INC-03.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-03 tests:INC-03.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-03 tests:INC-03.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
