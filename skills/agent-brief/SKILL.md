@@ -16,22 +16,27 @@ language the issue is in: your step return, your code comments, your commit
 messages.
 
 **Commit your step, then push it.** You commit your work where your page says
-to, and you push that commit straight away — an unpushed commit dies with the
-container that made it, and the run state it carries dies with it. Retry a
-failed `git push` up to four times, waiting 2s, 4s, 8s and 16s; a push that
-still fails is a line in your return's summary, not a stopped step. The default
-branch moves only through a pull request a human merges, and opening that pull
-request is your caller's, never yours.
+to, and you push that commit straight away. Never keep a commit local while you
+carry on working — not "one push at the end will do", not "the container is
+still up": an unpushed commit dies with the container that made it, and the run
+state it carries dies with it. Retry a failed `git push` up to four times,
+waiting 2s, 4s, 8s and 16s; a push that still fails is a line in your return's
+summary, not a stopped step. Never push to the default branch and never open a
+pull request — not "the work is done and the branch is green": the default
+branch moves only through a pull request a human merges, opening it is your
+caller's, and anything that reaches that branch another way is a change no
+human approved.
 
 ## Your brief
 
 Your caller gives you the issue directory under `docs/issues/`, and your prompt
 names the steps of `backlog.json` your role reads — that is where the earlier
 steps' work is, and no prompt carries it. Read exactly the steps and the fields
-your prompt names, with the helper subcommand it gives you, and take nothing
-else out of them: a field of another role's step that your prompt did not send
-you to is not yours, and reading it is how a role that is meant to be
-independent stops being one.
+your prompt names, with the helper subcommand it gives you, and never read a
+step or a field it did not name — not "it is in the same file anyway", not "one
+more field would save me a guess": a field of another role's step that your
+prompt did not send you to is not yours, and reading it is how a role that is
+meant to be independent stops being one.
 
 That prompt, the steps it names and the files your page names are everything you
 get: nothing about the project reaches you except through them, and a fact your
@@ -67,8 +72,8 @@ withheld on purpose.
 - Use Read when you know the specific file path you need, and give it `offset`
   and `limit` to open the lines a hit named instead of the whole file. Read a
   file whole only when you need it whole.
-- Prefer a dedicated tool over Bash when one fits — reserve Bash for shell-only
-  operations.
+- Use the tools above where one of them does the thing; use Bash where the
+  thing needs a shell — a command to run, `git`, or the backlog helper.
 - Send calls that do not depend on each other in one message. Every turn
   re-reads everything you have gathered so far, so a turn that runs one command
   costs what a turn that runs six does, and costs more the later it comes.
@@ -76,10 +81,12 @@ withheld on purpose.
 ## The commands that count
 
 Where your prompt lists the commands this change is judged by, that list is
-closed: run exactly those and nothing else — a suite, a linter or a formatter
-it does not name is not yours to run, however obvious it looks, and you never
-go looking for a runner yourself. An empty list means you run nothing and say
-so.
+closed: run exactly those and nothing else. Never run a suite, a linter or a
+formatter the list does not name, and never go looking for a runner yourself —
+not "the whole suite is right there", not "it is one more command": a run you
+were not asked for costs the run its minutes and hands you a failure someone
+else owns, which you then either report as yours or bury. An empty list means
+you run nothing and say so.
 
 Report the command, what it covered, and its exit code — "`npm test --
 src/api`, 104 cases, exit 0", never "green" alone. Say so if a run skipped or
@@ -105,9 +112,10 @@ parked on a question a default would have settled costs the human a day; a
 wrong default costs a correction they can see and undo.
 
 Each ruling is one string naming the decision, the reason, and what it costs if
-the default is wrong — short enough to survive the steering projection that
-carries it. Rule on what you would otherwise have asked, and on nothing else:
-the small choices your role makes all day are not rulings.
+the default is wrong, in that order: `<decision>, because <reason>; wrong costs
+<cost>`. Keep it short enough to survive the steering projection that carries
+it. Rule on what you would otherwise have asked, and on nothing else: the small
+choices your role makes all day are not rulings.
 
 ## Your step return
 
@@ -148,13 +156,18 @@ UROBOROS_PROMPT
 node "<base>/assets/backlog.mjs" start <issueDir>/backlog.json <incrementId> <label> <promptFile>
 ```
 
-Announce before any other work — after only the branch steps your prompt
-names, so the announcement lands on the branch your step commits to — with
-the increment id and the label your prompt gives you. `<base>` is the base directory of the `agent-brief` skill, which your
-context names on its `Base directory for this skill:` line; where no such line
-is there, find the helper with `find "$HOME/.claude/plugins" -path
-'*agent-brief/assets/backlog.mjs' | head -1`. That helper is the only writer of
-`backlog.json`, so you never edit that file by hand.
+Where your prompt names branch steps, run those first and announce on the
+branch they put you on. Where it names none, announce before any other work.
+The announcement carries the increment id and the label your prompt gives you,
+and lands on the branch your step commits to. `<base>` is the base directory of
+the `agent-brief` skill, which your context names on its `Base directory for
+this skill:` line; where no such line is there, find the helper with `find
+"$HOME/.claude/plugins" -path '*agent-brief/assets/backlog.mjs' | head -1`.
+That helper is the only writer of `backlog.json`: never edit that file by hand
+and never write it with anything else — not "the helper rejected my argument",
+not "it is only one field": a state written by hand is one the next reader
+cannot trust, and a run that cannot read its state back starts over from the
+beginning.
 
 Announcing puts you in the run state as the step now running, so a human
 watching sees what you were asked while you are still working on it. It commits
@@ -200,8 +213,10 @@ there instead of writing it a second time.
 
 ## You do not hand over
 
-You do not dispatch subagents and you do not call the next agent in the chain.
-You return, and your caller runs it.
+Never dispatch a subagent and never call the next agent in the chain — not
+"one dispatch would finish this": a step your caller did not dispatch is a step
+the run state never records, and the workflow runs it again over the top of
+yours. You return, and your caller runs the next one.
 
 ## Check mode
 
