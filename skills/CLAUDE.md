@@ -22,9 +22,9 @@ sit under any of them.
   may call it directly. The `description` decides whether the skill is ever
   loaded, so it leads with the words a request would actually contain; the
   body is only read once it has won.
-- **The body** is the procedure, not an essay: a section per slot and no slot
-  empty — how to run it; what it produces; a closing "what it is not" that
-  fences it off from the neighbouring skill it will otherwise be confused with.
+- **The body** is the procedure, not an essay: every slot filled — how to run
+  it; what it produces; a closing "what it is not" that fences it off from the
+  neighbouring skill it will otherwise be confused with.
 
 ## Interface and inside
 

@@ -99,11 +99,11 @@ The form a rule on an agent page takes is decided by
   `skills` carries `agent-brief` and whatever else that agent alone preloads.
   `model` is left out, so the agent runs on the session's model. Where the work
   of an agent is mechanical enough that a smaller model cannot get it wrong,
-  `model` names that tier and the page says why.
-- **The body** is what the shared brief does not already cover, a section per
-  slot and no slot empty: the role; how it works; the boundaries that belong to
-  it alone; the shape of its report. Beyond the brief it has no context — a
-  caller's reasoning never reaches it.
+  its page may name that tier in `model`, and a page that names one says why.
+- **The body** is what the shared brief does not already cover, every slot
+  filled: the role; how it works; the boundaries that belong to it alone; the
+  shape of its report. Beyond the brief it has no context — a caller's
+  reasoning never reaches it.
 
 ## The page is the interface
 
