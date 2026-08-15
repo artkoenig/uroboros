@@ -115,6 +115,11 @@ const INDEX_STEP = {
       items: { type: 'string' },
       description: 'The step return\'s `questions`, when the index carried them. Empty otherwise.',
     },
+    rulings: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'The step return\'s `rulings` when the index carried them. Empty otherwise.',
+    },
     needsTests: {
       type: 'boolean',
       description: 'The step return\'s `needsTests` when the index carried one, false otherwise.',
@@ -137,7 +142,7 @@ const INDEX_STEP = {
       description: 'The step return\'s `reason` when the index carried one, empty otherwise.',
     },
   },
-  required: ['label', 'asked', 'questions', 'needsTests', 'checks', 'findingCount', 'allDirect', 'reason'],
+  required: ['label', 'asked', 'questions', 'rulings', 'needsTests', 'checks', 'findingCount', 'allDirect', 'reason'],
   additionalProperties: false,
 }
 
@@ -224,9 +229,14 @@ const BACKLOG = {
       items: { type: 'string' },
       description: 'Your return\'s `questions`, the way your shared brief defines them.',
     },
+    rulings: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+    },
     summary: { type: 'string' },
   },
-  required: ['increments', 'questions', 'summary'],
+  required: ['increments', 'questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -249,9 +259,14 @@ const PLAN = {
       items: { type: 'string' },
       description: 'Your return\'s `questions`, the way your shared brief defines them.',
     },
+    rulings: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+    },
     summary: { type: 'string' },
   },
-  required: ['needsTests', 'checks', 'questions', 'summary'],
+  required: ['needsTests', 'checks', 'questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -263,9 +278,14 @@ const TESTS = {
       items: { type: 'string' },
       description: 'Your return\'s `questions`, the way your shared brief defines them.',
     },
+    rulings: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+    },
     summary: { type: 'string' },
   },
-  required: ['questions', 'summary'],
+  required: ['questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -277,9 +297,14 @@ const BUILD = {
       items: { type: 'string' },
       description: 'Your return\'s `questions`, the way your shared brief defines them.',
     },
+    rulings: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+    },
     summary: { type: 'string' },
   },
-  required: ['questions', 'summary'],
+  required: ['questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -305,9 +330,14 @@ const VERDICT = {
       items: { type: 'string' },
       description: 'Your return\'s `questions`, the way your shared brief defines them.',
     },
+    rulings: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+    },
     summary: { type: 'string' },
   },
-  required: ['findingCount', 'allDirect', 'reason', 'questions', 'summary'],
+  required: ['findingCount', 'allDirect', 'reason', 'questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -506,7 +536,7 @@ const state = await agent(
     `\`find "$HOME/.claude/plugins" -path '*agent-brief/assets/backlog.mjs' | head -1\`.\n` +
     `Return exists true, the index's \`increments\` in increments and its \`run.steps\` in ` +
     `runSteps. Each step of either carries the index's \`label\` and \`asked\`; fill ` +
-    `questions, needsTests, checks, findingCount, allDirect and reason from that step's ` +
+    `questions, rulings, needsTests, checks, findingCount, allDirect and reason from that step's ` +
     `\`return\` object where the index carried them, and leave them empty otherwise.\n` +
     `Do NOT read the file itself and do NOT return its content: the index is what this ` +
     `dispatch is for.\n` +
@@ -653,12 +683,12 @@ function branchBlock(taskId, incrementBranch, create) {
 async function step(label, phaseName, run) {
   if (recorded.has(label)) {
     log(`${label}: recorded already, skipping`)
-    return recorded.get(label)
+    return carryRulings(label, recorded.get(label))
   }
   phase(phaseName)
   const out = await run()
   recorded.set(label, out)
-  return out
+  return carryRulings(label, out)
 }
 
 // Every step label that belongs to one increment: `research:<id>.<round>` and
@@ -684,6 +714,25 @@ function asksTheHuman(label, out) {
     log(`${label} has a question for the human: ${q}`)
   }
   return questions.length > 0
+}
+
+// A ruling is a decision an agent took on the human's behalf rather than
+// stalling the run for it. Every recording step passes through `step()`, live
+// or replayed from the state, so both of its paths are the whole of the
+// collection: a resumed run's result is as rich as an uninterrupted one's.
+// Entries already carrying a label are dropped before that label's new ones
+// are pushed, because an increment the planner hands back is worked again
+// under the same labels and the abandoned attempt's rulings must not sit in
+// the result beside the ones that replaced them.
+const rulings = []
+function carryRulings(label, out) {
+  const taken = out && Array.isArray(out.rulings) ? out.rulings.filter(Boolean) : []
+  for (let i = rulings.length - 1; i >= 0; i--) if (rulings[i].step === label) rulings.splice(i, 1)
+  for (const ruling of taken) {
+    rulings.push({ step: label, ruling })
+    log(`${label} ruled: ${ruling}`)
+  }
+  return out
 }
 
 // Asked before the step runs, never after: `step` writes the label into
@@ -1153,6 +1202,10 @@ function runOutcome() {
   } else {
     lines.push('- No increment was worked in this run.')
   }
+  if (rulings.length) {
+    lines.push('- Rulings this run took on the human\'s behalf:')
+    for (const r of rulings) lines.push(`  - ${r.step}: ${r.ruling}`)
+  }
   if (blockedOnHuman.length) {
     lines.push('- Questions that ended this run, unanswered:')
     for (const q of blockedOnHuman) lines.push(`  - ${q.step}: ${q.question}`)
@@ -1194,7 +1247,13 @@ const push = await agent(
     'when the backlog did NOT empty and name what is left, and when a question for the ' +
     'human ended the run. Name the branch of every blocked increment — the outcome ' +
     'below carries it — so its unmerged work is findable without being in the ' +
-    'diff. End the body with a blank line, `---`, and ' +
+    'diff. ' +
+    (rulings.length
+      ? 'The outcome below lists the rulings this run took on the human\'s behalf: give them a ' +
+        '`## Rulings` heading of their own in the body, one bullet each, naming the step that ' +
+        'made the ruling. '
+      : '') +
+    'End the body with a blank line, `---`, and ' +
     '`🤖 Generated with [Claude Code](https://claude.com/claude-code)`.\n' +
     '4. If the only pull request for this branch is already MERGED, do NOT open a ' +
     'second one on top of merged history and do NOT rebase — report `prUrl` of the ' +
@@ -1226,5 +1285,6 @@ return {
   increments: worked,
   backlog: increments,
   blockedOnHuman,
+  rulings,
   push,
 }
