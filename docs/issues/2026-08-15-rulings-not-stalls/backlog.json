@@ -19,7 +19,7 @@
       "depth": "full",
       "status": "todo",
       "note": "Load-bearing and first: it fixes the definition of `rulings` that everything downstream carries. The workflow plumbing in i2 is unusable until the roles are told to produce the field.",
-      "branch": "",
+      "branch": "claude/offene-issues-g9eclm--i1",
       "steps": [],
       "attempts": []
     },
