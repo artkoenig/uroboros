@@ -3150,19 +3150,27 @@ else
   no "the researcher's what-is-already-red rule still carries an exemption clause, present or bolted on"
 fi
 
-# Case 9: researcher, R-9, row 1, and the tail of the R-8 re-cut — the
-# boundaries are priced prohibitions quoting their excuses (failure class: a
-# rule skipped under pressure). Break: restore either boundary bullet ("You
-# do not write production code or tests." or "You do not run tests.").
+# Case 9: researcher, R-9 and R-10, row 1, and the tail of the R-8 re-cut —
+# the boundaries are priced prohibitions quoting their excuses, and the run
+# boundary is scoped to test runs so the announce, record, commit and push
+# commands the shared brief requires stay allowed (failure class: a rule
+# skipped under pressure). Break, three directions: restore "You do not write
+# production code or tests." or "You do not run tests.", each caught by its
+# own absence assertion; or restore round 0's "You run nothing except what
+# **What is already red** sends you to run.", which forbade those commands —
+# the last absence assertion fails and the three new presence markers vanish.
 if echo "$researcher_form" | grep -q 'Never write production code or a test' &&
   echo "$researcher_form" | grep -q '"the fix is three lines"' &&
   echo "$researcher_form" | grep -q 'a plan whose author already built it' &&
-  echo "$researcher_form" | grep -q 'You run nothing except what \*\*What is already red\*\* sends you to run' &&
+  echo "$researcher_form" | grep -q 'Never run a test where no decision in your plan turns on a fact only that run can settle' &&
+  echo "$researcher_form" | grep -q '"a baseline first"' &&
+  echo "$researcher_form" | grep -q 'plans around what it saw instead of around what the issue asked for' &&
   ! echo "$researcher_form" | grep -q 'You do not write production code or tests' &&
-  ! echo "$researcher_form" | grep -q 'You do not run tests'; then
-  ok "the researcher's boundaries are priced prohibitions quoting their excuses"
+  ! echo "$researcher_form" | grep -q 'You do not run tests' &&
+  ! echo "$researcher_form" | grep -q 'You run nothing except'; then
+  ok "the researcher's boundaries are priced prohibitions quoting their excuses, and its run boundary is scoped to test runs"
 else
-  no "the researcher's boundaries still read as unpriced reminders, present or bolted on"
+  no "the researcher's boundaries still read as unpriced reminders, or forbid the runs the shared brief requires"
 fi
 
 # Case 10: test-author, T-1, row 1 — never opening production code is a
@@ -3190,29 +3198,38 @@ else
   no "the test-author's no-unasked-coverage rule still reads as an unpriced reminder, present or bolted on"
 fi
 
-# Case 12: test-author, T-3, row 1 — proving a failure's reason is a priced
-# prohibition quoting its excuse (failure class: a rule skipped under
-# pressure). Break: restore that clause ("confirm each fails because the
-# behaviour is missing").
-if echo "$testauthor_form" | grep -q 'Never record a case as failing without that reason in hand' &&
+# Case 12: test-author, T-3, row 1 — the failure a case is left with has to be
+# the missing behaviour, in a priced prohibition quoting its excuse (failure
+# class: a rule skipped under pressure). Break, two directions: restore
+# "confirm each fails because the behaviour is missing", caught by the first
+# absence assertion; or restore round 0's "Never record a case as failing
+# without that reason in hand", which asked only that the reason be known and
+# let an import error be recorded as the failure — the second absence
+# assertion fails and the first presence marker vanishes.
+if echo "$testauthor_form" | grep -q 'Never leave a case failing on anything but the missing behaviour' &&
   echo "$testauthor_form" | grep -q '"red is red"' &&
   echo "$testauthor_form" | grep -q 'makes it pass by fixing the typo' &&
-  ! echo "$testauthor_form" | grep -q 'confirm each fails because the behaviour is missing'; then
-  ok "the test-author's prove-the-failure rule is a priced prohibition quoting its excuse"
+  ! echo "$testauthor_form" | grep -q 'confirm each fails because the behaviour is missing' &&
+  ! echo "$testauthor_form" | grep -q 'Never record a case as failing without that reason in hand'; then
+  ok "the test-author's prove-the-failure rule demands the failure be the missing behaviour, priced and quoting its excuse"
 else
-  no "the test-author's prove-the-failure rule still reads as an unpriced reminder, present or bolted on"
+  no "the test-author's prove-the-failure rule asks only for a reason, or still reads as an unpriced reminder"
 fi
 
-# Case 13: test-author, T-4, row 3 — the suite doc's contents are a template,
-# not a prose list (failure class: an omitted required element). Break:
-# restore the prose list. The existing "CLAUDE.md" case (line 2174) must
-# stay green.
-if echo "$testauthor_form" | grep -q '<what the suite covers> — <the helpers and fixtures a new case reuses>' &&
-  echo "$testauthor_form" | grep -q '<the command that runs just this suite>' &&
-  ! echo "$testauthor_form" | grep -q 'what the suite covers, the helpers and fixtures a new case reuses'; then
-  ok "the test-author's suite-doc contents are a template, not prose"
+# Case 13: test-author, T-4, row 3 — the suite doc's contents are required
+# slots, one section each (failure class: an omitted required element), and
+# not the one-line em-dash template round 0 wrote, which imposed a shape on
+# the doc that the rule never asked for. Break, two directions: restore the
+# prose list, whose join "worked in: what the suite covers" the first absence
+# assertion catches; or restore round 0's em-dash template, caught by the
+# second. The existing "CLAUDE.md" case (line 2174) must stay green.
+if echo "$testauthor_form" | grep -q 'a section per slot and no slot empty: what the suite covers' &&
+  echo "$testauthor_form" | grep -q 'the command that runs just this suite' &&
+  ! echo "$testauthor_form" | grep -q 'worked in: what the suite covers' &&
+  ! echo "$testauthor_form" | grep -q '<what the suite covers> — <the helpers and fixtures a new case reuses>'; then
+  ok "the test-author's suite-doc contents are required slots, one section each"
 else
-  no "the test-author's suite-doc contents still read as prose"
+  no "the test-author's suite-doc contents read as prose, or as a one-line template"
 fi
 
 # Case 14: test-author, T-5 first bullet, row 1 — the production-code
