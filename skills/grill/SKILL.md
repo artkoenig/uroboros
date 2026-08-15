@@ -38,8 +38,9 @@ ground the interview stands on, every slot filled: `<what already exists> —
    together": bundled questions get half-answers, and the turn that asked both
    is spent.
 3. **Chase the observable.** Never let "it should be better" stand as an
-   answer — press politely for the one that can land as an acceptance
-   criterion: an answer nobody can fail is a criterion nobody can test. Never
+   answer — not "we can pin it down later": press politely for the one that
+   can land as an acceptance criterion, because an answer nobody can fail is a
+   criterion nobody can test. Never
    leave an edge the sweep turned up undecided — not "the centre is what
    matters": the empty case, the limit and the repeat come back as a blocked
    `test-author`, one role too late.

@@ -3490,6 +3490,7 @@ fi
 # keeps in the rule, so a rewrite that drops it while keeping the
 # prohibition also goes red.
 if echo "$grill_form" | grep -q 'Never let "it should be better" stand as an answer' &&
+  echo "$grill_form" | grep -q '"we can pin it down later"' &&
   echo "$grill_form" | grep -q 'press politely for the one that can land as an acceptance criterion' &&
   echo "$grill_form" | grep -q 'an answer nobody can fail is a criterion nobody can test' &&
   echo "$grill_form" | grep -q 'Never leave an edge the sweep turned up undecided' &&
