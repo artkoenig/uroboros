@@ -548,6 +548,144 @@ else
 fi
 
 echo
+echo "=== a decidable question gets a ruling, not a stall"
+
+brief_collapsed="$(tr '\n' ' ' <"$root/skills/agent-brief/SKILL.md" | tr -s ' ')"
+
+# Criterion 1.1: the five material terms the rulebook gives the session stand
+# in the brief and in rulebook.md alike. Break: delete the sentence "A
+# question is material when it turns on user-visible behaviour, a public
+# contract, the data model, the dependency footprint, or anything
+# irreversible." from the brief — four of the five terms vanish and the case
+# fails. It fails in the other direction too if rulebook.md's own list drifts
+# from the brief's.
+declare -a material_terms=(
+  "user-visible behaviour"
+  "public contract"
+  "data model"
+  "dependency footprint"
+  "irreversible"
+)
+for term in "${material_terms[@]}"; do
+  if echo "$brief_collapsed" | grep -qi "$term"; then
+    ok "the shared brief names \"$term\" as a material term"
+  else
+    no "the shared brief does not name \"$term\" as a material term"
+  fi
+  if grep -qi "$term" "$root/rulebook.md"; then
+    ok "rulebook.md names \"$term\" as a material term"
+  else
+    no "rulebook.md does not name \"$term\" as a material term"
+  fi
+done
+
+# Criterion 1.2: the brief names the other side of the test. Break: delete
+# "Everything else is decidable." from the brief.
+if echo "$brief_collapsed" | grep -qi 'decidable'; then
+  ok "the shared brief names the decidable side of the material test"
+else
+  no "the shared brief does not name a decidable question"
+fi
+
+# Criterion 2.1: a material question stays in questions. Break: delete "A
+# material question goes in `questions`" from the "Rulings, not stalls"
+# section, or reword it to send a material question anywhere else.
+if echo "$brief_collapsed" | grep -q 'A material question goes in `questions`'; then
+  ok "the shared brief keeps a material question in \`questions\`"
+else
+  no "the shared brief no longer keeps a material question in \`questions\`"
+fi
+
+# Criterion 2.2: a non-empty questions list still ends the run. Break: delete
+# that clause from the questions bullet of "Your step return".
+if echo "$brief_collapsed" | grep -q 'A non-empty list ends the run'; then
+  ok "the shared brief still ends the run on a non-empty \`questions\`"
+else
+  no "the shared brief no longer says a non-empty \`questions\` ends the run"
+fi
+
+# Criterion 3.1: a decidable question is forbidden in questions. Break:
+# delete "A decidable one never does", or soften it to allow a decidable
+# question into questions.
+if echo "$brief_collapsed" | grep -q 'A decidable one never does'; then
+  ok "the shared brief forbids a decidable question in \`questions\`"
+else
+  no "the shared brief no longer forbids a decidable question in \`questions\`"
+fi
+
+# Criterion 3.2: the agent picks a default and records it in rulings. Break:
+# delete either half of "pick the default that costs least to undo, carry on,
+# and record it in `rulings`".
+if echo "$brief_collapsed" | grep -q 'record it in `rulings`' && echo "$brief_collapsed" | grep -q 'pick the default'; then
+  ok "the shared brief requires a picked default recorded in \`rulings\`"
+else
+  no "the shared brief no longer requires a picked default recorded in \`rulings\`"
+fi
+
+# Criterion 3.3: rulings is one of the fields meaning the same in every role.
+# Break: delete that bullet from the "Three of those fields mean the same in
+# every role" list.
+if echo "$brief_collapsed" | grep -q '\*\*`rulings`\*\*'; then
+  ok "the shared brief lists \`rulings\` among the fields meaning the same in every role"
+else
+  no "the shared brief does not list \`rulings\` among the fields meaning the same in every role"
+fi
+
+# Criterion 4.1: the shape of one ruling. Break: delete or reword that
+# sentence.
+if echo "$brief_collapsed" | grep -q 'one string naming the decision, the reason, and what it costs if the default is wrong'; then
+  ok "the shared brief states the shape of one ruling"
+else
+  no "the shared brief does not state the shape of one ruling"
+fi
+
+# Criterion 4.2: the length constraint. Break: drop the length constraint
+# from that sentence.
+if echo "$brief_collapsed" | grep -q 'steering projection'; then
+  ok "the shared brief bounds a ruling's length to survive the steering projection"
+else
+  no "the shared brief does not bound a ruling's length to survive the steering projection"
+fi
+
+# Criterion 5.1: every agent page names the rulings field. Break: remove
+# rulings from any one of them — the case fails and names it.
+missing_rulings_ref=""
+for page in "$root"/agents/*.md; do
+  grep -q 'rulings' "$page" || missing_rulings_ref="$missing_rulings_ref $(basename "$page")"
+done
+if [ -z "$missing_rulings_ref" ]; then
+  ok "every agent page names \`rulings\`, the step-return field a ruling is recorded in"
+else
+  no "these agent pages do not mention \`rulings\`:$missing_rulings_ref"
+fi
+
+# Criterion 5.2: the brief is the only page that defines the material test.
+# Break, either direction: restate the material list on any agent page or
+# second shipped skill (two paths match), or delete it from the brief (none
+# match).
+ruling_rule_owners="$(grep -lie 'dependency footprint' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$ruling_rule_owners" = "$root/skills/agent-brief/SKILL.md" ]; then
+  ok "skills/agent-brief/SKILL.md is the only agent page or shipped skill naming the material/decidable test"
+else
+  no "the phrase \"dependency footprint\" is owned by more (or fewer) pages than skills/agent-brief/SKILL.md alone:"
+  echo "${ruling_rule_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Criterion 5.3: the implementer no longer parks every open decision. Break:
+# revert either edit.
+implementer_collapsed="$(tr '\n' ' ' <"$root/agents/implementer.md" | tr -s ' ')"
+if echo "$implementer_collapsed" | grep -q 'need a material decision' && echo "$implementer_collapsed" | grep -q 'leave a material decision open'; then
+  ok "agents/implementer.md only parks a material decision, not every open decision"
+else
+  no "agents/implementer.md does not say it only parks a material decision"
+fi
+if echo "$implementer_collapsed" | grep -q 'leave a real decision open'; then
+  no "agents/implementer.md still says \"leave a real decision open\""
+else
+  ok "agents/implementer.md no longer says \"leave a real decision open\""
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
