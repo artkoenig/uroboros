@@ -738,6 +738,7 @@ const DISJOINT_MARKERS = [
   'MARKER-RULING-VERDICT',
   'MARKER-RULING-CLOSE',
   'MARKER-RULING-RESUMED',
+  'MARKER-RULING-ARCHIVED',
 ];
 
 // The read a prompt has to carry for its role to have a brief at all. Written
@@ -827,6 +828,7 @@ function idxIncrement(id, extra) {
       depth: 'full',
       steps: [],
       attempts: 0,
+      attemptRulings: [],
     },
     extra || {},
   );
@@ -872,6 +874,28 @@ const rulingResumeState = () =>
       }),
     ],
     [idxStep('decompose', Object.assign({}, decomposeReturnOne, { rulings: ['MARKER-RULING-CUT'] }))],
+  );
+
+// A run resumed behind an increment an earlier session already closed: the
+// closed increment's rulings live only in its archived attempt now, so the
+// result of this run has to recover them from there — the resumed half of
+// criterion 3, on a cut boundary rather than a mid-increment crash.
+const closedRulingState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        status: 'done',
+        note: 'accepted',
+        branch: 'issue-branch--i1',
+        attempts: 1,
+        attemptRulings: [
+          { label: 'research:i1.0', rulings: ['MARKER-RULING-ARCHIVED'] },
+          { label: 'replan:i1', rulings: ['MARKER-RULING-CLOSE'] },
+        ],
+      }),
+      idxIncrement('i2'),
+    ],
+    [idxStep('decompose', decomposeReturnTwo)],
   );
 
 // A run whose research:i1.0 ended with a question for the human. A resumed run
@@ -1056,6 +1080,8 @@ function contextFor(m) {
       // close on one increment, so decompose and research return their plain
       // fixtures.
       return { stateReturn: rulingResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w28':
+      return { stateReturn: closedRulingState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1195,6 +1221,16 @@ async function main() {
       'the resumed reviewer was handed no checks, so the recorded plan never reached the one role that cannot read it');
   } else if (mode === 'w3') {
     assertEqualArrays(labels, ['load-state', 'publish'], 'a fully-closed backlog dispatches more than the state loader and publish');
+    // Criterion 5, the closed-increment edge: this fixture's one increment is
+    // closed and its archive ruled nothing (idxIncrement's default
+    // attemptRulings: []), so the result and the publish prompt must add no
+    // noise about rulings — a seeding loop over archived steps must not push
+    // an entry regardless of whether the step it archives carries one.
+    assertTrue(!!result && Array.isArray(result.rulings) && result.rulings.length === 0,
+      'the result of a run whose one closed increment ruled nothing carries a ruling');
+    const publishCall = calls.find((c) => c.label === 'publish');
+    assertTrue(!!publishCall && !/ruling/i.test(publishCall.prompt),
+      'the publish prompt talks about rulings though the closed increment it replays recorded none');
   } else if (mode === 'w4') {
     const testsCall = calls.find((c) => c.label.startsWith('tests:'));
     assertTrue(!!testsCall, 'the test-author was never dispatched');
@@ -1293,6 +1329,21 @@ async function main() {
       "the state loader's schema does not require `rulings` on an increment's steps");
     assertTrue(!!loaderCall && /\brulings\b/.test(loaderCall.prompt),
       "the state loader's prompt does not name `rulings` among the fields it fills");
+    // Criterion 3, the resumed-run guarantee: the loader's schema asks each
+    // increment for the rulings its archived attempts carry, not only the
+    // rulings of its current steps — otherwise a resumed run behind a closed
+    // increment could never recover what that increment's own steps ruled.
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.increments &&
+      !!loaderCall.schema.properties.increments.items && !!loaderCall.schema.properties.increments.items.properties &&
+      loaderCall.schema.properties.increments.items.properties.attemptRulings &&
+      loaderCall.schema.properties.increments.items.properties.attemptRulings.type === 'array',
+      "the state loader's schema does not declare `attemptRulings` as an array property on each increment");
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.increments &&
+      Array.isArray(loaderCall.schema.properties.increments.items.required) &&
+      loaderCall.schema.properties.increments.items.required.includes('attemptRulings'),
+      "the state loader's schema does not require `attemptRulings` on each increment");
+    assertTrue(!!loaderCall && /\battemptRulings\b/.test(loaderCall.prompt),
+      "the state loader's prompt does not name `attemptRulings` among the fields it fills");
   } else if (mode === 'w9') {
     // A recorded step whose return carried a question used to be replayed
     // as-is, so a resumed run dispatched only load-state and publish, forever.
@@ -1633,6 +1684,21 @@ async function main() {
     const publishCall = calls.find((c) => c.label === 'publish');
     assertTrue(!!publishCall && publishCall.prompt.includes('research:i1.0: MARKER-RULING-RESUMED'),
       "the resumed run's publish prompt is poorer than an uninterrupted run's — it does not carry the skipped researcher step's ruling");
+  } else if (mode === 'w28') {
+    // Criterion 3, the closed-increment half: a resumed run recovers the
+    // rulings of an increment an earlier session closed, not only those of a
+    // step it skips mid-increment.
+    assertEqualArrays(labels,
+      ['load-state', 'research:i2.0', 'tests:i2.0', 'implement:i2.0', 'review:i2.0', 'replan:i2', 'publish'],
+      'the resumed run did not skip the closed increment i1 and pick up i2');
+    const rulingPairs = (result && result.rulings || []).map((r) => r.step + ': ' + r.ruling);
+    assertTrue(rulingPairs.includes('research:i1.0: MARKER-RULING-ARCHIVED'),
+      "the resumed run's result does not carry the closed increment's archived researcher ruling");
+    assertTrue(rulingPairs.includes('replan:i1: MARKER-RULING-CLOSE'),
+      "the resumed run's result does not carry the closed increment's archived close ruling");
+    const publishCall = calls.find((c) => c.label === 'publish');
+    assertTrue(!!publishCall && publishCall.prompt.includes('research:i1.0: MARKER-RULING-ARCHIVED'),
+      "the resumed run's publish prompt does not carry the closed increment's archived ruling");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1686,6 +1752,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w25 "$wf_name: an increment the state shows as having already closed an attempt is full again after a restart"
   run_driver "$wf" w26 "$wf_name: the rulings every step recorded reach the run's result and the publish prompt"
   run_driver "$wf" w27 "$wf_name: a resumed run recovers the rulings of the steps it skips"
+  run_driver "$wf" w28 "$wf_name: a resumed run recovers the rulings of an increment an earlier session closed"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
