@@ -1,6 +1,6 @@
 ---
 name: agent-brief
-description: The rules every uroboros subagent works by, whatever its role — how it reads its brief out of the run state, how it spends its tools, how it reports a command run, how it records, commits and pushes its step return and the prompt that produced it, and the check mode that makes it enumerate its startup context instead of working. Every uroboros agent preloads it, so it reaches them wherever uroboros is installed; a session has no use for it.
+description: The rules every uroboros subagent works by, whatever its role — the ones its own page does not repeat because this page owns them. Every uroboros agent preloads it, so they bind whenever one is dispatched, wherever uroboros is installed; a session has no use for it.
 ---
 
 # The shared brief

@@ -24,5 +24,14 @@ Never patch a working rule with an exemption clause. Re-cut the rule on an
 observable predicate instead, and state each branch on its own: one appended
 exemption measured a working rule down from consistent to noisy.
 
+## The form of a description
+
+A description names the occasion to reach for the thing it fronts — the
+situation that calls for it, and what it hands back — and never walks through
+the steps inside it. A description that summarises a workflow becomes the
+shortcut agents take instead of reading the body: one measured case ran a
+single review where the body ordered two, because the description said "review
+between tasks".
+
 This page stays in this checkout rather than in the shipped brief because it
 binds whoever writes a page here, not an agent at run time.
