@@ -85,11 +85,11 @@ half its rules and nobody hears about it.
 
 - **Frontmatter**: `name`, `description`, `tools`, `skills`, `color`. The
   `description` is what a caller reads while deciding — say what the agent
-  does, when to dispatch it, and what not to use it for. It is read far more
-  often than the body. `skills` carries `agent-brief` and whatever else that
-  agent alone preloads. `model` is left out, so the agent runs on the session's
-  model; name a tier only for an agent whose work is mechanical enough that a
-  smaller one cannot get it wrong, and say on its page why.
+  does and what not to use it for. It is read far more often than the body.
+  `skills` carries `agent-brief` and whatever else that agent alone preloads.
+  `model` is left out, so the agent runs on the session's model; name a tier
+  only for an agent whose work is mechanical enough that a smaller one cannot
+  get it wrong, and say on its page why.
 - **The body** is what the shared brief does not already cover: the role, how
   it works, the boundaries that belong to it alone, and the shape of its
   report. Beyond the brief it has no context — a caller's reasoning never
