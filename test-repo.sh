@@ -3636,10 +3636,12 @@ fi
 # Case 2: skills/CLAUDE.md, S-5/R-2, row 3 — the skill page's body is a
 # recipe, not prose (failure class: an omitted required element asked for in
 # prose). Break: restore "not an essay: how to run it, what it produces, and
-# a closing".
-if echo "$skills_doc_form" | grep -q 'is the procedure, not an essay: a section per slot and no slot empty' &&
+# a closing" (the pre-branch prose) or "not an essay: a section per slot and
+# no slot empty" (the round-0 wording this round replaces).
+if echo "$skills_doc_form" | grep -q 'is the procedure, not an essay: every slot filled' &&
   echo "$skills_doc_form" | grep -q 'a closing "what it is not"' &&
-  ! echo "$skills_doc_form" | grep -q 'not an essay: how to run it'; then
+  ! echo "$skills_doc_form" | grep -q 'not an essay: how to run it' &&
+  ! echo "$skills_doc_form" | grep -q 'a section per slot'; then
   ok "the skill-page body is a slot recipe, not prose"
 else
   no "the skill-page body still reads as prose"
@@ -3747,14 +3749,19 @@ else
 fi
 
 # Case 10: .claude/rules/agents.md, A-12/R-10, row 4 — the model-tier rule
-# states each branch on its own (failure class: an exemption clause). Break:
-# restore "name a tier only for an agent whose work is mechanical enough
-# that a smaller one cannot get it wrong". Both branches are asserted
-# separately, so folding them back onto one semicolon goes red.
+# states each branch on its own; the true branch is a permission, not an
+# obligation (failure class: an exemption clause). Break: restore "name a
+# tier only for an agent whose work is mechanical enough that a smaller one
+# cannot get it wrong" (the pre-branch exemption) or "`model` names that
+# tier and the page says why" (the round-0 wording this round replaces,
+# which turned the permission into an obligation). Both branches are
+# asserted separately, so folding them back onto one semicolon goes red, and
+# the second absence marker alone pins the modality.
 if echo "$agent_rules_form" | grep -q '`model` is left out, so the agent runs on the session' &&
-  echo "$agent_rules_form" | grep -q 'is mechanical enough that a smaller model cannot get it wrong, `model` names that tier' &&
-  echo "$agent_rules_form" | grep -q 'the page says why' &&
-  ! echo "$agent_rules_form" | grep -q 'name a tier only for an agent whose work'; then
+  echo "$agent_rules_form" | grep -q 'is mechanical enough that a smaller model cannot get it wrong, its page may name that tier' &&
+  echo "$agent_rules_form" | grep -q 'a page that names one says why' &&
+  ! echo "$agent_rules_form" | grep -q 'name a tier only for an agent whose work' &&
+  ! echo "$agent_rules_form" | grep -q '`model` names that tier and the page says why'; then
   ok "the model-tier rule states each branch on its own"
 else
   no "the model-tier rule still folds both branches onto one semicolon, present or bolted on"
@@ -3763,10 +3770,12 @@ fi
 # Case 11: .claude/rules/agents.md, A-13/R-11, row 3 — the agent page's body
 # is a recipe, not prose (failure class: an omitted required element asked
 # for in prose). Break: restore "does not already cover: the role, how it
-# works".
-if echo "$agent_rules_form" | grep -q 'does not already cover, a section per slot and no slot empty' &&
+# works" (the pre-branch prose) or "does not already cover, a section per
+# slot and no slot empty" (the round-0 wording this round replaces).
+if echo "$agent_rules_form" | grep -q 'does not already cover, every slot filled' &&
   echo "$agent_rules_form" | grep -q 'the boundaries that belong to it alone; the shape of its report' &&
-  ! echo "$agent_rules_form" | grep -q 'does not already cover: the role, how it works'; then
+  ! echo "$agent_rules_form" | grep -q 'does not already cover: the role, how it works' &&
+  ! echo "$agent_rules_form" | grep -q 'does not already cover, a section per slot'; then
   ok "the agent-page body is a slot recipe, not prose"
 else
   no "the agent-page body still reads as prose"
