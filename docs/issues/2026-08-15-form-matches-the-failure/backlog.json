@@ -265,78 +265,106 @@
         },
         {
           "label": "tests:INC-2.0",
-          "at": "2026-08-15T14:45:49.454Z",
+          "at": "2026-08-15T15:09:09.859Z",
           "return": {
             "cases": [
               {
-                "case": "CASE 1 - the rule requires the occasion (C1)",
+                "case": "Case 16 — the skill-page rules do not restate the occasion rule (criterion 2, \"no page restates it\"): invoke desc.js carry-bullet on skills/CLAUDE.md requiring the discovery clause and forbidding triggers/when-to-dispatch/occasion synonyms.",
                 "file": "test-repo.sh",
-                "testName": "the authoring rules require a description to name the occasion",
-                "demands": "at least one paragraph of .claude/rules/authoring.md mentioning \"description\" (table lines stripped first) also matches /occasion/i",
-                "got": "FAIL - the authoring rules do not require a description to name the occasion: no paragraph in .claude/rules/authoring.md mentions \"description\""
+                "testName": "skills/CLAUDE.md keeps the discovery rule and restates no occasion rule",
+                "demands": "The Frontmatter bullet in skills/CLAUDE.md's \"## What a page has to carry\" section must match /leads with the words a request/i and must not match /\\btriggers?\\b/i, /when to dispatch/i, or /\\boccasion\\b/i.",
+                "got": "RED as expected before the production edit: `skills/CLAUDE.md: Frontmatter bullet restates the occasion rule (matched /\\btriggers?\\b/i): \"- **Frontmatter**: `name`, `description`, and `user-invocable` where the human may call it directly. The `description` decides whether the skill is ever loaded, so it leads with the words a request would actually contain and names the triggers; the body is only read once it has won.\"`"
               },
               {
-                "case": "CASE 2 - the rule forbids the steps (C1)",
+                "case": "Case 17 — the agent-page rules do not restate the occasion rule (criterion 2, \"no page restates it\"): invoke desc.js carry-bullet on .claude/rules/agents.md requiring the \"what a caller reads while deciding\" clause and forbidding the same synonyms.",
                 "file": "test-repo.sh",
-                "testName": "the authoring rules forbid a description from walking through the steps",
-                "demands": "same paragraph set matches /\\bnever\\b[^.]*\\bsteps\\b/i",
-                "got": "FAIL - the authoring rules do not forbid a description from walking through the steps: no paragraph in .claude/rules/authoring.md mentions \"description\""
-              },
-              {
-                "case": "CASE 3 - the rule carries its reason (C1)",
-                "file": "test-repo.sh",
-                "testName": "the authoring rules carry the reason: a summarised workflow becomes a shortcut past the body",
-                "demands": "same paragraph set has a paragraph matching /shortcut/i AND /body/i",
-                "got": "FAIL - the authoring rules do not carry the shortcut-past-the-body reason: no paragraph in .claude/rules/authoring.md mentions \"description\""
-              },
-              {
-                "case": "CASES 4-7 - every shipped skill description names an occasion (C2), one per skills/*/SKILL.md sorted",
-                "file": "test-repo.sh",
-                "testName": "$skill's description names an occasion for using it (loop over agent-brief, argus, grill, retro)",
-                "demands": "the frontmatter description of each skill matches /reach for it|\\bwhenever\\b|\\bwhen\\b/i",
-                "got": "agent-brief FAIL - description names no occasion; argus ok; grill ok; retro FAIL - description names no occasion"
-              },
-              {
-                "case": "CASES 8-11 - no shipped skill description walks the body's steps (C2), one per file",
-                "file": "test-repo.sh",
-                "testName": "$skill's description does not walk through the steps (loop over agent-brief, argus, grill, retro)",
-                "demands": "the description matches none of /\\bhow it [a-z]+s\\b/i, /\\bfirst\\b[^.]*\\bthen\\b/i, /\\bstep [0-9]/i, and the failing marker is named in the message",
-                "got": "agent-brief FAIL - matched \"how it ...s\"; argus ok; grill FAIL - matched \"first ... then\"; retro ok"
-              },
-              {
-                "case": "CASE 12 - the rule has one home (C1)",
-                "file": "test-repo.sh",
-                "testName": ".claude/rules/authoring.md is the only page naming the occasion",
-                "demands": "grep -lie 'occasion' over agents/*.md, skills/*/SKILL.md, skills/CLAUDE.md, .claude/rules/*.md, rulebook.md, README.md, GEMINI.md returns exactly .claude/rules/authoring.md",
-                "got": "FAIL - the word \"occasion\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone: (none)"
-              },
-              {
-                "case": "CASE 13 - agent-brief's rewritten lead still carries the request words (C3)",
-                "file": "test-repo.sh",
-                "testName": "agent-brief's description leads with the words a request for it would contain",
-                "demands": "the description's first sentence matches /rules/i and /uroboros subagent/i",
-                "got": "ok - the current agent-brief description's lead already carries both markers; the case is green before the rewrite and its break is the rewrite dropping the words, per the plan's note"
-              },
-              {
-                "case": "CASE 14 - grill's rewritten lead still carries the request words (C3)",
-                "file": "test-repo.sh",
-                "testName": "grill's description leads with the words a request for it would contain",
-                "demands": "the description's first sentence matches /vague idea/i and /acceptance criteria/i",
-                "got": "ok - already green for the same reason as case 13"
-              },
-              {
-                "case": "CASE 15 - retro's rewritten lead still carries the request words (C3)",
-                "file": "test-repo.sh",
-                "testName": "retro's description leads with the words a request for it would contain",
-                "demands": "the description's first sentence matches /retrospective/i and /log/i",
-                "got": "ok - already green for the same reason as case 13"
+                "testName": ".claude/rules/agents.md says what the description is read for and restates no occasion rule",
+                "demands": "The Frontmatter bullet in .claude/rules/agents.md's \"## What a page has to carry\" section must match /what a caller reads while deciding/i and must not match /\\btriggers?\\b/i, /when to dispatch/i, or /\\boccasion\\b/i.",
+                "got": "RED as expected before the production edit: `.claude/rules/agents.md: Frontmatter bullet restates the occasion rule (matched /when to dispatch/i): \"- **Frontmatter**: `name`, `description`, `tools`, `skills`, `color`. The `description` is what a caller reads while deciding — say what the agent does, when to dispatch it, and what not to use it for. It is read far more often than the body. ...\"`"
               }
             ],
             "openQuestions": [],
             "questions": [],
-            "summary": "Added \"=== a description names the occasion, not the steps\" to test-repo.sh with 15 cases (4 loop-cases counted individually as 4 files each = 8 sub-checks for cases 4-7 and 8-11); ran `bash test-repo.sh` from the repo root: exit 1, 141 cases, 8 of them red exactly as the plan's state-of-play predicted (cases 1, 2, 3, the agent-brief and retro occasion checks, the agent-brief and grill step checks, and case 12), with argus's two checks, retro's step check, grill's occasion check, and all three lead checks (13-15) already green. No suite doc was written for test-repo.sh per the plan's exception (a root CLAUDE.md would load as project memory into every session, which .claude/rules/agents.md forbids)."
+            "summary": "Added cases 16 and 17 to test-repo.sh's \"a description names the occasion, not the steps\" section, plus the new carry-bullet mode in the heredoc'd desc.js, exactly as the test plan specified; ran `bash test-repo.sh` and confirmed the two new cases fail RED with the exact quoted messages while all 143-2=141 other cases (including the 15 pre-existing ones in that section) stay green. No CLAUDE.md was written for test-repo.sh, per the plan's explicit instruction that doing so would break an existing case."
           },
-          "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on branch `claude/authoring-rule-form-matching-c5ygkt--INC-2`. Before anything else make sure you are on it: `git fetch origin claude/authoring-rule-form-matching-c5ygkt--INC-2` and check it out; if the remote does not have it, create it from `claude/authoring-rule-form-matching-c5ygkt` and push it with `-u`.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 3 is yours:\n  A description names the occasion, and every shipped description is held to it — The authoring rules state what a description is for — the occasion to reach for the thing, never its steps — and every description this repository ships is checked against that rule, so no description can be read as a shortcut past the body it fronts.\nWhat it has to satisfy:\n  - The authoring rules require a description to name the occasion for using the thing and forbid it from summarising the thing's steps, with the reason a summarised workflow becomes a shortcut agents take instead of reading the body.\n  - Each of the four shipped skill descriptions — `agent-brief`, `argus`, `grill`, `retro` — is checked against that rule, and each one that summarises steps is rewritten so it names the occasion instead.\n  - A rewritten skill description still leads with the words a request for that skill would actually contain, so discovery still finds it.\n  - Each of the five agent descriptions is checked against that rule, and rewritten only where the description contradicts the body of the page it fronts; a description that merely summarises steps without contradicting its page is left as it stands.\n  - The increment's return records the verdict for all nine descriptions by name, including the ones deliberately left unchanged and why.\n  - The commands the increment names all exit 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 research:INC-2.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 tests:INC-2.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 tests:INC-2.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `summary`\n"
+          "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on branch `claude/authoring-rule-form-matching-c5ygkt--INC-2`. Before anything else make sure you are on it: `git fetch origin claude/authoring-rule-form-matching-c5ygkt--INC-2` and check it out; if the remote does not have it, create it from `claude/authoring-rule-form-matching-c5ygkt` and push it with `-u`.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 3 is yours:\n  A description names the occasion, and every shipped description is held to it — The authoring rules state what a description is for — the occasion to reach for the thing, never its steps — and every description this repository ships is checked against that rule and guarded by the suite, so no description can be read as a shortcut past the body it fronts and none can drift back into a summarised workflow unnoticed.\nWhat it has to satisfy:\n  - The authoring rules require a description to name the occasion for using the thing and forbid it from summarising the thing's steps, with the reason a summarised workflow becomes a shortcut agents take instead of reading the body.\n  - That rule lives in the one home the form table and the exemption-clause ban already occupy, reaching whoever authors a skill page and whoever authors an agent page alike, and no page restates it.\n  - Each of the four shipped skill descriptions — `agent-brief`, `argus`, `grill`, `retro` — is checked against that rule, and each one that summarises steps is rewritten so it names the occasion instead.\n  - A rewritten skill description still leads with the words a request for that skill would actually contain, so discovery still finds it.\n  - Each of the five agent descriptions is checked against that rule, and rewritten only where the description contradicts the body of the page it fronts; a description that merely summarises steps without contradicting its page is left as it stands.\n  - Deleting the description rule, or dropping the occasion clause, the ban on summarising steps, or the reason from it, each turns the suite red.\n  - For each description this increment rewrites, restoring it to the wording it replaced turns the suite red; a check that would still pass on the old wording does not satisfy this criterion.\n  - The increment's return records the verdict for all nine descriptions by name, including the ones deliberately left unchanged and why.\n  - The commands the increment names all exit 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 research:INC-2.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 tests:INC-2.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 tests:INC-2.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `summary`\n",
+          "history": [
+            {
+              "label": "tests:INC-2.0",
+              "at": "2026-08-15T14:45:49.454Z",
+              "return": {
+                "cases": [
+                  {
+                    "case": "CASE 1 - the rule requires the occasion (C1)",
+                    "file": "test-repo.sh",
+                    "testName": "the authoring rules require a description to name the occasion",
+                    "demands": "at least one paragraph of .claude/rules/authoring.md mentioning \"description\" (table lines stripped first) also matches /occasion/i",
+                    "got": "FAIL - the authoring rules do not require a description to name the occasion: no paragraph in .claude/rules/authoring.md mentions \"description\""
+                  },
+                  {
+                    "case": "CASE 2 - the rule forbids the steps (C1)",
+                    "file": "test-repo.sh",
+                    "testName": "the authoring rules forbid a description from walking through the steps",
+                    "demands": "same paragraph set matches /\\bnever\\b[^.]*\\bsteps\\b/i",
+                    "got": "FAIL - the authoring rules do not forbid a description from walking through the steps: no paragraph in .claude/rules/authoring.md mentions \"description\""
+                  },
+                  {
+                    "case": "CASE 3 - the rule carries its reason (C1)",
+                    "file": "test-repo.sh",
+                    "testName": "the authoring rules carry the reason: a summarised workflow becomes a shortcut past the body",
+                    "demands": "same paragraph set has a paragraph matching /shortcut/i AND /body/i",
+                    "got": "FAIL - the authoring rules do not carry the shortcut-past-the-body reason: no paragraph in .claude/rules/authoring.md mentions \"description\""
+                  },
+                  {
+                    "case": "CASES 4-7 - every shipped skill description names an occasion (C2), one per skills/*/SKILL.md sorted",
+                    "file": "test-repo.sh",
+                    "testName": "$skill's description names an occasion for using it (loop over agent-brief, argus, grill, retro)",
+                    "demands": "the frontmatter description of each skill matches /reach for it|\\bwhenever\\b|\\bwhen\\b/i",
+                    "got": "agent-brief FAIL - description names no occasion; argus ok; grill ok; retro FAIL - description names no occasion"
+                  },
+                  {
+                    "case": "CASES 8-11 - no shipped skill description walks the body's steps (C2), one per file",
+                    "file": "test-repo.sh",
+                    "testName": "$skill's description does not walk through the steps (loop over agent-brief, argus, grill, retro)",
+                    "demands": "the description matches none of /\\bhow it [a-z]+s\\b/i, /\\bfirst\\b[^.]*\\bthen\\b/i, /\\bstep [0-9]/i, and the failing marker is named in the message",
+                    "got": "agent-brief FAIL - matched \"how it ...s\"; argus ok; grill FAIL - matched \"first ... then\"; retro ok"
+                  },
+                  {
+                    "case": "CASE 12 - the rule has one home (C1)",
+                    "file": "test-repo.sh",
+                    "testName": ".claude/rules/authoring.md is the only page naming the occasion",
+                    "demands": "grep -lie 'occasion' over agents/*.md, skills/*/SKILL.md, skills/CLAUDE.md, .claude/rules/*.md, rulebook.md, README.md, GEMINI.md returns exactly .claude/rules/authoring.md",
+                    "got": "FAIL - the word \"occasion\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone: (none)"
+                  },
+                  {
+                    "case": "CASE 13 - agent-brief's rewritten lead still carries the request words (C3)",
+                    "file": "test-repo.sh",
+                    "testName": "agent-brief's description leads with the words a request for it would contain",
+                    "demands": "the description's first sentence matches /rules/i and /uroboros subagent/i",
+                    "got": "ok - the current agent-brief description's lead already carries both markers; the case is green before the rewrite and its break is the rewrite dropping the words, per the plan's note"
+                  },
+                  {
+                    "case": "CASE 14 - grill's rewritten lead still carries the request words (C3)",
+                    "file": "test-repo.sh",
+                    "testName": "grill's description leads with the words a request for it would contain",
+                    "demands": "the description's first sentence matches /vague idea/i and /acceptance criteria/i",
+                    "got": "ok - already green for the same reason as case 13"
+                  },
+                  {
+                    "case": "CASE 15 - retro's rewritten lead still carries the request words (C3)",
+                    "file": "test-repo.sh",
+                    "testName": "retro's description leads with the words a request for it would contain",
+                    "demands": "the description's first sentence matches /retrospective/i and /log/i",
+                    "got": "ok - already green for the same reason as case 13"
+                  }
+                ],
+                "openQuestions": [],
+                "questions": [],
+                "summary": "Added \"=== a description names the occasion, not the steps\" to test-repo.sh with 15 cases (4 loop-cases counted individually as 4 files each = 8 sub-checks for cases 4-7 and 8-11); ran `bash test-repo.sh` from the repo root: exit 1, 141 cases, 8 of them red exactly as the plan's state-of-play predicted (cases 1, 2, 3, the agent-brief and retro occasion checks, the agent-brief and grill step checks, and case 12), with argus's two checks, retro's step check, grill's occasion check, and all three lead checks (13-15) already green. No suite doc was written for test-repo.sh per the plan's exception (a root CLAUDE.md would load as project memory into every session, which .claude/rules/agents.md forbids)."
+              },
+              "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on branch `claude/authoring-rule-form-matching-c5ygkt--INC-2`. Before anything else make sure you are on it: `git fetch origin claude/authoring-rule-form-matching-c5ygkt--INC-2` and check it out; if the remote does not have it, create it from `claude/authoring-rule-form-matching-c5ygkt` and push it with `-u`.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 3 is yours:\n  A description names the occasion, and every shipped description is held to it — The authoring rules state what a description is for — the occasion to reach for the thing, never its steps — and every description this repository ships is checked against that rule, so no description can be read as a shortcut past the body it fronts.\nWhat it has to satisfy:\n  - The authoring rules require a description to name the occasion for using the thing and forbid it from summarising the thing's steps, with the reason a summarised workflow becomes a shortcut agents take instead of reading the body.\n  - Each of the four shipped skill descriptions — `agent-brief`, `argus`, `grill`, `retro` — is checked against that rule, and each one that summarises steps is rewritten so it names the occasion instead.\n  - A rewritten skill description still leads with the words a request for that skill would actually contain, so discovery still finds it.\n  - Each of the five agent descriptions is checked against that rule, and rewritten only where the description contradicts the body of the page it fronts; a description that merely summarises steps without contradicting its page is left as it stands.\n  - The increment's return records the verdict for all nine descriptions by name, including the ones deliberately left unchanged and why.\n  - The commands the increment names all exit 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 research:INC-2.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 tests:INC-2.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-2 tests:INC-2.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `summary`\n"
+            }
+          ]
         },
         {
           "label": "implement:INC-2.0",

@@ -2526,6 +2526,33 @@ if (mode === "skill-nosteps") {
   process.exit(0);
 }
 
+if (mode === "carry-bullet") {
+  const file = process.argv[4];
+  const requiredRx = new RegExp(process.argv[5], "i");
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  const headingIdx = lines.findIndex((l) => /^## What a page has to carry/.test(l));
+  if (headingIdx === -1) fail(file + ": no \"## What a page has to carry\" heading");
+  let sectionEnd = lines.length;
+  for (let i = headingIdx + 1; i < lines.length; i++) {
+    if (/^## /.test(lines[i])) { sectionEnd = i; break; }
+  }
+  const section = lines.slice(headingIdx + 1, sectionEnd);
+  const bulletStart = section.findIndex((l) => /^- \*\*Frontmatter\*\*/.test(l));
+  if (bulletStart === -1) fail(file + ": no \"- **Frontmatter**\" bullet in its carry section");
+  let bulletEnd = section.length;
+  for (let i = bulletStart + 1; i < section.length; i++) {
+    if (/^- \*\*/.test(section[i])) { bulletEnd = i; break; }
+  }
+  const block = section.slice(bulletStart, bulletEnd).join(" ").replace(/\s+/g, " ").trim();
+  if (!requiredRx.test(block)) fail(file + ": Frontmatter bullet does not match required regex " + process.argv[5] + ": " + JSON.stringify(block));
+  const forbidden = [/\btriggers?\b/i, /when to dispatch/i, /\boccasion\b/i];
+  for (const rx of forbidden) {
+    if (rx.test(block)) fail(file + ": Frontmatter bullet restates the occasion rule (matched " + rx + "): " + JSON.stringify(block));
+  }
+  process.exit(0);
+}
+
 if (mode === "skill-lead") {
   const file = process.argv[4];
   const m1 = new RegExp(process.argv[5], "i");
@@ -2625,6 +2652,27 @@ if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/retro/SKILL.md" 're
   ok "retro's description leads with the words a request for it would contain"
 else
   no "retro's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/retro/SKILL.md" 'retrospective' 'log' 2>&1)"
+fi
+
+# Case 16: the skill-page rules do not restate the occasion rule (criterion 2,
+# "no page restates it"). Break: restore "and names the triggers" to the
+# Frontmatter bullet of skills/CLAUDE.md, or delete "leads with the words a
+# request would actually contain" from it (which fails the required regex
+# instead, so the case cannot be satisfied by gutting the bullet).
+if node "$desc_tmp/desc.js" "$root" carry-bullet "$root/skills/CLAUDE.md" 'leads with the words a request' >/dev/null 2>&1; then
+  ok "skills/CLAUDE.md keeps the discovery rule and restates no occasion rule"
+else
+  no "skills/CLAUDE.md's carry rule restates the occasion rule or dropped the discovery clause: $(node "$desc_tmp/desc.js" "$root" carry-bullet "$root/skills/CLAUDE.md" 'leads with the words a request' 2>&1)"
+fi
+
+# Case 17: the agent-page rules do not restate the occasion rule (criterion 2,
+# "no page restates it"). Break: restore "when to dispatch it," to the
+# Frontmatter bullet of .claude/rules/agents.md, or delete "what a caller
+# reads while deciding" from it (which fails the required regex instead).
+if node "$desc_tmp/desc.js" "$root" carry-bullet "$root/.claude/rules/agents.md" 'what a caller reads while deciding' >/dev/null 2>&1; then
+  ok ".claude/rules/agents.md says what the description is read for and restates no occasion rule"
+else
+  no ".claude/rules/agents.md's carry rule restates the occasion rule or dropped the reading clause: $(node "$desc_tmp/desc.js" "$root" carry-bullet "$root/.claude/rules/agents.md" 'what a caller reads while deciding' 2>&1)"
 fi
 
 rm -rf "$desc_tmp"
