@@ -98,6 +98,22 @@
             "summary": "Added a new '=== the mutation standard has one owner' section to test-repo.sh with the seven cases the test plan named, one per acceptance criterion of increment name-the-break; ran `bash test-repo.sh`, 83 cases total, 7 of them new, 6 fail as intended (go-red against today's pages) and 1 (criterion 4's case) passes spuriously today due to a pre-existing unrelated match, flagged in openQuestions. No suite doc was added, per the plan's stated exception that test-repo.sh must not carry a CLAUDE.md."
           },
           "prompt": "Turn the researcher's test plan into failing tests for increment name-the-break of docs/issues/2026-08-15-the-test-plan-names-the-break, on branch the-test-plan-names-the-break--name-the-break, reading the test plan via `steps ... research:name-the-break.0 --fields testPlan`, and recording the return via `tests:name-the-break.0`.\n"
+        },
+        {
+          "label": "implement:name-the-break.0",
+          "at": "2026-08-15T08:06:18.041Z",
+          "return": {
+            "deviations": [
+              "The plan's verbatim prose for agents/researcher.md and agents/reviewer.md, wrapped at the pages' usual line width, split the pinned phrases 'at least one case', 'production change' and 'mutation standard' across line breaks, so the suite's single-line greps missed them. Kept the plan's wording verbatim and moved only the line breaks so each pinned phrase sits on one source line."
+            ],
+            "commands": [
+              "bash test-repo.sh — 83 cases, exit 0. Before the change the same run failed 7 of 83, all in '=== the mutation standard has one owner', confirming the planned tests were red for the right reason. The test-author's flagged case 'says so and why' was already ok before implementation, exactly as its openQuestions entry predicted."
+            ],
+            "blockers": [],
+            "questions": [],
+            "summary": "The shared brief now owns the mutation standard in a section of its own, and the researcher's test-plan bullet and the reviewer's check 3 point to it instead of restating it; all 83 repository-facts cases pass."
+          },
+          "prompt": "Issue directory: /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break\nThis increment is worked on branch `the-test-plan-names-the-break--name-the-break`. Before anything else make sure you are on it: `git fetch origin the-test-plan-names-the-break--name-the-break` and check it out; if the remote does not have it, create it from `the-test-plan-names-the-break` and push it with `-u`.\nYour brief is the plan the researcher wrote and the tests that already exist. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json name-the-break research:name-the-break.0 --fields plan,moduleMap,environment` — what gets built and why, the files it touches, and the commands the plan asks anyone to run.\n  - `steps /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json name-the-break tests:name-the-break.0 --fields cases` — the cases the test-author wrote.\nThe commands that count for this increment:\n  - `bash test-repo.sh`\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json name-the-break implement:name-the-break.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json name-the-break implement:name-the-break.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `deviations`\n  - `commands`\n  - `blockers`\n  - `questions`\n  - `summary`\n"
         }
       ],
       "attempts": []

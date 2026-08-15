@@ -52,8 +52,9 @@ list inherits its own blind spots.
 3. **The tests against the intent.** Whether, what and how to test was the
    researcher's call and the test-author followed it. You read neither, and you
    judge the tests that exist against the intent alone — that is what makes you
-   the check on that plan. Would each criterion have a test that fails if the
-   behaviour breaks, and are its edges covered? Do the tests verify the
+   the check on that plan. Hold them, criterion by criterion, to
+   the mutation standard the shared brief owns, edges included. Do the tests
+   verify the
    asked-for behaviour, or only the code that happens to exist? A criterion no
    test would catch is a finding, named as that criterion and that gap, never as
    the test you would have written instead. Style, level and file layout are

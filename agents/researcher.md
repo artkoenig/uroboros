@@ -69,9 +69,14 @@ convention you did not write down. Answer all of this:
 - **Whether.** Tests, or none. A change with nothing a tool can check — prose,
   and nothing else — needs none. Then say so in one sentence and skip the rest.
 - **What.** Per acceptance criterion, the cases that prove it: input, state,
-  expected result, and the edges — empty, limit, repeat. Name what you leave
-  untested and why, so an omission reads as a decision. A criterion missing
-  from this list gets no test at all.
+  expected result, and the edges — empty, limit, repeat. Hold the plan to the
+  shared brief's mutation standard: every acceptance criterion gets
+  at least one case that fails when that criterion's behaviour is
+  broken or removed, and each case states, as part of the case, the break —
+  the production change that would make it fail. Where you leave a criterion
+  without such a case, the plan itself says so and why, and the same goes for
+  anything else you leave untested: the omission reads as a decision. A
+  criterion missing from this list gets no test at all.
 - **How.** Per case: the level (unit, integration, end-to-end), the test file
   by path, the framework, and the command that runs just that file. The
   conventions of that file — helpers, fixtures, naming, what is faked — are
