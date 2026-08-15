@@ -20,7 +20,7 @@
       "depth": "full",
       "status": "todo",
       "note": "One cut: the scoped prompt and the rules the reviewer judges it by are one change, and either half alone is unusable.",
-      "branch": "",
+      "branch": "claude/correction-rounds-judge-the-fix--i1",
       "steps": [],
       "attempts": []
     }
