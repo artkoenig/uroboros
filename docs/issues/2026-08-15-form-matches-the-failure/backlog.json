@@ -56,6 +56,109 @@
             "summary": "INC-3 re-lands INC-1's accepted prose — a new path-scoped .claude/rules/authoring.md carrying the four-row failure-to-form table and the exemption-clause ban, plus a one-sentence pointer from skills/CLAUDE.md and from .claude/rules/agents.md — and replaces the guards that let it through: every row case now parses the table into cells and asserts the row's markers are in the form-that-works cell and absent from the form-that-fails cell, so swapping the two cells goes red, with a new header case catching the column-level swap that would invert all four rows at once. Thirteen cases in test-repo.sh, judged by `bash test-repo.sh` alone."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on its own branch: `claude/authoring-rule-form-matching-c5ygkt--INC-3`, off `claude/authoring-rule-form-matching-c5ygkt`.\nBefore anything else, on `claude/authoring-rule-form-matching-c5ygkt`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-3 claude/authoring-rule-form-matching-c5ygkt--INC-3`, commit that state change and push `claude/authoring-rule-form-matching-c5ygkt`. Then create the branch with `git checkout -b claude/authoring-rule-form-matching-c5ygkt--INC-3`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 2 is yours:\n  The form table lands, and every row of it is guarded against its own inversion — Whoever edits a page in this repository finds in the authoring rules a four-row table that picks the form of a correction from the failure class it prevents, and a standing ban on patching a working rule with an exemption clause — and the repository's own suite holds each of those four rows to the form that wins, so the table cannot silently drift into pairing a failure class with the form that loses against it. This re-cuts INC-1, whose prose satisfied every criterion but whose guards did not; the prior attempt is on the unmerged remote branch claude/authoring-rule-form-matching-c5ygkt--INC-1 and can be read there.\nWhat it has to satisfy:\n  - The authoring rules carry a table of exactly four rows; each row names a failure class, the form that works against it, the form that fails against it, and the reason in one sentence.\n  - The four rows are: a rule skipped under pressure gets a prohibition carrying its price and the verbatim rationalisation it counters; a wrong output shape gets a recipe stating what the output is; an omitted required element gets a required slot in the schema or template; behaviour that depends on a condition gets a rule keyed to an observable predicate.\n  - The authoring rules forbid patching an existing rule with an exemption clause and require re-cutting the rule on an observable predicate instead.\n  - The table and the exemption rule reach whoever authors a skill page and whoever authors an agent page alike, and the repository's existing rule about one home per rule is not broken to achieve it — no page restates what another page already carries.\n  - For each of the four rows independently, a table that pairs that row's failure class with the form that fails against it instead of the form that works turns the suite red; a check that would still pass on such a table does not satisfy this criterion.\n  - Deleting the price, deleting the verbatim rationalisation, deleting the exemption-clause ban, or dropping the observable predicate from the re-cutting requirement each turns the suite red.\n  - The commands the increment names all exit 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: A description names the occasion, and every shipped description is held to it.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-form-matches-the-failure/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-3 research:INC-3.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-3 research:INC-3.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:INC-3.0",
+          "at": "2026-08-15T14:22:51.248Z",
+          "return": {
+            "cases": [
+              {
+                "case": "Shape: the form table has exactly four body rows, each splitting into exactly four non-empty cells.",
+                "file": "test-repo.sh",
+                "testName": "the form table has exactly four body rows, each with four non-empty cells",
+                "demands": "table.js mode shape reads .claude/rules/authoring.md, drops the header separator row, and asserts body.length === 4 and every cell of every body row is non-empty.",
+                "got": "FAIL — the form table's shape is wrong: ENOENT .claude/rules/authoring.md (the file does not exist yet)."
+              },
+              {
+                "case": "Column order: the header row names failure, works, fails, and the reason/why, in that order.",
+                "file": "test-repo.sh",
+                "testName": "the form table's header names failure, works, fails and the reason, in order",
+                "demands": "table.js mode header asserts header[0] matches /failure/i, header[1] matches /works/i, header[2] matches /fails/i, header[3] matches /reason|why/i — a swap of the works/fails headers fails cells 2 and 3 both.",
+                "got": "FAIL — the form table's header is wrong: ENOENT .claude/rules/authoring.md (the file does not exist yet)."
+              },
+              {
+                "case": "One-sentence reason: every body row's fourth cell is exactly one full stop, at its end.",
+                "file": "test-repo.sh",
+                "testName": "every form-table row states its reason in exactly one sentence",
+                "demands": "table.js mode reason asserts every body row's cell 4 matches /^[^.]+\\.$/.",
+                "got": "FAIL — a form-table reason cell is not one sentence: ENOENT .claude/rules/authoring.md (the file does not exist yet)."
+              },
+              {
+                "case": "Row 1 (a rule skipped under pressure): the winning form carries a prohibition, its price, and the verbatim rationalisation, and none of those markers sit in the losing form.",
+                "file": "test-repo.sh",
+                "testName": "row 1 (skipped under pressure) pairs the prohibition, its price and the verbatim rationalisation with the winning form",
+                "demands": "table.js mode row, failure-class regex 'skipped under pressure', markers [\"prohibition\", \"\\\\bprice\\\\b\", \"verbatim\", \"rationalisation\"] all present in cell 2 and absent from cell 3.",
+                "got": "FAIL — row 1 (skipped under pressure) is wrong: ENOENT .claude/rules/authoring.md (the file does not exist yet). Verified separately against a scratch fixture: a swapped-cells break, a 'A reminder' substitution, a deleted price, and a deleted 'verbatim' each turn this case red on its own; the correct row turns it green."
+              },
+              {
+                "case": "Row 2 (a wrong output shape): the winning form is a recipe stating what the output is.",
+                "file": "test-repo.sh",
+                "testName": "row 2 (wrong output shape) pairs the recipe with the winning form",
+                "demands": "table.js mode row, failure-class regex 'output shape', markers [\"recipe\", \"output\"] present in cell 2, absent from cell 3.",
+                "got": "FAIL — row 2 (wrong output shape) is wrong: ENOENT .claude/rules/authoring.md (the file does not exist yet). Verified separately: swapping cells, or replacing cell 2 with 'A list of prohibitions', turns this case red; the correct row turns it green."
+              },
+              {
+                "case": "Row 3 (an omitted required element): the winning form is a required slot in the schema or the template.",
+                "file": "test-repo.sh",
+                "testName": "row 3 (omitted required element) pairs the required slot with the winning form",
+                "demands": "table.js mode row, failure-class regex 'omitted required element', markers [\"\\\\bslot\\\\b\", \"schema|template\"] present in cell 2, absent from cell 3.",
+                "got": "FAIL — row 3 (omitted required element) is wrong: ENOENT .claude/rules/authoring.md (the file does not exist yet). Verified separately: swapping cells, or replacing cell 2 with 'Prose in the body asking for the element', turns this case red; the correct row turns it green."
+              },
+              {
+                "case": "Row 4 (behaviour that depends on a condition): the winning form is a rule keyed to an observable predicate.",
+                "file": "test-repo.sh",
+                "testName": "row 4 (depends on a condition) pairs the observable predicate with the winning form",
+                "demands": "table.js mode row, failure-class regex 'depends on a condition', marker [\"observable predicate\"] present in cell 2, absent from cell 3.",
+                "got": "FAIL — row 4 (depends on a condition) is wrong: ENOENT .claude/rules/authoring.md (the file does not exist yet). Verified separately: swapping cells, or replacing cell 2 with \"Left to the agent's judgement\", turns this case red; the correct row turns it green."
+              },
+              {
+                "case": "The exemption-clause ban: a paragraph naming an exemption clause also carries never, re-cut and observable predicate, with table rows stripped before the paragraph check so row 4's cells cannot satisfy it in the ban's place.",
+                "file": "test-repo.sh",
+                "testName": "the authoring rules ban patching a working rule with an exemption clause and require re-cutting on an observable predicate",
+                "demands": "table.js mode ban splits the page into paragraphs, drops table lines from each, collapses to one line, and requires at least one paragraph mentioning 'exemption clause' to also match /never/i, /re-cut/i and /observable predicate/i.",
+                "got": "FAIL — the exemption-clause ban is missing or gutted: ENOENT .claude/rules/authoring.md (the file does not exist yet). Verified separately: deleting the ban paragraph, or replacing 'Re-cut the rule on an observable predicate instead' with '...on your best judgement instead', turns this case red; the correct paragraph turns it green."
+              },
+              {
+                "case": "The home exists and is scoped to both authoring audiences via paths: skills/** and agents/**.",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/authoring.md exists and is scoped to skills/** and agents/** alike",
+                "demands": ".claude/rules/authoring.md is a file, and the frontmatter between the first --- and the next one contains both 'skills/**' and 'agents/**'.",
+                "got": "FAIL — .claude/rules/authoring.md is missing, or its paths: frontmatter does not cover skills/** and agents/** (the file does not exist yet)."
+              },
+              {
+                "case": "The skill-page author is pointed at the shared home.",
+                "file": "test-repo.sh",
+                "testName": "skills/CLAUDE.md points whoever authors a skill page at .claude/rules/authoring.md",
+                "demands": "skills/CLAUDE.md contains the string '.claude/rules/authoring.md'.",
+                "got": "FAIL — skills/CLAUDE.md does not point at .claude/rules/authoring.md"
+              },
+              {
+                "case": "The agent-page author is pointed at the shared home.",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/agents.md points whoever authors an agent page at .claude/rules/authoring.md",
+                "demands": ".claude/rules/agents.md contains the string '.claude/rules/authoring.md'.",
+                "got": "FAIL — .claude/rules/agents.md does not point at .claude/rules/authoring.md"
+              },
+              {
+                "case": "One home for the exemption-clause ban across agent pages, shipped skills, .claude/rules pages, rulebook.md, README.md and GEMINI.md.",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/authoring.md is the only page naming an exemption clause",
+                "demands": "grep -lie 'exemption clause' over agents/*.md, skills/*/SKILL.md, skills/CLAUDE.md, .claude/rules/*.md, rulebook.md, README.md, GEMINI.md returns exactly .claude/rules/authoring.md.",
+                "got": "FAIL — the phrase \"exemption clause\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone: (none) — the file does not exist yet."
+              },
+              {
+                "case": "One home for the form table, keyed on 'rationalisation', its most distinctive word.",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/authoring.md is the only page naming a rationalisation",
+                "demands": "Same ownership check as above, keyed on 'rationalisation', returns exactly .claude/rules/authoring.md.",
+                "got": "FAIL — the phrase \"rationalisation\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone: (none) — the file does not exist yet."
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "summary": "Added the 13 planned cases to test-repo.sh under \"=== a rule's form is picked by the failure it prevents\", sharing one node table-parser helper (mktemp + heredoc) across the shape, header, one-sentence-reason, four per-row and exemption-ban checks, plus five plain grep/frontmatter checks for the shared home and its two ownership guards; `bash test-repo.sh` now runs 126 cases, all 13 new ones fail (113 pre-existing pass unchanged) because .claude/rules/authoring.md does not exist yet, and I additionally proved each row/ban/shape/header check against a scratch fixture that every mutation break in the plan turns red while the correct content turns it green."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on branch `claude/authoring-rule-form-matching-c5ygkt--INC-3`. Before anything else make sure you are on it: `git fetch origin claude/authoring-rule-form-matching-c5ygkt--INC-3` and check it out; if the remote does not have it, create it from `claude/authoring-rule-form-matching-c5ygkt` and push it with `-u`.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 2 is yours:\n  The form table lands, and every row of it is guarded against its own inversion — Whoever edits a page in this repository finds in the authoring rules a four-row table that picks the form of a correction from the failure class it prevents, and a standing ban on patching a working rule with an exemption clause — and the repository's own suite holds each of those four rows to the form that wins, so the table cannot silently drift into pairing a failure class with the form that loses against it. This re-cuts INC-1, whose prose satisfied every criterion but whose guards did not; the prior attempt is on the unmerged remote branch claude/authoring-rule-form-matching-c5ygkt--INC-1 and can be read there.\nWhat it has to satisfy:\n  - The authoring rules carry a table of exactly four rows; each row names a failure class, the form that works against it, the form that fails against it, and the reason in one sentence.\n  - The four rows are: a rule skipped under pressure gets a prohibition carrying its price and the verbatim rationalisation it counters; a wrong output shape gets a recipe stating what the output is; an omitted required element gets a required slot in the schema or template; behaviour that depends on a condition gets a rule keyed to an observable predicate.\n  - The authoring rules forbid patching an existing rule with an exemption clause and require re-cutting the rule on an observable predicate instead.\n  - The table and the exemption rule reach whoever authors a skill page and whoever authors an agent page alike, and the repository's existing rule about one home per rule is not broken to achieve it — no page restates what another page already carries.\n  - For each of the four rows independently, a table that pairs that row's failure class with the form that fails against it instead of the form that works turns the suite red; a check that would still pass on such a table does not satisfy this criterion.\n  - Deleting the price, deleting the verbatim rationalisation, deleting the exemption-clause ban, or dropping the observable predicate from the re-cutting requirement each turns the suite red.\n  - The commands the increment names all exit 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: A description names the occasion, and every shipped description is held to it.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-3 research:INC-3.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-3 tests:INC-3.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-3 tests:INC-3.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `summary`\n"
         }
       ],
       "attempts": []
