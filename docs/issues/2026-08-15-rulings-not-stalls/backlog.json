@@ -320,7 +320,7 @@
       "depth": "full",
       "status": "todo",
       "note": "Delivers the issue's last two criteria. Its first criterion narrowed after i1: the dispatch prompts already name `rulings`, so what is left there is the per-role structured-return schemas the workflow steers on, which still drop the field.",
-      "branch": "",
+      "branch": "claude/offene-issues-g9eclm--i2",
       "steps": [],
       "attempts": []
     }
