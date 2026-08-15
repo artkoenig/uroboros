@@ -2256,15 +2256,35 @@ else
 fi
 
 # Criterion 2, row 1: a rule skipped under pressure gets a prohibition
-# carrying its price and the verbatim rationalisation it counters. Break:
-# drop the price, or the verbatim rationalisation, from row 1's winning form.
-if grep -qi 'skipped under pressure' "$root/.claude/rules/authoring.md" &&
-  grep -i 'skipped under pressure' "$root/.claude/rules/authoring.md" | grep -qi 'prohibition' &&
-  grep -i 'skipped under pressure' "$root/.claude/rules/authoring.md" | grep -qi 'price' &&
-  grep -i 'skipped under pressure' "$root/.claude/rules/authoring.md" | grep -qi 'rationalisation'; then
-  ok "row 1 of the authoring rules table pairs 'skipped under pressure' with a prohibition, its price and the rationalisation"
+# carrying its price and the verbatim rationalisation it counters. Scoped to
+# cell 2 alone, so cell 3's 'unpriced' can no longer stand in for the 'price'
+# assertion. Break: drop 'verbatim' from cell 2; drop 'carries its price
+# and ' from cell 2; replace 'A prohibition' with 'A reminder' in cell 2;
+# replace 'the rationalisation it counters' with 'the excuse it counters' in
+# cell 2.
+node -e '
+  const fs = require("fs");
+  const path = process.argv[1] + "/.claude/rules/authoring.md";
+  const text = fs.readFileSync(path, "utf8");
+  const rows = text.split("\n").filter((l) => l.trim().startsWith("|"));
+  const body = rows.slice(1).filter((l) => !/^\|[\s:|-]+\|$/.test(l.trim()));
+  const matches = body.filter((row) => {
+    const cells = row.split("|").slice(1, -1).map((c) => c.trim());
+    return /skipped under pressure/i.test(cells[0] || "");
+  });
+  if (matches.length === 0) { console.error("no row found whose failure class matches \"skipped under pressure\""); process.exit(1); }
+  if (matches.length > 1) { console.error("more than one row matches \"skipped under pressure\": " + matches.length); process.exit(1); }
+  const cells = matches[0].split("|").slice(1, -1).map((c) => c.trim());
+  const cell2 = cells[1] || "";
+  const need = [/prohibition/i, /price/i, /verbatim/i, /rationalisation/i];
+  for (const re of need) {
+    if (!re.test(cell2)) { console.error("cell 2 does not match " + re + ": " + cell2); process.exit(1); }
+  }
+' "$root"
+if [ $? -eq 0 ]; then
+  ok "row 1's winning form (cell 2 only) carries a prohibition, its price and the verbatim rationalisation it counters"
 else
-  no "row 1 of the authoring rules table does not pair 'skipped under pressure' with a prohibition, its price and the rationalisation on one line"
+  no "row 1's winning form does not carry a prohibition with its price and the verbatim rationalisation"
 fi
 
 # Criterion 2, row 2: a wrong output shape gets a recipe stating what the
@@ -2295,16 +2315,35 @@ else
 fi
 
 # Criterion 3: the ban on patching an existing rule with an exemption clause,
-# and the re-cut on an observable predicate it requires. Break: delete the
-# ban paragraph — 'exemption clause' and 're-cut' both vanish, since row 4's
-# failing form is worded without either.
-authoring_collapsed="$(tr '\n' ' ' <"$root/.claude/rules/authoring.md" | tr -s ' ')"
-if echo "$authoring_collapsed" | grep -qi 'exemption clause' &&
-  echo "$authoring_collapsed" | grep -qi 're-cut' &&
-  echo "$authoring_collapsed" | grep -qi 'observable predicate'; then
+# and the re-cut on an observable predicate it requires. Scoped to the
+# paragraph that names the ban, with table pipe-lines stripped out first, so
+# a future reword of row 4's failing-form cell to contain the words
+# 'exemption clause' cannot let the table paragraph stand in for the ban.
+# Break: replace 'Re-cut the rule on an observable predicate instead' with
+# '...on your best judgement instead'; delete 'Re-cut the rule' from the
+# ban; replace 'Never patch a working rule' with 'Consider avoiding patching
+# a working rule'; delete the ban paragraph outright.
+node -e '
+  const fs = require("fs");
+  const path = process.argv[1] + "/.claude/rules/authoring.md";
+  const text = fs.readFileSync(path, "utf8");
+  const paragraphs = text.split(/\n\s*\n/).map((p) =>
+    p.split("\n").filter((l) => !l.trim().startsWith("|")).join(" ").replace(/\s+/g, " ").trim()
+  );
+  const matches = paragraphs.filter((p) => /exemption clause/i.test(p));
+  if (matches.length === 0) { console.error("no paragraph (with table lines stripped) mentions \"exemption clause\""); process.exit(1); }
+  const need = [/never/i, /re-cut/i, /observable predicate/i];
+  const found = matches.some((p) => need.every((re) => re.test(p)));
+  if (!found) {
+    const missing = matches.map((p) => need.filter((re) => !re.test(p)).map(String).join(", ")).join(" | ");
+    console.error("no matching paragraph carries all three markers; missing per paragraph: " + missing);
+    process.exit(1);
+  }
+' "$root"
+if [ $? -eq 0 ]; then
   ok "the authoring rules forbid patching a rule with an exemption clause and require re-cutting it on an observable predicate"
 else
-  no "the authoring rules do not carry both halves of the exemption-clause ban"
+  no "the authoring rules do not carry both halves of the exemption-clause ban in one paragraph"
 fi
 
 # Criterion 4: the home page exists and is scoped to both authoring
