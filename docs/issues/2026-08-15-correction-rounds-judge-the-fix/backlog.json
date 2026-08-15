@@ -38,6 +38,136 @@
             "summary": "A correction round’s reviewer is dispatched against the previous round’s findings and the fix’s diff range, which travel in its prompt because it reads nothing: the verdict schema gains the findings and the commit reviewed, and agents/reviewer.md gains the rules for verdicting each finding addressed or not, counting only those and new fix-diff breakage, and parking everything else as an observation."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-correction-rounds-judge-the-fix\nThis increment is worked on its own branch: `claude/correction-rounds-judge-the-fix--i1`, off `claude/correction-rounds-judge-the-fix`.\nBefore anything else, on `claude/correction-rounds-judge-the-fix`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json i1 claude/correction-rounds-judge-the-fix--i1`, commit that state change and push `claude/correction-rounds-judge-the-fix`. Then create the branch with `git checkout -b claude/correction-rounds-judge-the-fix--i1`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-correction-rounds-judge-the-fix/issue.md one increment at a time, and increment 1 is yours:\n  A correction round's review is scoped to the findings and the fix — A correction round's reviewer is dispatched to judge the fix for the previous round's findings instead of the increment afresh: its prompt names those findings and the fix's diff range, it verdicts each of them as addressed or not, new breakage inside the fix diff is a finding, anything else is an observation that neither blocks nor extends the loop, and the first round of an increment is dispatched and judged exactly as before.\nWhat it has to satisfy:\n  - A correction round's review prompt names the previous verdict's findings and the fix's diff range.\n  - The reviewer verdicts each named finding as addressed or not addressed, where addressed means the defect no longer exists, not that a fix was attempted.\n  - New breakage inside the fix diff is a finding.\n  - A remark outside the named findings and outside the fix diff is an observation in the summary; it does not block the increment and does not start another round.\n  - The verdict's `findingCount` counts only not-addressed findings and new fix-diff findings.\n  - The reviewer still reads nothing out of `backlog.json`; whatever it needs travels in its prompt.\n  - The first round of an increment is unchanged.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json i1 research:i1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json i1 research:i1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:i1.0",
+          "at": "2026-08-15T10:30:44.320Z",
+          "return": {
+            "cases": [
+              {
+                "case": "Case A item 1 (mode w26): the correction round's review prompt names the previous verdict's findings (MARKER-FINDING-CLAIM, MARKER-FINDING-REPRO)",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "assertTrue on review:i1.1's prompt containing MARKER-FINDING-CLAIM and MARKER-FINDING-REPRO. Failed today: \"the correction round's review prompt does not name the previous verdict's findings\""
+              },
+              {
+                "case": "Case A item 2: the prompt names the fix's diff range, `git diff MARKER-REVIEW-HEAD..HEAD`",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Failed today: \"the correction round's review prompt does not name the fix's diff range\""
+              },
+              {
+                "case": "Case A item 3: the prompt does not name the increment range `git diff issue-branch...HEAD`, only the fix range",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Failed today: \"the correction round's review prompt names the increment's diff range instead of the fix's — it judges the increment again, not the fix\""
+              },
+              {
+                "case": "Case A item 4: the prompt matches /correction round/i",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Failed today: \"the correction round's review prompt does not say a correction round is what it is judging\""
+              },
+              {
+                "case": "Case A item 5: the prompt reads no step of backlog.json and still says the run state is closed to the reviewer ('read nothing out of')",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Passes today: round 1's reviewer prompt already carries no `steps docs/issues/x/backlog.json` read and already says 'read nothing out of', unchanged from the reviewer's existing independence. This case guards that the new findings/fix-diff prompt keeps that invariant rather than proving it currently broken."
+              },
+              {
+                "case": "Case A item 6: the prompt still carries the closed list of commands (CHECK-MARKER)",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Passes today: the checks already reach every round's review prompt regardless of round number. Guards that the correction prompt is not rebuilt without them."
+              },
+              {
+                "case": "Case A item 7: on review:i1.0 (round 0), the prompt still names the increment range and carries neither a finding marker nor 'correction round'",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Passes today: round 0 is unaffected by this change, so it already dispatches this way. Guards that the round>0 form is not switched on for round 0 too."
+              },
+              {
+                "case": "Case A item 8: the review prompt carries the recorded-field lines `- \\`findings\\`` and `- \\`head\\``",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Failed today: \"the review prompt does not tell the reviewer to record findings and head, so a correction round could never be scoped to them\""
+              },
+              {
+                "case": "Case A item 9: the workflow source's `const VERDICT = { ... }` schema names findings and head, and both are in its required: line",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round's review is dispatched against the findings and the fix's diff (mode w26)",
+                "got": "Failed today: \"the workflow source names no const VERDICT schema block\" — no block matching `const VERDICT = { ... };` exists yet in workflows/agile-loop.js under that regex."
+              },
+              {
+                "case": "Case B item 1 (mode w27): a correction round resumed from the state (no findings, no head recorded) falls back to naming the increment's diff range `git diff issue-branch...HEAD`",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round resumed from the state is dispatched as a first round, not as a broken one (mode w27)",
+                "got": "Passes today: with no correction-round scoping implemented at all yet, every round unconditionally uses the increment's diff range, which already is the fallback the case pins. The whole mode w27, all three assertions and the label sequence, is green on the tree as it stands — see openQuestions."
+              },
+              {
+                "case": "Case B item 2: the prompt renders neither `undefined` nor `git diff ..HEAD` — no command built from values a restart dropped",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round resumed from the state is dispatched as a first round, not as a broken one (mode w27)",
+                "got": "Passes today, for the same reason as item 1 above."
+              },
+              {
+                "case": "Case B item 3: the prompt does not match /correction round/i when no findings are in hand",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round resumed from the state is dispatched as a first round, not as a broken one (mode w27)",
+                "got": "Passes today, for the same reason as item 1 above."
+              },
+              {
+                "case": "Case C item 1 (criterion 2): the paragraph under the correction-round heading carries 'addressed', 'no longer exist' and 'attempt' together",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (rule table)",
+                "got": "Failed today: \"these rules of the correction-round scope stand in no paragraph of agents/reviewer.md\" lists \"criterion 2, addressed means the defect is gone, not that a fix was attempted\" — no correction-round section exists yet on agents/reviewer.md."
+              },
+              {
+                "case": "Case C item 2 (criterion 3): the paragraph carries 'fix', 'diff', 'finding' and 'broke|breakage|introduc' together",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (rule table)",
+                "got": "Failed today: same list names \"criterion 3, new breakage inside the fix diff is a finding\"."
+              },
+              {
+                "case": "Case C item 3 (criterion 4): the paragraph carries 'observation', 'summary', 'outside' and 'round' together",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (rule table)",
+                "got": "Failed today: same list names \"criterion 4, a remark outside the named findings and the fix diff is an observation that neither blocks nor extends the loop\"."
+              },
+              {
+                "case": "Case C item 4 (criterion 5): the paragraph carries 'findingcount' and 'not addressed|not-addressed' together",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (rule table)",
+                "got": "Failed today: same list names \"criterion 5, findingCount counts only not-addressed findings and new fix-diff findings\"."
+              },
+              {
+                "case": "Case C item 5 (criterion 1, the page's side): the paragraph carries 'prompt', 'finding' and 'diff' together",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (rule table)",
+                "got": "Failed today: same list names \"criterion 1, the prompt tells the reviewer where the findings and the fix diff are\"."
+              },
+              {
+                "case": "Case C item 6: `grep -inE 'every round starts fresh|knows nothing of the earlier ones' agents/reviewer.md` finds nothing",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (old blanket statement)",
+                "got": "Failed today: \"agents/reviewer.md still claims every round starts fresh\" — grep found line 26-27: \"Every round starts fresh, this one included. Your prompt names the round, and a later round knows nothing of the earlier ones\"."
+              },
+              {
+                "case": "Case C item 7: `grep -inE 'the findings themselves it never sees' agents/reviewer.md` finds nothing",
+                "file": "test-repo.sh",
+                "testName": "=== a correction round judges the fix (old blanket statement)",
+                "got": "Failed today: \"agents/reviewer.md still claims it never sees the findings themselves, though the prompt now carries them\". Written collapsing the page first (tr '\\n' ' '), the way the mutation-standard section's existing case does, because the phrase wraps across a line break in the current prose ('...the findings themselves it never\\n  sees...'); a literal single-line grep against the un-collapsed page would find nothing regardless of whether the page still makes the claim, which is not what the plan's break condition asks the case to catch."
+              }
+            ],
+            "openQuestions": [
+              "The test plan expected case B (mode w27) to be red on the tree as it stands, alongside case A and case C. It is not: with no correction-round scoping implemented yet, every round already renders the increment's diff range unconditionally and never says 'correction round', which is exactly the fallback the case pins, so all three assertions and the label sequence pass today. The case still meets the mutation standard — it fails if the fallback is built from `previousVerdict.head` without checking it is present, or if `correctionScope` fires whenever `round > 0` regardless of whether findings exist — but it earns its place as a regression guard rather than a currently-failing case, which the plan did not anticipate.",
+              "The plan's item 9 (Case A) names 'the const VERDICT = { … } block' in the workflow source; the driver's check greps for a literal `const VERDICT = {` declaration and its `required:` line. If the implementer's schema is not a single `const VERDICT = { ... };` block in that exact shape (e.g. built across statements, or named differently), the case as written would report the block missing even after the fields are added — worth a look once the production change lands.",
+              "No CLAUDE.md exists for test-repo.sh and the plan explicitly says not to write one: the suite-doc check in test-repo.sh only requires a CLAUDE.md for a directory holding a *.test.mjs, and a CLAUDE.md at the repository root would load as project memory inherited by every subagent this session dispatches, which .claude/rules/agents.md forbids. This is recorded here per the plan's instruction; no doc was written or is missing."
+            ],
+            "questions": [],
+            "summary": "Added mode w26 (a correction round's review prompt is scoped to the previous verdict's findings and the fix's diff range, not the increment again) and mode w27 (a correction round resumed from the state falls back to the first-round form) to test-repo.sh's workflow driver, extending verdictReturnWithFinding with findings/head fixtures, and added a new '=== a correction round judges the fix' section pinning the five new rules on agents/reviewer.md plus two guards against contradicting the old prose. bash test-repo.sh: 88 cases, 4 fail (mode w26's findings/diff-scoping assertions and the schema check; the three new agents/reviewer.md rule checks), exit 1 — all for the missing behaviour, none an import or syntax error. No suite doc exists or was written for test-repo.sh, per the plan."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-correction-rounds-judge-the-fix\nThis increment is worked on branch `claude/correction-rounds-judge-the-fix--i1`. Before anything else make sure you are on it: `git fetch origin claude/correction-rounds-judge-the-fix--i1` and check it out; if the remote does not have it, create it from `claude/correction-rounds-judge-the-fix` and push it with `-u`.\nThis run works docs/issues/2026-08-15-correction-rounds-judge-the-fix/issue.md one increment at a time, and increment 1 is yours:\n  A correction round's review is scoped to the findings and the fix — A correction round's reviewer is dispatched to judge the fix for the previous round's findings instead of the increment afresh: its prompt names those findings and the fix's diff range, it verdicts each of them as addressed or not, new breakage inside the fix diff is a finding, anything else is an observation that neither blocks nor extends the loop, and the first round of an increment is dispatched and judged exactly as before.\nWhat it has to satisfy:\n  - A correction round's review prompt names the previous verdict's findings and the fix's diff range.\n  - The reviewer verdicts each named finding as addressed or not addressed, where addressed means the defect no longer exists, not that a fix was attempted.\n  - New breakage inside the fix diff is a finding.\n  - A remark outside the named findings and outside the fix diff is an observation in the summary; it does not block the increment and does not start another round.\n  - The verdict's `findingCount` counts only not-addressed findings and new fix-diff findings.\n  - The reviewer still reads nothing out of `backlog.json`; whatever it needs travels in its prompt.\n  - The first round of an increment is unchanged.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json i1 research:i1.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json i1 tests:i1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json i1 tests:i1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `summary`\n"
         }
       ],
       "attempts": []
