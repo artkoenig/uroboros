@@ -335,9 +335,9 @@ const PUSH = {
 
 // The fields a role writes into the run state. The prompt names them and stops
 // there: what each one holds is on the agent's own page, which is where a
-// role-specific rule belongs, and `questions` and `summary` mean the same in
-// every role, so the shared brief defines those two. A description here would
-// be a third copy of a text that already has an owner.
+// role-specific rule belongs, and `rulings`, `questions` and `summary` mean the
+// same in every role, so the shared brief defines those three. A description
+// here would be a third copy of a text that already has an owner.
 //
 // They are named in the dispatch prompt rather than in a schema, because the
 // schema describes what comes back to this script and these never do: they are
@@ -350,16 +350,25 @@ const PLAN_PAYLOAD = [
   'testPlan',
   'checks',
   'questions',
+  'rulings',
   'summary',
 ]
 
-const TESTS_PAYLOAD = ['cases', 'openQuestions', 'questions', 'summary']
+const TESTS_PAYLOAD = ['cases', 'openQuestions', 'questions', 'rulings', 'summary']
 
-const BUILD_PAYLOAD = ['deviations', 'commands', 'blockers', 'questions', 'summary']
+const BUILD_PAYLOAD = ['deviations', 'commands', 'blockers', 'questions', 'rulings', 'summary']
 
-const VERDICT_PAYLOAD = ['findings', 'findingCount', 'allDirect', 'reason', 'questions', 'summary']
+const VERDICT_PAYLOAD = [
+  'findings',
+  'findingCount',
+  'allDirect',
+  'reason',
+  'questions',
+  'rulings',
+  'summary',
+]
 
-const CUT_PAYLOAD = ['questions', 'summary']
+const CUT_PAYLOAD = ['questions', 'rulings', 'summary']
 
 // The reviewer is handed no part of the plan — that is what keeps it an
 // independent pair of eyes. So the one thing it needs, the list of commands
