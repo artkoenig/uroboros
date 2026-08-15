@@ -54,8 +54,10 @@ prints the export block. Two ways to use it, and the choice matters:
   settings file would have every contributor exporting to a collector they do
   not run.
 
-Either way, a **new** session has to be started afterwards. Say that out loud
-when you hand this over; it is the one step that silently produces no data.
+Either way, a **new** session has to be started afterwards. Never hand the
+setup over without saying that out loud — not "they will start a new session
+anyway": it is the one step that silently produces no data, and an empty
+measurement directory reads as a broken collector.
 
 ## Check that it arrives
 
@@ -63,10 +65,12 @@ when you hand this over; it is the one step that silently produces no data.
 argus check
 ```
 
-Run it inside the environment the agent runs in. It walks the export path the
-exporter takes — reachable, one instance, ingest accepted, record stored — and
-names the step that broke. Exit 1 when anything failed, so it works in a
-script.
+Never run it outside the environment the agent runs in — not "my shell is close
+enough": the exporter reads that environment and no other, so a check run
+anywhere else passes on variables nothing is exporting with. It walks the
+export path the exporter takes — reachable, one instance, ingest accepted,
+record stored — and names the step that broke. Exit 1 when anything failed, so
+it works in a script.
 
 ## Watch a run while it runs
 
@@ -103,9 +107,10 @@ That replays it and writes nothing into it, however old it is.
 
 ## An old session, or one already running
 
-There is nothing to recover. Telemetry not exported at the time was never
-produced, and no directory holds it. Say so and offer the measurable thing: a
-new session doing the same work.
+Never offer to recover it — not "there may be a log somewhere": telemetry not
+exported at the time was never produced, no directory holds it, and the search
+ends empty however long it runs. Say that there is nothing to recover, and
+offer the measurable thing: a new session doing the same work.
 
 ## What this is not
 

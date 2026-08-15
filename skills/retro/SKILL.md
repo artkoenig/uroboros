@@ -13,14 +13,16 @@ Generate a structured English session retrospective for an issue based on Claude
 When invoked to run a retro for an issue, follow these steps:
 
 1. **Locate the session log file:**
-   Identify the log file to parse (either via an explicit path parameter or by running `bin/parse-agent-log --latest`).
+   Where the caller named a log file, parse that one. Where the caller named none, run `bin/parse-agent-log --latest` and parse the file it names.
 
 2. **Extract data:**
    Execute `bin/parse-agent-log <path> --format all` to extract quantitative metrics (tokens, tool calls, errors, thinking blocks) and the transcript markdown.
 
-   A run leaves the session log, the issue directory's `backlog.json` and the
-   git history, and those are the whole record: no agent writes a prose report
-   of its own, so do not go looking for one.
+   Never go looking for a prose report of the run — not "there must be a
+   summary somewhere": no agent writes one, and the search spends the retro's
+   context before it has read a single metric. A run leaves the session log,
+   the issue directory's `backlog.json` and the git history, and those are the
+   whole record.
 
 3. **Synthesize the English Retro:**
    Analyze the parsed data and transcript to synthesize a retrospective answering these 10 core workflow questions across 5 categories in English:
@@ -45,7 +47,11 @@ When invoked to run a retro for an issue, follow these steps:
      - Which recurring manual steps should be encapsulated into dedicated CLI tools or scripts?
      - Which errors were caused by missing environment pre-requisites before test execution?
 
-   Include a **Session Metrics Summary** table, a **Per-Agent Breakdown** table (main agent vs each subagent), and a **Mermaid Sequence Diagram** illustrating the interaction flow between User, Main Agent, Subagents, and Tools/System.
+   The retrospective carries these three as well, a section per slot and no slot empty:
+
+   - **Session Metrics Summary** — a table.
+   - **Per-Agent Breakdown** — a table, the main agent against each subagent.
+   - **Mermaid Sequence Diagram** — the interaction flow between User, Main Agent, Subagents and Tools/System.
 
 4. **Append the formatted section:**
    Append the formatted Retrospective section directly under the `## Retro` heading in the active issue document (e.g. at `docs/issues/<timestamp>-<slug>/issue.md`). Where the document has no such heading yet, add it at the end of the file first.
