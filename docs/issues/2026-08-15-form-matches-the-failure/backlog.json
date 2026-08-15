@@ -36,6 +36,102 @@
             "summary": "The four-row form table and the ban on exemption clauses get one home, a new path-scoped rule page .claude/rules/authoring.md that loads for whoever opens a file under skills/ or agents/, with a one-sentence pointer from each of the two existing authoring pages and twelve new cases in test-repo.sh. The shared brief was rejected as the home because it ships to every project and binds agents at run time, not the people who write uroboros pages."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on its own branch: `claude/authoring-rule-form-matching-c5ygkt--INC-1`, off `claude/authoring-rule-form-matching-c5ygkt`.\nBefore anything else, on `claude/authoring-rule-form-matching-c5ygkt`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-1 claude/authoring-rule-form-matching-c5ygkt--INC-1`, commit that state change and push `claude/authoring-rule-form-matching-c5ygkt`. Then create the branch with `git checkout -b claude/authoring-rule-form-matching-c5ygkt--INC-1`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 1 is yours:\n  The authoring rules pick a rule's form by the failure it prevents — Whoever edits a page in this repository finds in the authoring rules a four-row table that picks the form of a correction from the failure class it prevents, and a standing ban on patching a working rule with an exemption clause. Today that choice is made by taste and re-learned through failed agent runs.\nWhat it has to satisfy:\n  - The authoring rules carry a table of exactly four rows; each row names a failure class, the form that works against it, the form that fails against it, and the reason in one sentence.\n  - The four rows are: a rule skipped under pressure gets a prohibition carrying its price and the verbatim rationalisation it counters; a wrong output shape gets a recipe stating what the output is; an omitted required element gets a required slot in the schema or template; behaviour that depends on a condition gets a rule keyed to an observable predicate.\n  - The authoring rules forbid patching an existing rule with an exemption clause and require re-cutting the rule on an observable predicate instead.\n  - The table and the exemption rule reach whoever authors a skill page and whoever authors an agent page alike, and the repository's existing rule about one home per rule is not broken to achieve it — no page restates what another page already carries.\n  - The commands the increment names all exit 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: A description names the occasion, and every shipped description is held to it.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-form-matches-the-failure/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-1 research:INC-1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-1 research:INC-1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:INC-1.0",
+          "at": "2026-08-15T13:46:05.038Z",
+          "return": {
+            "cases": [
+              {
+                "case": "Criterion 1 — four body rows, four non-empty cells each",
+                "file": "test-repo.sh",
+                "testName": "the authoring rules carry a table of exactly four body rows, each with four non-empty cells",
+                "demands": "Parses .claude/rules/authoring.md, collects lines starting with '|', drops the header and the dashes-only separator, and asserts exactly four body rows remain, each splitting into exactly four non-empty cells.",
+                "got": "FAIL — node throws ENOENT: .claude/rules/authoring.md does not exist yet."
+              },
+              {
+                "case": "Criterion 1 — each reason is one sentence",
+                "file": "test-repo.sh",
+                "testName": "every reason cell in the authoring rules table is one sentence",
+                "demands": "Asserts the fourth cell of every body row matches /^[^.]+\\.$/ — one full stop, at the end.",
+                "got": "FAIL — node throws ENOENT: .claude/rules/authoring.md does not exist yet."
+              },
+              {
+                "case": "Criterion 2, row 1 — skipped-under-pressure row",
+                "file": "test-repo.sh",
+                "testName": "row 1 of the authoring rules table pairs 'skipped under pressure' with a prohibition, its price and the rationalisation",
+                "demands": "A single line of the file carries 'skipped under pressure', 'prohibition', 'price' and 'rationalisation' together.",
+                "got": "FAIL — grep: .claude/rules/authoring.md: No such file or directory."
+              },
+              {
+                "case": "Criterion 2, row 2 — wrong output shape row",
+                "file": "test-repo.sh",
+                "testName": "row 2 of the authoring rules table pairs 'shape' with a recipe",
+                "demands": "A single line carries 'shape' and 'recipe' together.",
+                "got": "FAIL — grep: .claude/rules/authoring.md: No such file or directory."
+              },
+              {
+                "case": "Criterion 2, row 3 — omitted required element row",
+                "file": "test-repo.sh",
+                "testName": "row 3 of the authoring rules table pairs 'omitted' with a required slot in the schema or template",
+                "demands": "A single line carries 'omitted', 'slot', and 'schema' or 'template' together.",
+                "got": "FAIL — grep: .claude/rules/authoring.md: No such file or directory."
+              },
+              {
+                "case": "Criterion 2, row 4 — conditional behaviour row",
+                "file": "test-repo.sh",
+                "testName": "row 4 of the authoring rules table pairs 'condition' with an observable predicate",
+                "demands": "A single line carries 'condition' and 'observable predicate' together.",
+                "got": "FAIL — grep: .claude/rules/authoring.md: No such file or directory."
+              },
+              {
+                "case": "Criterion 3 — the exemption-clause ban and the re-cut it requires",
+                "file": "test-repo.sh",
+                "testName": "the authoring rules forbid patching a rule with an exemption clause and require re-cutting it on an observable predicate",
+                "demands": "Collapses the page to one line and asserts it carries 'exemption clause', 're-cut' and 'observable predicate'.",
+                "got": "FAIL — test-repo.sh: line ...: .claude/rules/authoring.md: No such file or directory."
+              },
+              {
+                "case": "Criterion 4 — the home page exists and is scoped to both audiences",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/authoring.md exists and its paths: frontmatter lists both skills/** and agents/**",
+                "demands": "Asserts the file exists and its frontmatter paths: block lists both skills/** and agents/**.",
+                "got": "FAIL — .claude/rules/authoring.md is missing, or its paths: frontmatter does not list both skills/** and agents/**."
+              },
+              {
+                "case": "Criterion 4 — the skill-page author is pointed at the home",
+                "file": "test-repo.sh",
+                "testName": "skills/CLAUDE.md points a skill-page author at .claude/rules/authoring.md",
+                "demands": "Asserts skills/CLAUDE.md names .claude/rules/authoring.md.",
+                "got": "FAIL — skills/CLAUDE.md does not name .claude/rules/authoring.md."
+              },
+              {
+                "case": "Criterion 4 — the agent-page author is pointed at the home",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/agents.md points an agent-page author at .claude/rules/authoring.md",
+                "demands": "Asserts .claude/rules/agents.md names .claude/rules/authoring.md.",
+                "got": "FAIL — .claude/rules/agents.md does not name .claude/rules/authoring.md."
+              },
+              {
+                "case": "Criterion 4 — one home for the ban",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/authoring.md is the only page naming the exemption-clause ban",
+                "demands": "Mirrors chain_depth_owners: grep -lie 'exemption clause' over agents/*.md, skills/*/SKILL.md, skills/CLAUDE.md, .claude/rules/*.md, rulebook.md, README.md, GEMINI.md must equal .claude/rules/authoring.md exactly.",
+                "got": "FAIL — the phrase \"exemption clause\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone: (none)."
+              },
+              {
+                "case": "Criterion 4 — one home for the table",
+                "file": "test-repo.sh",
+                "testName": ".claude/rules/authoring.md is the only page naming 'rationalisation'",
+                "demands": "Same ownership check as above, keyed on 'rationalisation'.",
+                "got": "FAIL — the phrase \"rationalisation\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone: (none)."
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "summary": "Added the twelve planned cases for 'a rule's form is picked by the failure it prevents' as a new section in test-repo.sh, right before the summary block; ran `bash test-repo.sh` from the repository root and confirmed exactly the 12 new cases fail (all against the not-yet-created .claude/rules/authoring.md) while all 113 pre-existing cases still pass, going from 113 to 125 total cases."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-form-matches-the-failure\nThis increment is worked on branch `claude/authoring-rule-form-matching-c5ygkt--INC-1`. Before anything else make sure you are on it: `git fetch origin claude/authoring-rule-form-matching-c5ygkt--INC-1` and check it out; if the remote does not have it, create it from `claude/authoring-rule-form-matching-c5ygkt` and push it with `-u`.\nThis run works docs/issues/2026-08-15-form-matches-the-failure/issue.md one increment at a time, and increment 1 is yours:\n  The authoring rules pick a rule's form by the failure it prevents — Whoever edits a page in this repository finds in the authoring rules a four-row table that picks the form of a correction from the failure class it prevents, and a standing ban on patching a working rule with an exemption clause. Today that choice is made by taste and re-learned through failed agent runs.\nWhat it has to satisfy:\n  - The authoring rules carry a table of exactly four rows; each row names a failure class, the form that works against it, the form that fails against it, and the reason in one sentence.\n  - The four rows are: a rule skipped under pressure gets a prohibition carrying its price and the verbatim rationalisation it counters; a wrong output shape gets a recipe stating what the output is; an omitted required element gets a required slot in the schema or template; behaviour that depends on a condition gets a rule keyed to an observable predicate.\n  - The authoring rules forbid patching an existing rule with an exemption clause and require re-cutting the rule on an observable predicate instead.\n  - The table and the exemption rule reach whoever authors a skill page and whoever authors an agent page alike, and the repository's existing rule about one home per rule is not broken to achieve it — no page restates what another page already carries.\n  - The commands the increment names all exit 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: A description names the occasion, and every shipped description is held to it.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-1 research:INC-1.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-1 tests:INC-1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-form-matches-the-failure/backlog.json INC-1 tests:INC-1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `summary`\n"
         }
       ],
       "attempts": []

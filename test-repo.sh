@@ -2209,6 +2209,156 @@ else
 fi
 
 echo
+echo "=== a rule's form is picked by the failure it prevents"
+
+# Criterion 1: exactly four body rows, each with a non-empty failure class, a
+# non-empty working form, a non-empty failing form and a one-sentence reason.
+# Break: add a fifth row, delete one, or blank any cell — in particular the
+# 'form that fails' cell of any row.
+node -e '
+  const fs = require("fs");
+  const path = process.argv[1] + "/.claude/rules/authoring.md";
+  const text = fs.readFileSync(path, "utf8");
+  const rows = text.split("\n").filter((l) => l.trim().startsWith("|"));
+  if (rows.length < 2) { console.error("no table found"); process.exit(1); }
+  const body = rows.slice(1).filter((l) => !/^\|[\s:|-]+\|$/.test(l.trim()));
+  if (body.length !== 4) { console.error("expected 4 body rows, found " + body.length); process.exit(1); }
+  for (const row of body) {
+    const cells = row.split("|").slice(1, -1).map((c) => c.trim());
+    if (cells.length !== 4) { console.error("row does not split into 4 cells: " + row); process.exit(1); }
+    if (cells.some((c) => c.length === 0)) { console.error("empty cell in row: " + row); process.exit(1); }
+  }
+' "$root"
+if [ $? -eq 0 ]; then
+  ok "the authoring rules carry a table of exactly four body rows, each with four non-empty cells"
+else
+  no "the authoring rules do not carry a well-formed four-row table"
+fi
+
+# Criterion 1, the reason cell is one sentence: one full stop, at the end.
+# Break: split any reason cell into two sentences.
+node -e '
+  const fs = require("fs");
+  const path = process.argv[1] + "/.claude/rules/authoring.md";
+  const text = fs.readFileSync(path, "utf8");
+  const rows = text.split("\n").filter((l) => l.trim().startsWith("|"));
+  const body = rows.slice(1).filter((l) => !/^\|[\s:|-]+\|$/.test(l.trim()));
+  for (const row of body) {
+    const cells = row.split("|").slice(1, -1).map((c) => c.trim());
+    const reason = cells[3] || "";
+    if (!/^[^.]+\.$/.test(reason)) { console.error("reason cell is not one sentence: " + reason); process.exit(1); }
+  }
+' "$root"
+if [ $? -eq 0 ]; then
+  ok "every reason cell in the authoring rules table is one sentence"
+else
+  no "a reason cell in the authoring rules table is not one sentence"
+fi
+
+# Criterion 2, row 1: a rule skipped under pressure gets a prohibition
+# carrying its price and the verbatim rationalisation it counters. Break:
+# drop the price, or the verbatim rationalisation, from row 1's winning form.
+if grep -qi 'skipped under pressure' "$root/.claude/rules/authoring.md" &&
+  grep -i 'skipped under pressure' "$root/.claude/rules/authoring.md" | grep -qi 'prohibition' &&
+  grep -i 'skipped under pressure' "$root/.claude/rules/authoring.md" | grep -qi 'price' &&
+  grep -i 'skipped under pressure' "$root/.claude/rules/authoring.md" | grep -qi 'rationalisation'; then
+  ok "row 1 of the authoring rules table pairs 'skipped under pressure' with a prohibition, its price and the rationalisation"
+else
+  no "row 1 of the authoring rules table does not pair 'skipped under pressure' with a prohibition, its price and the rationalisation on one line"
+fi
+
+# Criterion 2, row 2: a wrong output shape gets a recipe stating what the
+# output is. Break: change row 2's winning form to a list of prohibitions.
+if grep -i 'shape' "$root/.claude/rules/authoring.md" | grep -qi 'recipe'; then
+  ok "row 2 of the authoring rules table pairs 'shape' with a recipe"
+else
+  no "row 2 of the authoring rules table does not pair 'shape' with a recipe on one line"
+fi
+
+# Criterion 2, row 3: an omitted required element gets a required slot in the
+# schema or template. Break: replace the required slot with prose asking for
+# the element.
+if grep -i 'omitted' "$root/.claude/rules/authoring.md" | grep -qi 'slot' &&
+  grep -i 'omitted' "$root/.claude/rules/authoring.md" | grep -Eqi 'schema|template'; then
+  ok "row 3 of the authoring rules table pairs 'omitted' with a required slot in the schema or template"
+else
+  no "row 3 of the authoring rules table does not pair 'omitted' with a required slot in the schema or template on one line"
+fi
+
+# Criterion 2, row 4: behaviour that depends on a condition gets a rule keyed
+# to an observable predicate. Break: re-key row 4 on a judgement call instead
+# of a predicate.
+if grep -i 'condition' "$root/.claude/rules/authoring.md" | grep -qi 'observable predicate'; then
+  ok "row 4 of the authoring rules table pairs 'condition' with an observable predicate"
+else
+  no "row 4 of the authoring rules table does not pair 'condition' with an observable predicate on one line"
+fi
+
+# Criterion 3: the ban on patching an existing rule with an exemption clause,
+# and the re-cut on an observable predicate it requires. Break: delete the
+# ban paragraph — 'exemption clause' and 're-cut' both vanish, since row 4's
+# failing form is worded without either.
+authoring_collapsed="$(tr '\n' ' ' <"$root/.claude/rules/authoring.md" | tr -s ' ')"
+if echo "$authoring_collapsed" | grep -qi 'exemption clause' &&
+  echo "$authoring_collapsed" | grep -qi 're-cut' &&
+  echo "$authoring_collapsed" | grep -qi 'observable predicate'; then
+  ok "the authoring rules forbid patching a rule with an exemption clause and require re-cutting it on an observable predicate"
+else
+  no "the authoring rules do not carry both halves of the exemption-clause ban"
+fi
+
+# Criterion 4: the home page exists and is scoped to both authoring
+# audiences. Break: drop either pattern from the frontmatter paths: list, or
+# delete the file. The existing scoping cases above additionally prove the
+# page is path-scoped at all and that both patterns match tracked files.
+authoring_frontmatter="$(sed -n '2,/^---$/p' "$root/.claude/rules/authoring.md" 2>/dev/null)"
+if [ -f "$root/.claude/rules/authoring.md" ] &&
+  echo "$authoring_frontmatter" | grep -q 'skills/\*\*' &&
+  echo "$authoring_frontmatter" | grep -q 'agents/\*\*'; then
+  ok ".claude/rules/authoring.md exists and its paths: frontmatter lists both skills/** and agents/**"
+else
+  no ".claude/rules/authoring.md is missing, or its paths: frontmatter does not list both skills/** and agents/**"
+fi
+
+# Criterion 4: the skill-page author is pointed at the home. Break: delete
+# that pointer sentence.
+if grep -q '.claude/rules/authoring.md' "$root/skills/CLAUDE.md"; then
+  ok "skills/CLAUDE.md points a skill-page author at .claude/rules/authoring.md"
+else
+  no "skills/CLAUDE.md does not name .claude/rules/authoring.md"
+fi
+
+# Criterion 4: the agent-page author is pointed at the home. Break: delete
+# that pointer sentence.
+if grep -q '.claude/rules/authoring.md' "$root/.claude/rules/agents.md"; then
+  ok ".claude/rules/agents.md points an agent-page author at .claude/rules/authoring.md"
+else
+  no ".claude/rules/agents.md does not name .claude/rules/authoring.md"
+fi
+
+# Criterion 4: one home for the ban — mirrors the chain_depth_owners case
+# above. Break, either direction: restate the ban on a second page (two
+# paths match), or delete it from the owner (none match).
+exemption_owners="$(grep -lie 'exemption clause' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$exemption_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming the exemption-clause ban"
+else
+  no "the phrase \"exemption clause\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${exemption_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Criterion 4: one home for the table — same ownership check, keyed on
+# 'rationalisation'. Break, either direction: restate a table row on another
+# page, or delete row 1 from the owner.
+rationalisation_owners="$(grep -lie 'rationalisation' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$rationalisation_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming 'rationalisation'"
+else
+  no "the phrase \"rationalisation\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${rationalisation_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else
