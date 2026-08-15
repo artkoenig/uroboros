@@ -731,6 +731,9 @@ const DISJOINT_MARKERS = [
   'MARKER-CUT-QUESTION',
   'MARKER-BUILD-QUESTION',
   'MARKER-HUMAN-ANSWER',
+  'MARKER-FINDING-CLAIM',
+  'MARKER-FINDING-REPRO',
+  'MARKER-REVIEW-HEAD',
   'MARKER-RULING-CUT',
   'MARKER-RULING-PLAN',
   'MARKER-RULING-TESTS',
@@ -774,6 +777,10 @@ const verdictReturnWithFinding = {
   findingCount: 1,
   allDirect: false,
   reason: 'MARKER-VERDICT-REASON',
+  findings: [
+    { claim: 'MARKER-FINDING-CLAIM', reproduction: 'MARKER-FINDING-REPRO', criterion: 'does i1' },
+  ],
+  head: 'MARKER-REVIEW-HEAD',
   questions: [],
   summary: 'verdict summary',
 };
@@ -854,6 +861,26 @@ const resumeState = () =>
       idxIncrement('i1', {
         branch: 'issue-branch--i1',
         steps: [idxStep('research:i1.0', planReturn), idxStep('tests:i1.0', testsReturn)],
+      }),
+    ],
+    [idxStep('decompose', decomposeReturnOne)],
+  );
+
+// A session that died right after round 0's review filed a finding, before the
+// correction round it opens ran a step. `idxStep` drops `findings` and `head`
+// off the recorded review — what a restart really leaves behind — so the
+// resumed correction round has nothing but `round > 0` to go on.
+const correctionResumeState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        branch: 'issue-branch--i1',
+        steps: [
+          idxStep('research:i1.0', planReturn),
+          idxStep('tests:i1.0', testsReturn),
+          idxStep('implement:i1.0', buildReturn),
+          idxStep('review:i1.0', verdictReturnWithFinding),
+        ],
       }),
     ],
     [idxStep('decompose', decomposeReturnOne)],
@@ -1082,6 +1109,10 @@ function contextFor(m) {
       return { stateReturn: rulingResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     case 'w28':
       return { stateReturn: closedRulingState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
+    case 'w29':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithFinding : verdictReturnClean) };
+    case 'w30':
+      return { stateReturn: correctionResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1699,6 +1730,59 @@ async function main() {
     const publishCall = calls.find((c) => c.label === 'publish');
     assertTrue(!!publishCall && publishCall.prompt.includes('research:i1.0: MARKER-RULING-ARCHIVED'),
       "the resumed run's publish prompt does not carry the closed increment's archived ruling");
+  } else if (mode === 'w29') {
+    // A correction round's review is scoped to the previous verdict's findings
+    // and the fix's diff range — it judges the fix, not the increment again.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0',
+       'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'],
+      'a review with findings does not open exactly one correction round');
+    const round1Review = calls.find((c) => c.label === 'review:i1.1');
+    assertTrue(!!round1Review && round1Review.prompt.includes('MARKER-FINDING-CLAIM') && round1Review.prompt.includes('MARKER-FINDING-REPRO'),
+      "the correction round's review prompt does not name the previous verdict's findings");
+    assertTrue(!!round1Review && round1Review.prompt.includes('git diff MARKER-REVIEW-HEAD..HEAD'),
+      "the correction round's review prompt does not name the fix's diff range");
+    assertTrue(!!round1Review && !round1Review.prompt.includes('git diff issue-branch...HEAD'),
+      "the correction round's review prompt names the increment's diff range instead of the fix's — it judges the increment again, not the fix");
+    assertTrue(!!round1Review && /correction round/i.test(round1Review.prompt),
+      "the correction round's review prompt does not say a correction round is what it is judging");
+    assertTrue(!!round1Review && !/\bsteps docs\/issues\/x\/backlog\.json/.test(round1Review.prompt) && /read nothing out of/i.test(round1Review.prompt),
+      'the correction round review is sent to read a step of the run state instead of carrying its brief in the prompt');
+    assertTrue(!!round1Review && round1Review.prompt.includes('CHECK-MARKER'),
+      "the correction round's review prompt does not carry the closed list of commands");
+
+    const round0Review = calls.find((c) => c.label === 'review:i1.0');
+    assertTrue(!!round0Review && round0Review.prompt.includes('git diff issue-branch...HEAD'),
+      "the first round's review prompt does not name the increment's diff range against the issue branch");
+    assertTrue(!!round0Review && !round0Review.prompt.includes('MARKER-FINDING-CLAIM') && !/correction round/i.test(round0Review.prompt),
+      'the first round of an increment is dispatched as though it were a correction round');
+    assertTrue(!!round0Review && round0Review.prompt.includes('- `findings`') && round0Review.prompt.includes('- `head`'),
+      "the review prompt does not tell the reviewer to record findings and head, so a correction round could never be scoped to them");
+
+    const verdictSchema = /const VERDICT = \{[\s\S]*?\n\}/.exec(src);
+    assertTrue(!!verdictSchema, 'the workflow source names no const VERDICT schema block');
+    if (verdictSchema) {
+      const block = verdictSchema[0];
+      assertTrue(/\bfindings\b/.test(block) && /\bhead\b/.test(block),
+        'the VERDICT schema does not name findings and head, so the reviewer is never asked for either');
+      const required = (block.match(/required:\s*\[[^\]]*\]/) || [''])[0];
+      assertTrue(/\bfindings\b/.test(required) && /\bhead\b/.test(required),
+        "the VERDICT schema's required: line does not list findings and head");
+    }
+  } else if (mode === 'w30') {
+    // A correction round resumed from the state has no findings and no head in
+    // hand — idxStep drops both — so it falls back to the first round's form
+    // instead of rendering a git command built from values a restart dropped.
+    assertEqualArrays(labels,
+      ['load-state', 'research:i1.1', 'tests:i1.1', 'implement:i1.1', 'review:i1.1', 'replan:i1', 'publish'],
+      'a correction round resumed from the state is not dispatched as a first round');
+    const round1Review = calls.find((c) => c.label === 'review:i1.1');
+    assertTrue(!!round1Review && round1Review.prompt.includes('git diff issue-branch...HEAD'),
+      "the resumed correction round's review prompt does not fall back to the increment's diff range");
+    assertTrue(!!round1Review && !round1Review.prompt.includes('undefined') && !round1Review.prompt.includes('git diff ..HEAD'),
+      "the resumed correction round's review prompt renders a git command built from values the restart dropped");
+    assertTrue(!!round1Review && !/correction round/i.test(round1Review.prompt),
+      "the resumed correction round's review prompt announces a correction round while naming no finding it corrects");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1753,6 +1837,8 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w26 "$wf_name: the rulings every step recorded reach the run's result and the publish prompt"
   run_driver "$wf" w27 "$wf_name: a resumed run recovers the rulings of the steps it skips"
   run_driver "$wf" w28 "$wf_name: a resumed run recovers the rulings of an increment an earlier session closed"
+  run_driver "$wf" w29 "$wf_name: a correction round's review is dispatched against the findings and the fix's diff"
+  run_driver "$wf" w30 "$wf_name: a correction round resumed from the state is dispatched as a first round, not as a broken one"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
@@ -1994,6 +2080,74 @@ if [ "$reviewer_probe_owners" = "$reviewer_probe_page" ]; then
 else
   no "the word \"probe\" is owned by more (or fewer) pages than agents/reviewer.md alone:"
   echo "${reviewer_probe_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+echo
+echo "=== a correction round judges the fix"
+
+# Same shape as the probe table above, for the same reason: a flat page-wide
+# grep would pass on a word the frontmatter already carries, so each rule is
+# pinned to one paragraph of the correction-round section that owns it.
+reviewer_correction_page="$root/agents/reviewer.md"
+declare -a reviewer_correction_rules=(
+  'correction round:criterion 2, addressed means the defect is gone, not that a fix was attempted:address:no longer exist:attempt'
+  'correction round:criterion 3, new breakage inside the fix diff is a finding:fix:diff:finding:broke|breakage|introduc'
+  'correction round:criterion 4, a remark outside the named findings and the fix diff is an observation that neither blocks nor extends the loop:observation:summary:outside:round'
+  'correction round:criterion 5, findingCount counts only not-addressed findings and new fix-diff findings:findingcount:not addressed|not-addressed'
+  'correction round:criterion 1, the prompt tells the reviewer where the findings and the fix diff are:prompt:finding:diff'
+)
+reviewer_correction_misses=""
+for rule in "${reviewer_correction_rules[@]}"; do
+  IFS=':' read -ra rule_fields <<<"$rule"
+  want="${rule_fields[0]}"
+  label="${rule_fields[1]}"
+  paragraphs="$(awk -v RS='' -v want="$want" '
+    /^## / { inside = tolower($0) ~ want; next }
+    inside { gsub(/\n/, " "); print }
+  ' "$reviewer_correction_page")"
+  matched="$paragraphs"
+  for ((field_index = 2; field_index < ${#rule_fields[@]}; field_index++)); do
+    term="${rule_fields[$field_index]}"
+    matched="$(echo "$matched" | grep -iE -- "$term" || true)"
+  done
+  if [ -z "$matched" ]; then
+    reviewer_correction_misses="${reviewer_correction_misses}${label}
+"
+  fi
+done
+if [ -z "$reviewer_correction_misses" ]; then
+  ok "every rule a correction round needs stands in its own paragraph of agents/reviewer.md"
+else
+  no "these rules of the correction-round scope stand in no paragraph of agents/reviewer.md:"
+  echo "$reviewer_correction_misses" | sed 's/^/       /'
+fi
+
+# The rules above catch an incomplete section, not a contradictory one: a page
+# that adds the correction-round section while leaving the old blanket
+# statement standing contradicts itself in the same breath, and the reader
+# follows whichever sentence it saw last.
+reviewer_correction_old_fresh="$(grep -inE 'every round starts fresh|knows nothing of the earlier ones' "$reviewer_correction_page" || true)"
+if [ -z "$reviewer_correction_old_fresh" ]; then
+  ok "agents/reviewer.md no longer claims every round starts fresh with no memory of the earlier ones"
+else
+  no "agents/reviewer.md still claims every round starts fresh:"
+  echo "$reviewer_correction_old_fresh" | sed 's/^/       /'
+fi
+
+# Collapsed first, the way the mutation-standard case above collapses
+# agents/reviewer.md before it greps: this exact sentence wraps across a line
+# break in the page's prose, and a plain grep would miss it there.
+reviewer_correction_collapsed="$(tr '\n' ' ' <"$reviewer_correction_page" | tr -s ' ')"
+if echo "$reviewer_correction_collapsed" | grep -qiE 'the findings themselves it never sees'; then
+  reviewer_correction_old_blind="the findings themselves it never sees"
+else
+  reviewer_correction_old_blind=""
+fi
+if [ -z "$reviewer_correction_old_blind" ]; then
+  ok "agents/reviewer.md no longer claims it never sees the findings themselves"
+else
+  no "agents/reviewer.md still claims it never sees the findings themselves, though the prompt now carries them:"
+  echo "$reviewer_correction_old_blind" | sed 's/^/       /'
 fi
 
 echo

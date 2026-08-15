@@ -44,15 +44,20 @@ export const meta = {
 // What this script does carry is steering: the cut, how deep the chain goes for
 // each increment, whether tests are needed, the closed list of commands the
 // reviewer runs, how many findings a review filed, and the questions that end a
-// run. Those few small values reach it as
-// each agent's structured return, and a resumed run recovers them from the
+// run. It also carries the findings themselves, which is the one exception: the
+// reviewer's brief cannot be a read, so a correction round's reviewer can only
+// be handed the round before's findings through this script. Those values reach
+// it as each agent's structured return, and a resumed run recovers them from the
 // state's index rather than from any agent re-emitting them. That is the whole
 // of the duplication left, and it is the price of a script that has no
 // filesystem: the workflow runtime gives it `args`, `agent`, `log` and `phase`
 // and nothing else.
 //
 // The reviewer is the one role outside all of this. It reads nothing and is
-// handed nothing any agent produced, because it is the check on them.
+// handed nothing any other role produced, because it is the check on them. The
+// single thing it is handed is what its own role filed in the round before: a
+// correction round's reviewer is given those findings and the diff of the fix
+// that answers them.
 
 const MAX_CORRECTIONS = 2
 
@@ -334,9 +339,35 @@ const BUILD = {
   additionalProperties: false,
 }
 
+// One finding of a review, as the round that answers it is handed it. It stands
+// beside the verdict rather than inside it so the verdict's own shape stays one
+// flat list of fields.
+const FINDING = {
+  type: 'object',
+  properties: {
+    claim: { type: 'string' },
+    reproduction: { type: 'string' },
+    criterion: { type: 'string' },
+  },
+  required: ['claim', 'reproduction', 'criterion'],
+  additionalProperties: false,
+}
+
+// The one schema that carries content rather than steering. Every other role
+// hands its work to the next role through the run state, and the reviewer is the
+// one role that reads nothing out of it — so the only route from one review to
+// the review of the round that answers it runs through this script, and the
+// findings have to travel in the verdict to get there.
 const VERDICT = {
   type: 'object',
   properties: {
+    findings: {
+      type: 'array',
+      description:
+        'The findings you recorded, so the next round\'s review can name them: the same ' +
+        'list, in the same words. Empty when you found nothing.',
+      items: FINDING,
+    },
     findingCount: {
       type: 'integer',
       description: 'How many findings you recorded. 0 means the increment is accepted.',
@@ -351,6 +382,13 @@ const VERDICT = {
       type: 'string',
       description: 'The `reason` you recorded. Empty when findingCount is 0.',
     },
+    head: {
+      type: 'string',
+      description:
+        'What `git rev-parse HEAD` printed on the branch you reviewed. The round after is ' +
+        'dispatched against it, so the fix\'s diff is exactly what landed after you looked. ' +
+        'Empty string when you could not read it.',
+    },
     questions: {
       type: 'array',
       items: { type: 'string' },
@@ -363,7 +401,16 @@ const VERDICT = {
     },
     summary: { type: 'string' },
   },
-  required: ['findingCount', 'allDirect', 'reason', 'questions', 'rulings', 'summary'],
+  required: [
+    'findings',
+    'findingCount',
+    'allDirect',
+    'reason',
+    'head',
+    'questions',
+    'rulings',
+    'summary',
+  ],
   additionalProperties: false,
 }
 
@@ -419,6 +466,7 @@ const VERDICT_PAYLOAD = [
   'findingCount',
   'allDirect',
   'reason',
+  'head',
   'questions',
   'rulings',
   'summary',
@@ -436,6 +484,23 @@ function checkList(checks) {
         checks.map((c) => `  - \`${c}\``).join('\n') +
         '\n'
     : 'No command counts for this increment: the list is empty.\n'
+}
+
+// The findings the round before filed, as the reviewer that judges the fix is
+// handed them: the claim, the reproduction it re-runs, and the criterion each
+// was filed against.
+function findingList(findings) {
+  return (
+    `The findings that review filed, all of them:\n` +
+    findings
+      .map(
+        (f, i) =>
+          `  ${i + 1}. ${f.claim}\n` +
+          `     Reproduction: ${f.reproduction}\n` +
+          `     Criterion: ${f.criterion || 'none'}\n`,
+      )
+      .join('')
+  )
 }
 
 // Every dispatch ends with the two calls that make its work durable: the
@@ -1061,21 +1126,50 @@ if (!blockedOnHuman.length) {
       if (asksTheHuman(buildLabel, build)) break
 
       const reviewLabel = `review:${task.id}.${round}`
+      // Captured before the dispatch, because the statement that awaits it is
+      // the one that reassigns `verdict`.
+      const previousVerdict = verdict
+      // What switches the prompt's form is findings in hand, not the round
+      // number: a resumed run replays a recorded review from the index's
+      // steering projection, which drops a list of objects, so after a restart a
+      // correction round is dispatched in the first round's form — the review it
+      // would have had before this change, never a prompt that names nothing.
+      const priorFindings =
+        round > 0 && previousVerdict && Array.isArray(previousVerdict.findings)
+          ? previousVerdict.findings.filter((f) => f && f.claim)
+          : []
+      const priorHead =
+        (previousVerdict &&
+          typeof previousVerdict.head === 'string' &&
+          previousVerdict.head.trim()) ||
+        ''
+      // The increment's diff is a fact of git — its branch against the
+      // merge-base with the issue branch — so no prose list of settled
+      // increments is needed: what earlier increments delivered is simply not
+      // in the range.
+      const incrementRange = incrementBranch
+        ? `The increment's diff is its branch against the merge-base with ` +
+          `\`${issueBranch}\`: judge \`git diff ${issueBranch}...HEAD\` (three dots), ` +
+          `whole, and nothing outside it.\n`
+        : `Check the whole diff against the repository's default branch.\n`
+      // An empty `head` falls back to the increment's range, so the prompt never
+      // renders a git command built from a value the run does not have.
+      const correctionScope =
+        `This is a correction round: the round before filed the findings below, this round ` +
+        `was run to fix them, and that fix is what you judge.\n` +
+        (priorHead
+          ? `The fix's diff is \`git diff ${priorHead}..HEAD\` (two dots): everything ` +
+            `committed since that review.\n`
+          : `The commit that review ran on was not recorded, so judge the increment's diff ` +
+            `instead.\n` + incrementRange) +
+        findingList(priorFindings)
       verdict = await step(reviewLabel, 'Review', () =>
         agent(
           `Issue directory: ${dir}\n` +
             questionBlock(reviewLabel) +
             branchBlock(task.id, incrementBranch, false) +
             `Review round ${round} of increment ${n}. ` +
-            // The increment's diff is a fact of git — its branch against the
-            // merge-base with the issue branch — so no prose list of settled
-            // increments is needed: what earlier increments delivered is
-            // simply not in the range.
-            (incrementBranch
-              ? `The increment's diff is its branch against the merge-base with ` +
-                `\`${issueBranch}\`: judge \`git diff ${issueBranch}...HEAD\` (three dots), ` +
-                `whole, and nothing outside it.\n`
-              : `Check the whole diff against the repository's default branch.\n`) +
+            (priorFindings.length ? correctionScope : incrementRange) +
             scope(task, increments, n) +
             checkList(lastChecks) +
             // The one role that reads nothing. It records into the state and

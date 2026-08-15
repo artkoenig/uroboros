@@ -80,7 +80,7 @@ gets there one question at a time.
 | [`researcher`](agents/researcher.md)         | *how* — the plan, the test plan, and the commands that judge it   |
 | [`test-author`](agents/test-author.md)       | the planned cases as failing tests, and nothing of its own        |
 | [`implementer`](agents/implementer.md)       | the code, until the closed list of commands is green              |
-| [`reviewer`](agents/reviewer.md)             | accepted or not — handed nothing any other agent produced         |
+| [`reviewer`](agents/reviewer.md)             | accepted or not — handed nothing any other role produced          |
 
 Orchestration lives in [`workflows/agile-loop.js`](workflows/agile-loop.js), not
 in an agent, because a subagent cannot start another one. Agents pass nothing to
