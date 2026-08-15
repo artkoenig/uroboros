@@ -194,6 +194,138 @@
             "summary": "Audited every rule on the planner and reviewer pages against the four rows of the form table and the ban on exemption clauses: seventeen lose — seven planner rules, ten reviewer rules, including two outright exemption clauses on the reviewer page — and the plan carries the replacement wording for each, plus the reason every other rule needs none. No rule needed its requirement changed to reach its winning form, so nothing is left standing as a question."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on its own branch: `claude/pages-carry-winning-issue-ng2pk5--INC-02`, off `claude/pages-carry-winning-issue-ng2pk5`.\nBefore anything else, on `claude/pages-carry-winning-issue-ng2pk5`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-02 claude/pages-carry-winning-issue-ng2pk5--INC-02`, commit that state change and push `claude/pages-carry-winning-issue-ng2pk5`. Then create the branch with `git checkout -b claude/pages-carry-winning-issue-ng2pk5--INC-02`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 2 is yours:\n  The planner and reviewer pages carry the winning form — The same audit and rewrite, with its tests and its verdict, for agents/planner.md and agents/reviewer.md — the two longest role pages, and the two whose rules most often read as unpriced reminders and prose-asked required elements. INC-01 settled the idiom: the rewrites follow the form table, the cases follow the test-repo.sh section it added, and the verdict lands in a step return.\nWhat it has to satisfy:\n  - Every rule on agents/planner.md and agents/reviewer.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.\n  - A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - The verdict is recorded page by page and rule by rule in this increment's step return, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The researcher, test-author and implementer pages carry the winning form; The argus, grill and retro skill pages carry the winning form; The two pages carrying the authoring rules carry the winning form.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-02 research:INC-02.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-02 research:INC-02.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:INC-02.0",
+          "at": "2026-08-15T19:24:02.573Z",
+          "return": {
+            "cases": [
+              {
+                "case": "1. cut-or-not rule: two branches on a predicate plus a priced prohibition",
+                "file": "test-repo.sh",
+                "testName": "the planner's cut-or-not rule is two branches on a predicate plus a priced prohibition",
+                "demands": "planner_form has all four presence markers (two predicate branches, the priced prohibition, its quoted excuse) and lacks the absent 'Whether to cut at all is yours' sentence",
+                "got": "FAIL — the planner's cut-or-not rule still reads as a judgement call, present or bolted on"
+              },
+              {
+                "case": "2. codemap's shape is a recipe, not prose",
+                "file": "test-repo.sh",
+                "testName": "the planner's codemap shape is a recipe, not prose",
+                "demands": "planner_form has the '<path> — <why the issue has to change it>' template and lacks the old prose wording",
+                "got": "FAIL — the planner's codemap shape still reads as prose"
+              },
+              {
+                "case": "3. criterion-to-increment mapping is a template slot",
+                "file": "test-repo.sh",
+                "testName": "the planner's criterion-to-increment mapping is a template slot",
+                "demands": "planner_form has '<criterion> → <increment id>' and lacks 'which criterion went where'",
+                "got": "FAIL — the planner's criterion-to-increment mapping still reads as prose"
+              },
+              {
+                "case": "4. landing the branch states each branch on its own",
+                "file": "test-repo.sh",
+                "testName": "the planner states each branch of landing a branch on its own",
+                "demands": "planner_form has all three bold branch headers and lacks the old run-on sentence",
+                "got": "FAIL — the planner's landing-the-branch rule still runs its branches together"
+              },
+              {
+                "case": "5. churn is a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the planner's churn rule is a priced prohibition quoting its excuse",
+                "demands": "planner_form has the prohibition and the quoted excuse '\"while I am in the file anyway\"'",
+                "got": "FAIL — the planner's churn rule is missing its price or its quoted excuse"
+              },
+              {
+                "case": "6. search-only boundary is a priced prohibition quoting its excuses",
+                "file": "test-repo.sh",
+                "testName": "the planner's search-only boundary is a priced prohibition quoting its excuses",
+                "demands": "planner_form has all three markers and lacks the old bullet lead 'You search the codebase for the codemap, and for nothing else'",
+                "got": "FAIL — the planner's search-only boundary is missing its price, its quoted excuses, or its absence assertion"
+              },
+              {
+                "case": "7. what an increment carries is a template, not prose",
+                "file": "test-repo.sh",
+                "testName": "the planner's increment-carries rule is a template, not prose",
+                "demands": "planner_form has the collapsed template columns and lacks the old prose sentence",
+                "got": "FAIL — the planner's increment-carries rule still reads as prose"
+              },
+              {
+                "case": "8. judging only what you verified is a priced prohibition quoting its excuses",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's verify-only rule is a priced prohibition quoting its excuses",
+                "demands": "reviewer_form has all three markers and lacks 'Guard it by judging only what you can verify yourself'",
+                "got": "FAIL — the reviewer's verify-only rule is missing its price, its quoted excuses, or its absence assertion"
+              },
+              {
+                "case": "9. a red run is one predicate with each branch stated, exemption clause gone",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's red-run rule is one predicate with each branch stated",
+                "demands": "reviewer_form has all three branch markers and lacks 'unless the change was supposed to fix it'",
+                "got": "FAIL — the reviewer's red-run rule still carries an exemption clause"
+              },
+              {
+                "case": "10. the run state is a branch on a predicate, not an exception to check 2",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's run-state rule is a branch on a predicate, not an exception",
+                "demands": "reviewer_form has 'Where a changed file is `backlog.json`' and lacks 'except `backlog.json`'",
+                "got": "FAIL — the reviewer's run-state rule still carries an exception bolted onto check 2"
+              },
+              {
+                "case": "11. the blast-radius check is a priced prohibition quoting its excuses",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's blast-radius check is a priced prohibition quoting its excuses",
+                "demands": "reviewer_form has all three markers and lacks 'answer every time, even when the answer'",
+                "got": "FAIL — the reviewer's blast-radius check is missing its price, its quoted excuses, or its absence assertion"
+              },
+              {
+                "case": "12. the per-finding verdict is a template slot",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's per-finding verdict is a template slot",
+                "demands": "reviewer_form has the '<finding> — addressed' template and lacks 'per named finding, whether it is addressed or not'",
+                "got": "FAIL — the reviewer's per-finding verdict still reads as prose"
+              },
+              {
+                "case": "13. a reproduction's shape is a template, not four elements in prose",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's reproduction shape is a template, not prose",
+                "demands": "reviewer_form has both template markers and lacks 'state it concretely: these inputs or this state'",
+                "got": "FAIL — the reviewer's reproduction shape still reads as prose"
+              },
+              {
+                "case": "14. never opening the run state is a priced prohibition quoting its excuses",
+                "file": "test-repo.sh",
+                "testName": "the reviewer prohibits opening the run state, with its price and its quoted excuses",
+                "demands": "reviewer_form has all three markers and lacks 'and you never read it: it holds', keyed away from 'never read' per the plan",
+                "got": "FAIL — the reviewer's run-state rule is missing its price, its quoted excuses, or its absence assertion"
+              },
+              {
+                "case": "15. writing nothing in the checkout is a priced prohibition quoting its excuses",
+                "file": "test-repo.sh",
+                "testName": "the reviewer prohibits writing in the checkout, with its price and its quoted excuses",
+                "demands": "reviewer_form has all three markers and lacks 'You write nothing in the checkout'",
+                "got": "FAIL — the reviewer's checkout rule is missing its price, its quoted excuses, or its absence assertion"
+              },
+              {
+                "case": "16. the probe's stated doubt carries its quoted excuse in the same sentence as the prohibition",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's probe rule carries its quoted excuse in the same sentence as the prohibition",
+                "demands": "reviewer_form has the exact whole marker 'Probe from a stated doubt, never to explore — not \"while the sandbox is up\"'",
+                "got": "FAIL — the reviewer's probe rule dropped its quoted excuse or split it from the prohibition"
+              },
+              {
+                "case": "17. the probe staying in the sandbox is a priced prohibition quoting its excuse",
+                "file": "test-repo.sh",
+                "testName": "the reviewer's sandbox rule is a priced prohibition quoting its excuse",
+                "demands": "reviewer_form has both markers ('\"it is only a scratch file\"' and 'the next round files it against the increment')",
+                "got": "FAIL — the reviewer's sandbox rule is missing its price or its quoted excuse"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added a new '=== every rule on the planner and reviewer pages is written in its winning form' section to test-repo.sh with the 17 cases the plan named, appended after the shared-brief section (line 2803) and before the PASS/FAIL block; `bash test-repo.sh` now reports 169 cases with exactly the 17 new ones failing (the 152 prior cases stay green), confirming each marker turns red against the current, unrewritten wording of agents/planner.md and agents/reviewer.md."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on branch `claude/pages-carry-winning-issue-ng2pk5--INC-02`. Before anything else make sure you are on it: `git fetch origin claude/pages-carry-winning-issue-ng2pk5--INC-02` and check it out; if the remote does not have it, create it from `claude/pages-carry-winning-issue-ng2pk5` and push it with `-u`.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 2 is yours:\n  The planner and reviewer pages carry the winning form — The same audit and rewrite, with its tests and its verdict, for agents/planner.md and agents/reviewer.md — the two longest role pages, and the two whose rules most often read as unpriced reminders and prose-asked required elements. INC-01 settled the idiom: the rewrites follow the form table, the cases follow the test-repo.sh section it added, and the verdict lands in a step return.\nWhat it has to satisfy:\n  - Every rule on agents/planner.md and agents/reviewer.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.\n  - A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - The verdict is recorded page by page and rule by rule in this increment's step return, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The researcher, test-author and implementer pages carry the winning form; The argus, grill and retro skill pages carry the winning form; The two pages carrying the authoring rules carry the winning form.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-02 research:INC-02.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-02 tests:INC-02.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-02 tests:INC-02.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
