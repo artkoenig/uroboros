@@ -470,6 +470,84 @@ else
 fi
 
 echo
+echo "=== the mutation standard has one owner"
+
+# Criterion 1: the researcher's page requires a per-criterion go-red case —
+# at least one case that fails when that criterion's behaviour is broken or
+# removed. Break: delete from the '**What.**' bullet the sentence "Hold the
+# plan to the shared brief's mutation standard: every acceptance criterion
+# gets at least one case that fails when that criterion's behaviour is broken
+# or removed."
+if grep -qi 'at least one case' "$root/agents/researcher.md" && grep -qi 'broken or removed' "$root/agents/researcher.md"; then
+  ok "agents/researcher.md requires a case that fails when a criterion's behaviour is broken or removed"
+else
+  no "agents/researcher.md does not require a per-criterion go-red case"
+fi
+
+# Criterion 2: each planned case states the production change that would make
+# it fail. Break: remove the clause "the break — the production change that
+# would make it fail" from that bullet.
+if grep -qi 'production change' "$root/agents/researcher.md"; then
+  ok "agents/researcher.md requires each planned case to state the production change that would make it fail"
+else
+  no "agents/researcher.md does not require a case to state the production change that would make it fail"
+fi
+
+# Criterion 3, part one: the mutation standard is defined on exactly one
+# owning page, the shared brief. Break: delete the brief's section.
+if grep -q '## The mutation standard' "$root/skills/agent-brief/SKILL.md"; then
+  ok "skills/agent-brief/SKILL.md carries the '## The mutation standard' section"
+else
+  no "skills/agent-brief/SKILL.md does not carry a '## The mutation standard' section"
+fi
+
+# Criterion 3, part two: no other agent page or shipped skill restates the
+# standard — mirrors the chain_depth_owners case above. Break, either
+# direction: restate the defining sentence on any agent page or second skill
+# (two paths match), or delete it from the brief (none match).
+mutation_standard_owners="$(grep -lie 'counts as tested' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$mutation_standard_owners" = "$root/skills/agent-brief/SKILL.md" ]; then
+  ok "skills/agent-brief/SKILL.md is the only agent page or shipped skill naming what counts as tested"
+else
+  no "the phrase \"counts as tested\" is owned by more (or fewer) pages than skills/agent-brief/SKILL.md alone:"
+  echo "${mutation_standard_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Criterion 3, part three: the researcher and the reviewer point at the
+# owning page instead of restating it. Break: drop either page's pointer.
+if grep -qi 'mutation standard' "$root/agents/researcher.md"; then
+  ok "agents/researcher.md points at the mutation standard"
+else
+  no "agents/researcher.md does not point at the mutation standard"
+fi
+if grep -qi 'mutation standard' "$root/agents/reviewer.md"; then
+  ok "agents/reviewer.md points at the mutation standard"
+else
+  no "agents/reviewer.md does not point at the mutation standard"
+fi
+
+# Criterion 3, part four: the reviewer's old free-standing restatement of the
+# question is gone, replaced by the pointer above. Break: reinstate the old
+# wording in check 3. Collapsed to a single line first — the phrase wraps
+# across lines in the page's prose and a plain grep would miss it there.
+reviewer_collapsed="$(tr '\n' ' ' <"$root/agents/reviewer.md" | tr -s ' ')"
+if echo "$reviewer_collapsed" | grep -qi 'fails if the behaviour breaks'; then
+  no "agents/reviewer.md still restates the mutation standard instead of pointing at its owner"
+else
+  ok "agents/reviewer.md no longer restates the mutation standard in its own words"
+fi
+
+# Criterion 4: a test plan that leaves a criterion without a go-red case must
+# say so and why, in the plan itself. Break: delete "Where you leave a
+# criterion without such a case, the plan itself says so and why" from the
+# bullet.
+if grep -Eqi 'says? so and why' "$root/agents/researcher.md"; then
+  ok "agents/researcher.md requires a skipped criterion to say so and why, in the plan itself"
+else
+  no "agents/researcher.md does not require a skipped criterion to say so and why"
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
