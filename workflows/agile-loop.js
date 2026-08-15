@@ -171,8 +171,34 @@ const STATE = {
           branch: { type: 'string' },
           steps: { type: 'array', items: INDEX_STEP },
           attempts: { type: 'integer' },
+          attemptRulings: {
+            type: 'array',
+            description:
+              'The index\'s `attemptRulings` for this increment: the rulings of the steps its closed attempts archived, each with the label of the step that made them. Empty when the index carries none.',
+            items: {
+              type: 'object',
+              properties: {
+                label: { type: 'string' },
+                rulings: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['label', 'rulings'],
+              additionalProperties: false,
+            },
+          },
         },
-        required: ['id', 'title', 'goal', 'criteria', 'depth', 'status', 'note', 'branch', 'steps', 'attempts'],
+        required: [
+          'id',
+          'title',
+          'goal',
+          'criteria',
+          'depth',
+          'status',
+          'note',
+          'branch',
+          'steps',
+          'attempts',
+          'attemptRulings',
+        ],
         additionalProperties: false,
       },
     },
@@ -538,6 +564,8 @@ const state = await agent(
     `runSteps. Each step of either carries the index's \`label\` and \`asked\`; fill ` +
     `questions, rulings, needsTests, checks, findingCount, allDirect and reason from that step's ` +
     `\`return\` object where the index carried them, and leave them empty otherwise.\n` +
+    `Each increment also carries the index's \`attemptRulings\`, returned as it stands and ` +
+    `empty where the index has none.\n` +
     `Do NOT read the file itself and do NOT return its content: the index is what this ` +
     `dispatch is for.\n` +
     `If the file does not exist, return exists false with both lists empty.\n` +
@@ -733,6 +761,20 @@ function carryRulings(label, out) {
     log(`${label} ruled: ${ruling}`)
   }
   return out
+}
+
+// The rulings of every increment an earlier session closed. `close` archived
+// their steps and the loop never enters a closed increment, so this is the only
+// place they can be recovered, and it runs before any step does — a resumed
+// run's result is then as rich as an uninterrupted one's. They go through
+// `carryRulings` for its label rule: an increment worked again this session
+// replaces its own earlier attempt's entries as its steps record.
+if (savedIndex) {
+  for (const increment of savedIndex.increments || []) {
+    for (const archived of increment.attemptRulings || []) {
+      carryRulings(archived.label, { rulings: archived.rulings })
+    }
+  }
 }
 
 // Asked before the step runs, never after: `step` writes the label into

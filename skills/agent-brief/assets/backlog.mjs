@@ -384,6 +384,24 @@ function steering(ret) {
   return out
 }
 
+// A close archives an attempt's steps, and nothing in that archive is steering
+// any more — except a ruling, which is a decision taken on the human's behalf
+// and has to reach the result of the run that resumes after the close. So the
+// index carries the archived steps' rulings and nothing else out of `attempts`,
+// through the same projection the current steps take: a ruling too long to be a
+// steering value is content, and content is read from the file.
+function attemptRulings(increment) {
+  const out = []
+  for (const attempt of increment.attempts || []) {
+    for (const step of attempt.steps || []) {
+      const projected = steering(step && step.return).rulings
+      const kept = Array.isArray(projected) ? projected.filter(Boolean) : []
+      if (kept.length) out.push({ label: (step && step.label) || '', rulings: kept })
+    }
+  }
+  return out
+}
+
 // `asked` is computed rather than projected. Every role's return carries
 // `questions`, a non-empty list ends the run, and a resumed run has to know
 // which steps ended that way even when the questions themselves were too long
@@ -422,6 +440,7 @@ function index(backlogPath) {
       branch: increment.branch || '',
       steps: (increment.steps || []).map(indexStep),
       attempts: (increment.attempts || []).length,
+      attemptRulings: attemptRulings(increment),
     })),
     run: { steps: ((backlog.run && backlog.run.steps) || []).map(indexStep) },
   }
