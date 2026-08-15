@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "issue": "docs/issues/2026-08-15-correction-rounds-judge-the-fix/issue.md",
+  "workflow": "agile-loop",
+  "codemap": "- `workflows/agile-loop.js` — the script that dispatches every round: it builds the review prompt per round, decides what each round's dispatch carries between the roles, holds the verdict schema the reviewer returns into, and runs the correction loop up to `MAX_CORRECTIONS`. The correction round's review dispatch and whatever the previous verdict has to hand it live here.\n- `agents/reviewer.md` — the reviewer's role page, frontmatter description included: what it judges, what counts as a finding against an observation, and what it records in `findings`, `findingCount` and `summary`. The rules for judging a correction round against the previous findings and the fix diff land here.\n- `test-repo.sh` — the repository's own suite: it holds the workflow harness cases that assert what each dispatched prompt carries (labels, findings reads, diff ranges) and the prose assertions about the reviewer's page. The cases that pin this behaviour go here.",
+  "increments": [
+    {
+      "id": "i1",
+      "title": "A correction round's review is scoped to the findings and the fix",
+      "goal": "A correction round's reviewer is dispatched to judge the fix for the previous round's findings instead of the increment afresh: its prompt names those findings and the fix's diff range, it verdicts each of them as addressed or not, new breakage inside the fix diff is a finding, anything else is an observation that neither blocks nor extends the loop, and the first round of an increment is dispatched and judged exactly as before.",
+      "criteria": [
+        "A correction round's review prompt names the previous verdict's findings and the fix's diff range.",
+        "The reviewer verdicts each named finding as addressed or not addressed, where addressed means the defect no longer exists, not that a fix was attempted.",
+        "New breakage inside the fix diff is a finding.",
+        "A remark outside the named findings and outside the fix diff is an observation in the summary; it does not block the increment and does not start another round.",
+        "The verdict's `findingCount` counts only not-addressed findings and new fix-diff findings.",
+        "The reviewer still reads nothing out of `backlog.json`; whatever it needs travels in its prompt.",
+        "The first round of an increment is unchanged."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "One cut: the scoped prompt and the rules the reviewer judges it by are one change, and either half alone is unusable.",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-15T10:13:32.030Z",
+        "return": {
+          "questions": [],
+          "summary": "Cut the issue as one increment: the correction round's scoped review prompt and the reviewer's rules for judging it are one change, and the codemap names workflows/agile-loop.js, agents/reviewer.md and test-repo.sh."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-15-correction-rounds-judge-the-fix\nOpen the run state for docs/issues/2026-08-15-correction-rounds-judge-the-fix/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-correction-rounds-judge-the-fix/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
