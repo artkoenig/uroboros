@@ -72,6 +72,8 @@ So an agent page carries its role and the boundaries of that role alone, and
 restates nothing the shared brief already says. A rule that stands in both
 drifts.
 
+The form a rule on an agent page takes is `.claude/rules/authoring.md`.
+
 The one exception opens every page: the line that tells the agent to report the
 shared brief as missing and stop. A skill that failed to load cannot announce
 its own absence, and Claude Code skips an unresolved `skills:` entry with
