@@ -347,7 +347,7 @@ const VERDICT = {
   },
   required: ['findings', 'findingCount', 'allDirect', 'reason', 'head', 'questions', 'summary'],
   additionalProperties: false,
-};
+}
 
 const PUSH = {
   type: 'object',

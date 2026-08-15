@@ -1425,7 +1425,7 @@ async function main() {
     assertTrue(!!round0Review && round0Review.prompt.includes('- `findings`') && round0Review.prompt.includes('- `head`'),
       "the review prompt does not tell the reviewer to record findings and head, so a correction round could never be scoped to them");
 
-    const verdictSchema = /const VERDICT = \{[\s\S]*?\n\};/.exec(src);
+    const verdictSchema = /const VERDICT = \{[\s\S]*?\n\}/.exec(src);
     assertTrue(!!verdictSchema, 'the workflow source names no const VERDICT schema block');
     if (verdictSchema) {
       const block = verdictSchema[0];
