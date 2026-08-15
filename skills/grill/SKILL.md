@@ -1,6 +1,6 @@
 ---
 name: grill
-description: Turn a genuinely vague idea into written acceptance criteria — first gather what is already true about it, from the code, the project's documentation, the record of past issues and the documentation of what the project builds on, then interview the human one question at a time about what is left. A shelf tool — reach for it only when the idea is too unclear to write criteria directly; a clear request needs no ceremony. The output is a filed issue whose criteria the human approved.
+description: Turn a genuinely vague idea into written acceptance criteria. A shelf tool — reach for it only when the idea is too unclear to write criteria directly; a clear request needs no ceremony. What it hands back is a filed issue whose criteria the human has approved.
 user-invocable: true
 ---
 

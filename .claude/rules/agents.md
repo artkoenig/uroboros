@@ -72,6 +72,9 @@ So an agent page carries its role and the boundaries of that role alone, and
 restates nothing the shared brief already says. A rule that stands in both
 drifts.
 
+The form a rule on an agent page takes is decided by
+`.claude/rules/authoring.md`.
+
 The one exception opens every page: the line that tells the agent to report the
 shared brief as missing and stop. A skill that failed to load cannot announce
 its own absence, and Claude Code skips an unresolved `skills:` entry with
@@ -82,11 +85,11 @@ half its rules and nobody hears about it.
 
 - **Frontmatter**: `name`, `description`, `tools`, `skills`, `color`. The
   `description` is what a caller reads while deciding — say what the agent
-  does, when to dispatch it, and what not to use it for. It is read far more
-  often than the body. `skills` carries `agent-brief` and whatever else that
-  agent alone preloads. `model` is left out, so the agent runs on the session's
-  model; name a tier only for an agent whose work is mechanical enough that a
-  smaller one cannot get it wrong, and say on its page why.
+  does and what not to use it for. It is read far more often than the body.
+  `skills` carries `agent-brief` and whatever else that agent alone preloads.
+  `model` is left out, so the agent runs on the session's model; name a tier
+  only for an agent whose work is mechanical enough that a smaller one cannot
+  get it wrong, and say on its page why.
 - **The body** is what the shared brief does not already cover: the role, how
   it works, the boundaries that belong to it alone, and the shape of its
   report. Beyond the brief it has no context — a caller's reasoning never

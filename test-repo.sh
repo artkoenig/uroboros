@@ -2209,6 +2209,475 @@ else
 fi
 
 echo
+echo "=== a rule's form is picked by the failure it prevents"
+
+# The four-row table and the exemption-clause ban both live in
+# .claude/rules/authoring.md. table.js reads the table once per case below: it
+# splits the page into pipe-delimited rows, drops the header separator (a row
+# that is only pipes, dashes, colons and spaces), and treats row 1 as the
+# header and the rest as body rows. Its "row" mode additionally selects the
+# one body row whose failure-class cell matches a regex and asserts every
+# marker is in the "works" cell and none is in the "fails" cell — case-
+# insensitively throughout — which is what catches a row whose two forms have
+# been swapped.
+form_tmp="$(mktemp -d)"
+cat >"$form_tmp/table.js" <<'JS'
+const fs = require("fs");
+const root = process.argv[2];
+const mode = process.argv[3];
+
+function fail(msg) { console.error(msg); process.exit(1); }
+
+const text = fs.readFileSync(root + "/.claude/rules/authoring.md", "utf8");
+const lines = text.split("\n").filter((l) => l.trim().startsWith("|"));
+const rows = lines.map((l) => {
+  const cells = l.trim().split("|");
+  cells.shift();
+  cells.pop();
+  return cells.map((c) => c.trim());
+});
+if (rows.length < 2) fail("no table found in .claude/rules/authoring.md");
+const header = rows[0];
+const body = rows.slice(1).filter((r) => !r.every((c) => /^[-:\s]*$/.test(c)));
+
+if (mode === "shape") {
+  if (body.length !== 4) fail("expected exactly 4 body rows, found " + body.length);
+  body.forEach((r, i) => {
+    if (r.length !== 4) fail("row " + i + " has " + r.length + " cells, expected 4");
+    r.forEach((c, j) => { if (!c) fail("row " + i + " cell " + j + " is empty"); });
+  });
+  process.exit(0);
+}
+
+if (mode === "header") {
+  if (!/failure/i.test(header[0] || "")) fail("header cell 1 does not name the failure class: " + JSON.stringify(header[0]));
+  if (!/works/i.test(header[1] || "")) fail("header cell 2 does not name the form that works: " + JSON.stringify(header[1]));
+  if (!/fails/i.test(header[2] || "")) fail("header cell 3 does not name the form that fails: " + JSON.stringify(header[2]));
+  if (!/reason|why/i.test(header[3] || "")) fail("header cell 4 does not name the reason: " + JSON.stringify(header[3]));
+  process.exit(0);
+}
+
+if (mode === "reason") {
+  const oneSentence = /^[^.]+\.$/;
+  body.forEach((r, i) => {
+    if (!oneSentence.test(r[3] || "")) fail("row " + i + " reason cell is not exactly one sentence: " + JSON.stringify(r[3]));
+  });
+  process.exit(0);
+}
+
+if (mode === "row") {
+  const failureRx = new RegExp(process.argv[4], "i");
+  const markers = JSON.parse(process.argv[5]);
+  const matches = body.filter((r) => failureRx.test(r[0] || ""));
+  if (matches.length !== 1) fail("expected exactly one row matching " + process.argv[4] + ", found " + matches.length);
+  const row = matches[0];
+  const works = row[1] || "";
+  const fails = row[2] || "";
+  const problems = [];
+  for (const m of markers) {
+    const rx = new RegExp(m, "i");
+    if (!rx.test(works)) problems.push("marker " + m + " missing from the works cell: " + JSON.stringify(works));
+    if (rx.test(fails)) problems.push("marker " + m + " found in the fails cell: " + JSON.stringify(fails));
+  }
+  if (problems.length) fail(problems.join("; "));
+  process.exit(0);
+}
+
+if (mode === "ban") {
+  const paragraphs = text.split(/\n\s*\n/).map((p) =>
+    p.split("\n").filter((l) => !l.trim().startsWith("|")).join(" ").replace(/\s+/g, " ").trim()
+  );
+  const mentioning = paragraphs.filter((p) => /exemption clause/i.test(p));
+  if (mentioning.length === 0) fail('no paragraph mentions "exemption clause"');
+  const guarded = mentioning.some((p) => /never/i.test(p) && /re-cut/i.test(p) && /observable predicate/i.test(p));
+  if (!guarded) fail('no paragraph mentioning "exemption clause" also carries never, re-cut and observable predicate');
+  process.exit(0);
+}
+
+fail("unknown mode " + mode);
+JS
+
+# Criterion 1: a table of exactly four rows, four named parts each.
+# Break: add a fifth row, delete one, or blank any cell — in particular the
+# "form that fails" cell of any row.
+if node "$form_tmp/table.js" "$root" shape >/dev/null 2>&1; then
+  ok "the form table has exactly four body rows, each with four non-empty cells"
+else
+  no "the form table's shape is wrong: $(node "$form_tmp/table.js" "$root" shape 2>&1)"
+fi
+
+# Criterion 1: column order. Break: swap the "Form that works" and "Form that
+# fails" headers — which inverts all four rows at once while every cell keeps
+# its text, and is why this case is separate from the shape case above.
+if node "$form_tmp/table.js" "$root" header >/dev/null 2>&1; then
+  ok "the form table's header names failure, works, fails and the reason, in order"
+else
+  no "the form table's header is wrong: $(node "$form_tmp/table.js" "$root" header 2>&1)"
+fi
+
+# Criterion 1: one-sentence reason. Break: split any reason cell into two
+# sentences, or empty it.
+if node "$form_tmp/table.js" "$root" reason >/dev/null 2>&1; then
+  ok "every form-table row states its reason in exactly one sentence"
+else
+  no "a form-table reason cell is not one sentence: $(node "$form_tmp/table.js" "$root" reason 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 1 — a rule skipped under pressure.
+# Breaks, each independently red: swap cells 2 and 3 of the row (the failing
+# form names no prohibition); replace "A prohibition" in cell 2 with
+# "A reminder"; delete "carries its price and " from cell 2 (criterion 6, the
+# price); delete ", verbatim," from cell 2, or replace "quotes, verbatim, the
+# rationalisation it counters" with "names the rationalisation it counters"
+# (criterion 6, the verbatim rationalisation); move any marker's wording into
+# cell 3.
+if node "$form_tmp/table.js" "$root" row 'skipped under pressure' '["prohibition","\\bprice\\b","verbatim","rationalisation"]' >/dev/null 2>&1; then
+  ok "row 1 (skipped under pressure) pairs the prohibition, its price and the verbatim rationalisation with the winning form"
+else
+  no "row 1 (skipped under pressure) is wrong: $(node "$form_tmp/table.js" "$root" row 'skipped under pressure' '["prohibition","\\bprice\\b","verbatim","rationalisation"]' 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 2 — a wrong output shape.
+# Breaks: swap cells 2 and 3, so the wrong output shape is paired with a list
+# of prohibitions — the form measured to lose against it (criterion 5);
+# replace cell 2 with "A list of prohibitions"; drop "what the output is"
+# from cell 2.
+if node "$form_tmp/table.js" "$root" row 'output shape' '["recipe","output"]' >/dev/null 2>&1; then
+  ok "row 2 (wrong output shape) pairs the recipe with the winning form"
+else
+  no "row 2 (wrong output shape) is wrong: $(node "$form_tmp/table.js" "$root" row 'output shape' '["recipe","output"]' 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 3 — an omitted required element.
+# Breaks: swap cells 2 and 3, so the omission is paired with prose in the body
+# (criterion 5); replace cell 2 with "Prose in the body asking for the
+# element"; drop "in the schema or the template" from cell 2.
+if node "$form_tmp/table.js" "$root" row 'omitted required element' '["\\bslot\\b","schema|template"]' >/dev/null 2>&1; then
+  ok "row 3 (omitted required element) pairs the required slot with the winning form"
+else
+  no "row 3 (omitted required element) is wrong: $(node "$form_tmp/table.js" "$root" row 'omitted required element' '["\\bslot\\b","schema|template"]' 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 4 — behaviour that depends on a condition.
+# Breaks: swap cells 2 and 3, so the conditional behaviour is paired with a
+# judgement call or a bolted-on exemption (criterion 5); replace "keyed to an
+# observable predicate" in cell 2 with "left to the agent's judgement".
+if node "$form_tmp/table.js" "$root" row 'depends on a condition' '["observable predicate"]' >/dev/null 2>&1; then
+  ok "row 4 (depends on a condition) pairs the observable predicate with the winning form"
+else
+  no "row 4 (depends on a condition) is wrong: $(node "$form_tmp/table.js" "$root" row 'depends on a condition' '["observable predicate"]' 2>&1)"
+fi
+
+# Criterion 3 and criterion 6 — the exemption-clause ban. Stripping the table
+# lines before collapsing paragraphs is load-bearing: without it, row 4's
+# cells satisfy the assertion and the ban paragraph can be gutted while the
+# case stays green — that is exactly the hole INC-1's second review round
+# found. Breaks: delete the ban paragraph; replace "Never patch a working
+# rule" with "Consider avoiding patching a working rule"; delete "Re-cut the
+# rule" from it; replace "Re-cut the rule on an observable predicate instead"
+# with "Re-cut the rule on your best judgement instead" (criterion 6, the
+# observable predicate).
+if node "$form_tmp/table.js" "$root" ban >/dev/null 2>&1; then
+  ok "the authoring rules ban patching a working rule with an exemption clause and require re-cutting on an observable predicate"
+else
+  no "the exemption-clause ban is missing or gutted: $(node "$form_tmp/table.js" "$root" ban 2>&1)"
+fi
+
+rm -rf "$form_tmp"
+
+# Criterion 4: the home exists and is scoped to both audiences. Break: delete
+# the file, or drop either pattern from paths:. (The pre-existing scoping
+# cases above add, for free, that the page is path-scoped at all and that both
+# patterns match tracked files.)
+if [ -f "$root/.claude/rules/authoring.md" ] &&
+  sed -n '2,/^---$/p' "$root/.claude/rules/authoring.md" | grep -q 'skills/\*\*' &&
+  sed -n '2,/^---$/p' "$root/.claude/rules/authoring.md" | grep -q 'agents/\*\*'; then
+  ok ".claude/rules/authoring.md exists and is scoped to skills/** and agents/** alike"
+else
+  no ".claude/rules/authoring.md is missing, or its paths: frontmatter does not cover skills/** and agents/**"
+fi
+
+# Criterion 4: the skill-page author is pointed at it. Break: delete the
+# pointer sentence.
+if grep -q '\.claude/rules/authoring\.md' "$root/skills/CLAUDE.md"; then
+  ok "skills/CLAUDE.md points whoever authors a skill page at .claude/rules/authoring.md"
+else
+  no "skills/CLAUDE.md does not point at .claude/rules/authoring.md"
+fi
+
+# Criterion 4: the agent-page author is pointed at it. Break: delete the
+# pointer sentence.
+if grep -q '\.claude/rules/authoring\.md' "$root/.claude/rules/agents.md"; then
+  ok ".claude/rules/agents.md points whoever authors an agent page at .claude/rules/authoring.md"
+else
+  no ".claude/rules/agents.md does not point at .claude/rules/authoring.md"
+fi
+
+# Criterion 4: one home for the ban. Mirrors mutation_standard_owners above.
+# Break, either direction: restate the ban on a second page (two paths
+# match), or delete it from the owner (none match).
+exemption_ban_owners="$(grep -lie 'exemption clause' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$exemption_ban_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming an exemption clause"
+else
+  no "the phrase \"exemption clause\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${exemption_ban_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Criterion 4: one home for the table. Same ownership check keyed on
+# "rationalisation", the table's most distinctive word. Break, either
+# direction: restate a table row on another page, or delete row 1 from the
+# owner.
+form_table_owners="$(grep -lie 'rationalisation' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$form_table_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming a rationalisation"
+else
+  no "the phrase \"rationalisation\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${form_table_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+echo
+echo "=== a description names the occasion, not the steps"
+
+# desc.js reads .claude/rules/authoring.md the same way table.js above reads
+# it — table lines stripped, paragraphs collapsed to one line each, filtered
+# to the ones mentioning "description" — and reads a skill's frontmatter
+# description the way the plan spells out: line 1 "---" to the next "---",
+# the single "description:" line inside it, key and surrounding quotes
+# stripped, whitespace collapsed. A description folded over several YAML
+# lines, or missing, or empty, fails loudly rather than passing silently.
+desc_tmp="$(mktemp -d)"
+cat >"$desc_tmp/desc.js" <<'JS'
+const fs = require("fs");
+const root = process.argv[2];
+const mode = process.argv[3];
+
+function fail(msg) { console.error(msg); process.exit(1); }
+
+function paragraphsOf(file) {
+  const text = fs.readFileSync(file, "utf8");
+  return text
+    .split(/\n\s*\n/)
+    .map((p) => p.split("\n").filter((l) => !l.trim().startsWith("|")).join(" ").replace(/\s+/g, " ").trim())
+    .filter((p) => p.length > 0);
+}
+
+function descriptionParagraphs() {
+  const paras = paragraphsOf(root + "/.claude/rules/authoring.md").filter((p) => /description/i.test(p));
+  if (paras.length === 0) fail('no paragraph in .claude/rules/authoring.md mentions "description"');
+  return paras;
+}
+
+function readSkillDescription(file) {
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  if ((lines[0] || "").trim() !== "---") fail(file + ": frontmatter does not start with ---");
+  let end = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === "---") { end = i; break; }
+  }
+  if (end === -1) fail(file + ": frontmatter has no closing ---");
+  const fm = lines.slice(1, end);
+  const descLine = fm.find((l) => /^description:/i.test(l.trim()));
+  if (!descLine) fail(file + ": no description: line in frontmatter (folded onto several lines?)");
+  let value = descLine.trim().replace(/^description:\s*/i, "");
+  value = value.replace(/^["']|["']$/g, "");
+  value = value.replace(/\s+/g, " ").trim();
+  if (!value) fail(file + ": description value is empty");
+  return value;
+}
+
+if (mode === "occasion") {
+  const paras = descriptionParagraphs();
+  if (!paras.some((p) => /occasion/i.test(p))) fail('no description paragraph mentions "occasion": ' + JSON.stringify(paras));
+  process.exit(0);
+}
+
+if (mode === "steps-ban") {
+  const paras = descriptionParagraphs();
+  if (!paras.some((p) => /\bnever\b[^.]*\bsteps\b/i.test(p))) fail('no description paragraph bans steps with "never ... steps": ' + JSON.stringify(paras));
+  process.exit(0);
+}
+
+if (mode === "reason") {
+  const paras = descriptionParagraphs();
+  if (!paras.some((p) => /shortcut/i.test(p) && /body/i.test(p))) fail('no description paragraph carries both "shortcut" and "body": ' + JSON.stringify(paras));
+  process.exit(0);
+}
+
+if (mode === "skill-occasion") {
+  const file = process.argv[4];
+  const desc = readSkillDescription(file);
+  if (!/reach for it|\bwhenever\b|\bwhen\b/i.test(desc)) fail("description names no occasion: " + JSON.stringify(desc));
+  process.exit(0);
+}
+
+if (mode === "skill-nosteps") {
+  const file = process.argv[4];
+  const desc = readSkillDescription(file);
+  const markers = [
+    ["\\bhow it [a-z]+s\\b", "how it ...s"],
+    ["\\bfirst\\b[^.]*\\bthen\\b", "first ... then"],
+    ["\\bstep [0-9]", "step N"],
+  ];
+  for (const [rx, label] of markers) {
+    if (new RegExp(rx, "i").test(desc)) fail("description walks the steps (matched " + label + "): " + JSON.stringify(desc));
+  }
+  process.exit(0);
+}
+
+if (mode === "carry-bullet") {
+  const file = process.argv[4];
+  const requiredRx = new RegExp(process.argv[5], "i");
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  const headingIdx = lines.findIndex((l) => /^## What a page has to carry/.test(l));
+  if (headingIdx === -1) fail(file + ": no \"## What a page has to carry\" heading");
+  let sectionEnd = lines.length;
+  for (let i = headingIdx + 1; i < lines.length; i++) {
+    if (/^## /.test(lines[i])) { sectionEnd = i; break; }
+  }
+  const section = lines.slice(headingIdx + 1, sectionEnd);
+  const bulletStart = section.findIndex((l) => /^- \*\*Frontmatter\*\*/.test(l));
+  if (bulletStart === -1) fail(file + ": no \"- **Frontmatter**\" bullet in its carry section");
+  let bulletEnd = section.length;
+  for (let i = bulletStart + 1; i < section.length; i++) {
+    if (/^- \*\*/.test(section[i])) { bulletEnd = i; break; }
+  }
+  const block = section.slice(bulletStart, bulletEnd).join(" ").replace(/\s+/g, " ").trim();
+  if (!requiredRx.test(block)) fail(file + ": Frontmatter bullet does not match required regex " + process.argv[5] + ": " + JSON.stringify(block));
+  const forbidden = [/\btriggers?\b/i, /when to dispatch/i, /\boccasion\b/i];
+  for (const rx of forbidden) {
+    if (rx.test(block)) fail(file + ": Frontmatter bullet restates the occasion rule (matched " + rx + "): " + JSON.stringify(block));
+  }
+  process.exit(0);
+}
+
+if (mode === "skill-lead") {
+  const file = process.argv[4];
+  const m1 = new RegExp(process.argv[5], "i");
+  const m2 = new RegExp(process.argv[6], "i");
+  const desc = readSkillDescription(file);
+  const firstSentenceMatch = desc.match(/^[^.]*\./);
+  const lead = firstSentenceMatch ? firstSentenceMatch[0] : desc;
+  if (!m1.test(lead)) fail("lead sentence missing " + process.argv[5] + ": " + JSON.stringify(lead));
+  if (!m2.test(lead)) fail("lead sentence missing " + process.argv[6] + ": " + JSON.stringify(lead));
+  process.exit(0);
+}
+
+fail("unknown mode " + mode);
+JS
+
+# Case 1: the rule requires the occasion. Break: delete "names the occasion
+# to reach for the thing it fronts" from the description paragraph, or delete
+# the section.
+if node "$desc_tmp/desc.js" "$root" occasion >/dev/null 2>&1; then
+  ok "the authoring rules require a description to name the occasion"
+else
+  no "the authoring rules do not require a description to name the occasion: $(node "$desc_tmp/desc.js" "$root" occasion 2>&1)"
+fi
+
+# Case 2: the rule forbids the steps. Break: delete "and never walks through
+# the steps inside it", or soften "never" to "try not to".
+if node "$desc_tmp/desc.js" "$root" steps-ban >/dev/null 2>&1; then
+  ok "the authoring rules forbid a description from walking through the steps"
+else
+  no "the authoring rules do not forbid a description from walking through the steps: $(node "$desc_tmp/desc.js" "$root" steps-ban 2>&1)"
+fi
+
+# Case 3: the rule carries its reason. Break: delete the sentence beginning
+# "A description that summarises a workflow becomes the shortcut agents take
+# instead of reading the body."
+if node "$desc_tmp/desc.js" "$root" reason >/dev/null 2>&1; then
+  ok "the authoring rules carry the reason: a summarised workflow becomes a shortcut past the body"
+else
+  no "the authoring rules do not carry the shortcut-past-the-body reason: $(node "$desc_tmp/desc.js" "$root" reason 2>&1)"
+fi
+
+# Cases 4-7: every shipped skill description names an occasion. One case per
+# skills/*/SKILL.md, sorted, naming the skill. Break: strip the occasion
+# clause from any of the four.
+for f in "$root"/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$f")")"
+  if node "$desc_tmp/desc.js" "$root" skill-occasion "$f" >/dev/null 2>&1; then
+    ok "$skill's description names an occasion for using it"
+  else
+    no "$skill's description names no occasion: $(node "$desc_tmp/desc.js" "$root" skill-occasion "$f" 2>&1)"
+  fi
+done
+
+# Cases 8-11: no shipped skill description walks the body's steps. One case
+# per skills/*/SKILL.md, sorted, naming the skill and the marker that
+# matched. Break: restore a description carrying "how it ...s", "first ...
+# then", or "step N".
+for f in "$root"/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$f")")"
+  if node "$desc_tmp/desc.js" "$root" skill-nosteps "$f" >/dev/null 2>&1; then
+    ok "$skill's description does not walk through the steps"
+  else
+    no "$skill's description walks through the steps: $(node "$desc_tmp/desc.js" "$root" skill-nosteps "$f" 2>&1)"
+  fi
+done
+
+# Case 12: the rule has one home. Mirrors exemption_ban_owners and
+# form_table_owners above. Break, either direction: restate the description
+# rule on skills/CLAUDE.md or .claude/rules/agents.md (two paths match), or
+# delete it from the authoring page (none match).
+description_rule_owners="$(grep -lie 'occasion' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$description_rule_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming the occasion"
+else
+  no "the word \"occasion\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${description_rule_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Cases 13-15: a rewritten description still leads with the words a request
+# for that skill would actually contain. Break: rewrite the lead into words a
+# request would not carry, e.g. "Elicitation protocol for underspecified
+# intents" for grill, "Post-run process analysis" for retro, "Cross-role
+# conventions" for agent-brief.
+if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/agent-brief/SKILL.md" 'rules' 'uroboros subagent' >/dev/null 2>&1; then
+  ok "agent-brief's description leads with the words a request for it would contain"
+else
+  no "agent-brief's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/agent-brief/SKILL.md" 'rules' 'uroboros subagent' 2>&1)"
+fi
+
+if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/grill/SKILL.md" 'vague idea' 'acceptance criteria' >/dev/null 2>&1; then
+  ok "grill's description leads with the words a request for it would contain"
+else
+  no "grill's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/grill/SKILL.md" 'vague idea' 'acceptance criteria' 2>&1)"
+fi
+
+if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/retro/SKILL.md" 'retrospective' 'log' >/dev/null 2>&1; then
+  ok "retro's description leads with the words a request for it would contain"
+else
+  no "retro's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/retro/SKILL.md" 'retrospective' 'log' 2>&1)"
+fi
+
+# Case 16: the skill-page rules do not restate the occasion rule (criterion 2,
+# "no page restates it"). Break: restore "and names the triggers" to the
+# Frontmatter bullet of skills/CLAUDE.md, or delete "leads with the words a
+# request would actually contain" from it (which fails the required regex
+# instead, so the case cannot be satisfied by gutting the bullet).
+if node "$desc_tmp/desc.js" "$root" carry-bullet "$root/skills/CLAUDE.md" 'leads with the words a request' >/dev/null 2>&1; then
+  ok "skills/CLAUDE.md keeps the discovery rule and restates no occasion rule"
+else
+  no "skills/CLAUDE.md's carry rule restates the occasion rule or dropped the discovery clause: $(node "$desc_tmp/desc.js" "$root" carry-bullet "$root/skills/CLAUDE.md" 'leads with the words a request' 2>&1)"
+fi
+
+# Case 17: the agent-page rules do not restate the occasion rule (criterion 2,
+# "no page restates it"). Break: restore "when to dispatch it," to the
+# Frontmatter bullet of .claude/rules/agents.md, or delete "what a caller
+# reads while deciding" from it (which fails the required regex instead).
+if node "$desc_tmp/desc.js" "$root" carry-bullet "$root/.claude/rules/agents.md" 'what a caller reads while deciding' >/dev/null 2>&1; then
+  ok ".claude/rules/agents.md says what the description is read for and restates no occasion rule"
+else
+  no ".claude/rules/agents.md's carry rule restates the occasion rule or dropped the reading clause: $(node "$desc_tmp/desc.js" "$root" carry-bullet "$root/.claude/rules/agents.md" 'what a caller reads while deciding' 2>&1)"
+fi
+
+rm -rf "$desc_tmp"
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else

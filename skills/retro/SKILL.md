@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Generate a structured English session retrospective from Claude Code or Gemini/Antigravity log files and append it to the active issue document (`docs/issues/<timestamp>-<slug>/issue.md`).
+description: Session retrospective from a Claude Code or Gemini/Antigravity session log. Reach for it when a run is finished and someone asks what to learn from it — which rules created friction, where the tokens and the context went, what to automate next. What it hands back is a retrospective in the run's own issue document; measuring a session while it is still running is `argus`'s instead.
 user-invocable: true
 ---
 
