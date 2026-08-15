@@ -2919,8 +2919,8 @@ fi
 # the change was supposed to fix it") drops the three presence markers
 # and fails the first absence assertion; the round-0 wording ("Where the
 # diff touched the code that failed, it is a finding, your first one ...
-# Where you cannot tell which of these you are in") drops presence
-# markers 1 and 3 and fails the last two absence assertions; putting back
+# Where you cannot tell which of these you are in") drops all three
+# presence markers and fails the last two absence assertions; putting back
 # only the unreachable escape sentence fails the last absence assertion
 # alone.
 if echo "$reviewer_form" | grep -q 'Where an acceptance criterion asked this increment to fix that red' &&
