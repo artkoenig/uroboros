@@ -85,6 +85,14 @@ Report the command, what it covered, and its exit code — "`npm test --
 src/api`, 104 cases, exit 0", never "green" alone. Say so if a run skipped or
 excluded anything.
 
+## The mutation standard
+
+A criterion counts as tested only when at least one of its tests fails if the
+behaviour it asks for is broken or removed — and a test earns its place by its
+break: the production change it exists to catch. This page owns that standard;
+a page that needs it points here instead of restating it. What your role does
+with it — plan to it, write to it, judge by it — is your own page's to say.
+
 ## Your step return
 
 Your step return is what you write into `backlog.json`. Your prompt names the
