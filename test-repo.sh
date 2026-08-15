@@ -548,6 +548,144 @@ else
 fi
 
 echo
+echo "=== a decidable question gets a ruling, not a stall"
+
+brief_collapsed="$(tr '\n' ' ' <"$root/skills/agent-brief/SKILL.md" | tr -s ' ')"
+
+# Criterion 1.1: the five material terms the rulebook gives the session stand
+# in the brief and in rulebook.md alike. Break: delete the sentence "A
+# question is material when it turns on user-visible behaviour, a public
+# contract, the data model, the dependency footprint, or anything
+# irreversible." from the brief — four of the five terms vanish and the case
+# fails. It fails in the other direction too if rulebook.md's own list drifts
+# from the brief's.
+declare -a material_terms=(
+  "user-visible behaviour"
+  "public contract"
+  "data model"
+  "dependency footprint"
+  "irreversible"
+)
+for term in "${material_terms[@]}"; do
+  if echo "$brief_collapsed" | grep -qi "$term"; then
+    ok "the shared brief names \"$term\" as a material term"
+  else
+    no "the shared brief does not name \"$term\" as a material term"
+  fi
+  if grep -qi "$term" "$root/rulebook.md"; then
+    ok "rulebook.md names \"$term\" as a material term"
+  else
+    no "rulebook.md does not name \"$term\" as a material term"
+  fi
+done
+
+# Criterion 1.2: the brief names the other side of the test. Break: delete
+# "Everything else is decidable." from the brief.
+if echo "$brief_collapsed" | grep -qi 'decidable'; then
+  ok "the shared brief names the decidable side of the material test"
+else
+  no "the shared brief does not name a decidable question"
+fi
+
+# Criterion 2.1: a material question stays in questions. Break: delete "A
+# material question goes in `questions`" from the "Rulings, not stalls"
+# section, or reword it to send a material question anywhere else.
+if echo "$brief_collapsed" | grep -q 'A material question goes in `questions`'; then
+  ok "the shared brief keeps a material question in \`questions\`"
+else
+  no "the shared brief no longer keeps a material question in \`questions\`"
+fi
+
+# Criterion 2.2: a non-empty questions list still ends the run. Break: delete
+# that clause from the questions bullet of "Your step return".
+if echo "$brief_collapsed" | grep -q 'A non-empty list ends the run'; then
+  ok "the shared brief still ends the run on a non-empty \`questions\`"
+else
+  no "the shared brief no longer says a non-empty \`questions\` ends the run"
+fi
+
+# Criterion 3.1: a decidable question is forbidden in questions. Break:
+# delete "A decidable one never does", or soften it to allow a decidable
+# question into questions.
+if echo "$brief_collapsed" | grep -q 'A decidable one never does'; then
+  ok "the shared brief forbids a decidable question in \`questions\`"
+else
+  no "the shared brief no longer forbids a decidable question in \`questions\`"
+fi
+
+# Criterion 3.2: the agent picks a default and records it in rulings. Break:
+# delete either half of "pick the default that costs least to undo, carry on,
+# and record it in `rulings`".
+if echo "$brief_collapsed" | grep -q 'record it in `rulings`' && echo "$brief_collapsed" | grep -q 'pick the default'; then
+  ok "the shared brief requires a picked default recorded in \`rulings\`"
+else
+  no "the shared brief no longer requires a picked default recorded in \`rulings\`"
+fi
+
+# Criterion 3.3: rulings is one of the fields meaning the same in every role.
+# Break: delete that bullet from the "Three of those fields mean the same in
+# every role" list.
+if echo "$brief_collapsed" | grep -q '\*\*`rulings`\*\*'; then
+  ok "the shared brief lists \`rulings\` among the fields meaning the same in every role"
+else
+  no "the shared brief does not list \`rulings\` among the fields meaning the same in every role"
+fi
+
+# Criterion 4.1: the shape of one ruling. Break: delete or reword that
+# sentence.
+if echo "$brief_collapsed" | grep -q 'one string naming the decision, the reason, and what it costs if the default is wrong'; then
+  ok "the shared brief states the shape of one ruling"
+else
+  no "the shared brief does not state the shape of one ruling"
+fi
+
+# Criterion 4.2: the length constraint. Break: drop the length constraint
+# from that sentence.
+if echo "$brief_collapsed" | grep -q 'steering projection'; then
+  ok "the shared brief bounds a ruling's length to survive the steering projection"
+else
+  no "the shared brief does not bound a ruling's length to survive the steering projection"
+fi
+
+# Criterion 5.1: every agent page names the rulings field. Break: remove
+# rulings from any one of them — the case fails and names it.
+missing_rulings_ref=""
+for page in "$root"/agents/*.md; do
+  grep -q 'rulings' "$page" || missing_rulings_ref="$missing_rulings_ref $(basename "$page")"
+done
+if [ -z "$missing_rulings_ref" ]; then
+  ok "every agent page names \`rulings\`, the step-return field a ruling is recorded in"
+else
+  no "these agent pages do not mention \`rulings\`:$missing_rulings_ref"
+fi
+
+# Criterion 5.2: the brief is the only page that defines the material test.
+# Break, either direction: restate the material list on any agent page or
+# second shipped skill (two paths match), or delete it from the brief (none
+# match).
+ruling_rule_owners="$(grep -lie 'dependency footprint' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$ruling_rule_owners" = "$root/skills/agent-brief/SKILL.md" ]; then
+  ok "skills/agent-brief/SKILL.md is the only agent page or shipped skill naming the material/decidable test"
+else
+  no "the phrase \"dependency footprint\" is owned by more (or fewer) pages than skills/agent-brief/SKILL.md alone:"
+  echo "${ruling_rule_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Criterion 5.3: the implementer no longer parks every open decision. Break:
+# revert either edit.
+implementer_collapsed="$(tr '\n' ' ' <"$root/agents/implementer.md" | tr -s ' ')"
+if echo "$implementer_collapsed" | grep -q 'need a material decision' && echo "$implementer_collapsed" | grep -q 'leave a material decision open'; then
+  ok "agents/implementer.md only parks a material decision, not every open decision"
+else
+  no "agents/implementer.md does not say it only parks a material decision"
+fi
+if echo "$implementer_collapsed" | grep -q 'leave a real decision open'; then
+  no "agents/implementer.md still says \"leave a real decision open\""
+else
+  ok "agents/implementer.md no longer says \"leave a real decision open\""
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
@@ -596,6 +734,14 @@ const DISJOINT_MARKERS = [
   'MARKER-FINDING-CLAIM',
   'MARKER-FINDING-REPRO',
   'MARKER-REVIEW-HEAD',
+  'MARKER-RULING-CUT',
+  'MARKER-RULING-PLAN',
+  'MARKER-RULING-TESTS',
+  'MARKER-RULING-BUILD',
+  'MARKER-RULING-VERDICT',
+  'MARKER-RULING-CLOSE',
+  'MARKER-RULING-RESUMED',
+  'MARKER-RULING-ARCHIVED',
 ];
 
 // The read a prompt has to carry for its role to have a brief at all. Written
@@ -672,6 +818,7 @@ function idxStep(label, ret) {
     findingCount: r.findingCount || 0,
     allDirect: r.allDirect === true,
     reason: r.reason || '',
+    rulings: Array.isArray(r.rulings) ? r.rulings : [],
   };
 }
 
@@ -688,6 +835,7 @@ function idxIncrement(id, extra) {
       depth: 'full',
       steps: [],
       attempts: 0,
+      attemptRulings: [],
     },
     extra || {},
   );
@@ -736,6 +884,45 @@ const correctionResumeState = () =>
       }),
     ],
     [idxStep('decompose', decomposeReturnOne)],
+  );
+
+// A session that died after the researcher and the test-author each recorded a
+// ruling, with the implementer never run: a resumed run skips both steps, but
+// the result it hands back must still carry what they decided.
+const rulingResumeState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        branch: 'issue-branch--i1',
+        steps: [
+          idxStep('research:i1.0', Object.assign({}, planReturn, { rulings: ['MARKER-RULING-RESUMED'] })),
+          idxStep('tests:i1.0', Object.assign({}, testsReturn, { rulings: ['MARKER-RULING-TESTS'] })),
+        ],
+      }),
+    ],
+    [idxStep('decompose', Object.assign({}, decomposeReturnOne, { rulings: ['MARKER-RULING-CUT'] }))],
+  );
+
+// A run resumed behind an increment an earlier session already closed: the
+// closed increment's rulings live only in its archived attempt now, so the
+// result of this run has to recover them from there — the resumed half of
+// criterion 3, on a cut boundary rather than a mid-increment crash.
+const closedRulingState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        status: 'done',
+        note: 'accepted',
+        branch: 'issue-branch--i1',
+        attempts: 1,
+        attemptRulings: [
+          { label: 'research:i1.0', rulings: ['MARKER-RULING-ARCHIVED'] },
+          { label: 'replan:i1', rulings: ['MARKER-RULING-CLOSE'] },
+        ],
+      }),
+      idxIncrement('i2'),
+    ],
+    [idxStep('decompose', decomposeReturnTwo)],
   );
 
 // A run whose research:i1.0 ended with a question for the human. A resumed run
@@ -902,8 +1089,29 @@ function contextFor(m) {
     case 'w25':
       return { stateReturn: handedBackState(), decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
     case 'w26':
-      return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithFinding : verdictReturnClean) };
+      // Every step of a plain one-increment fresh run records a ruling, so the
+      // labels stay the w1-shaped sequence for one increment and the point of
+      // the case is what the result and the publish prompt do with them.
+      return {
+        stateReturn: noState,
+        decomposeReturn: Object.assign({}, decomposeReturnOne, { rulings: ['MARKER-RULING-CUT'] }),
+        researchReturn: Object.assign({}, planReturn, { rulings: ['MARKER-RULING-PLAN'] }),
+        testsReturn: Object.assign({}, testsReturn, { rulings: ['MARKER-RULING-TESTS'] }),
+        buildReturn: Object.assign({}, buildReturn, { rulings: ['MARKER-RULING-BUILD'] }),
+        verdictFor: () => Object.assign({}, verdictReturnClean, { rulings: ['MARKER-RULING-VERDICT'] }),
+        closeFor: () => ({ summary: 'closed', rulings: ['MARKER-RULING-CLOSE'] }),
+      };
     case 'w27':
+      // A session that died after the researcher and the test-author each
+      // recorded a ruling: the resume skips both, and the run still has to
+      // close on one increment, so decompose and research return their plain
+      // fixtures.
+      return { stateReturn: rulingResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w28':
+      return { stateReturn: closedRulingState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
+    case 'w29':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithFinding : verdictReturnClean) };
+    case 'w30':
       return { stateReturn: correctionResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
@@ -917,7 +1125,7 @@ function returnFor(label) {
   if (label === 'decompose') return ctx.decomposeReturn;
   if (label.startsWith('research:')) return ctx.researchReturn;
   if (label.startsWith('tests:')) return ctx.testsReturn || testsReturn;
-  if (label.startsWith('implement:')) return buildReturn;
+  if (label.startsWith('implement:')) return ctx.buildReturn || buildReturn;
   if (label.startsWith('review:')) return ctx.verdictFor ? ctx.verdictFor(label) : verdictReturnClean;
   if (label.startsWith('replan:')) {
     return ctx.closeFor ? ctx.closeFor(label) : { summary: 'closed' };
@@ -939,7 +1147,7 @@ async function main() {
   const fn = new AsyncFunction('args', 'agent', 'log', 'phase', src);
   const calls = [];
   const stub = async (prompt, opts) => {
-    calls.push({ label: opts.label, agentType: opts.agentType, prompt });
+    calls.push({ label: opts.label, agentType: opts.agentType, prompt, schema: opts.schema });
     return returnFor(opts.label);
   };
   const logs = [];
@@ -1044,6 +1252,16 @@ async function main() {
       'the resumed reviewer was handed no checks, so the recorded plan never reached the one role that cannot read it');
   } else if (mode === 'w3') {
     assertEqualArrays(labels, ['load-state', 'publish'], 'a fully-closed backlog dispatches more than the state loader and publish');
+    // Criterion 5, the closed-increment edge: this fixture's one increment is
+    // closed and its archive ruled nothing (idxIncrement's default
+    // attemptRulings: []), so the result and the publish prompt must add no
+    // noise about rulings — a seeding loop over archived steps must not push
+    // an entry regardless of whether the step it archives carries one.
+    assertTrue(!!result && Array.isArray(result.rulings) && result.rulings.length === 0,
+      'the result of a run whose one closed increment ruled nothing carries a ruling');
+    const publishCall = calls.find((c) => c.label === 'publish');
+    assertTrue(!!publishCall && !/ruling/i.test(publishCall.prompt),
+      'the publish prompt talks about rulings though the closed increment it replays recorded none');
   } else if (mode === 'w4') {
     const testsCall = calls.find((c) => c.label.startsWith('tests:'));
     assertTrue(!!testsCall, 'the test-author was never dispatched');
@@ -1100,7 +1318,63 @@ async function main() {
         c.label + ' is not told to record the prompt it was dispatched with, verbatim');
       assertTrue(/<the return file> <the prompt file>/.test(c.prompt),
         c.label + ' is not given the record call that stores both');
+      // R.1: every recording step's payload list carries `rulings`, matched
+      // as the rendered bullet so a stray mention elsewhere in the prompt
+      // cannot satisfy it.
+      assertTrue(c.prompt.includes('- `rulings`'), c.label + ' is not told that its step return carries `rulings`');
+      // Criterion 1: the structured return the schema demands carries
+      // `rulings` as a required array, not merely as a bullet the prompt's
+      // prose names. Every role but load-state and publish is dispatched in
+      // this fixture (decompose and replan on BACKLOG, research on PLAN,
+      // tests on TESTS, implement on BUILD, review on VERDICT).
+      assertTrue(!!c.schema && !!c.schema.properties && !!c.schema.properties.rulings && c.schema.properties.rulings.type === 'array',
+        c.label + "'s schema does not declare `rulings` as an array property");
+      assertTrue(!!c.schema && Array.isArray(c.schema.required) && c.schema.required.includes('rulings'),
+        c.label + "'s schema does not require `rulings`");
     }
+    // Criterion 3's mechanism: the state loader is asked for the rulings it
+    // reads, on both the run-level steps and the increments' own steps, and
+    // its prompt names the field — checked here because the driver's stub
+    // returns its fixture whatever the schema says, so no run-level case can
+    // catch a schema that stopped asking for the field.
+    const loaderCall = byLabel('load-state');
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties &&
+      !!loaderCall.schema.properties.runSteps && !!loaderCall.schema.properties.runSteps.items &&
+      !!loaderCall.schema.properties.runSteps.items.properties &&
+      !!loaderCall.schema.properties.runSteps.items.properties.rulings,
+      "the state loader's schema does not ask runSteps for `rulings`");
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.runSteps &&
+      Array.isArray(loaderCall.schema.properties.runSteps.items.required) &&
+      loaderCall.schema.properties.runSteps.items.required.includes('rulings'),
+      "the state loader's schema does not require `rulings` on runSteps");
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.increments &&
+      !!loaderCall.schema.properties.increments.items && !!loaderCall.schema.properties.increments.items.properties &&
+      !!loaderCall.schema.properties.increments.items.properties.steps &&
+      !!loaderCall.schema.properties.increments.items.properties.steps.items &&
+      !!loaderCall.schema.properties.increments.items.properties.steps.items.properties &&
+      !!loaderCall.schema.properties.increments.items.properties.steps.items.properties.rulings,
+      "the state loader's schema does not ask an increment's steps for `rulings`");
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.increments &&
+      Array.isArray(loaderCall.schema.properties.increments.items.properties.steps.items.required) &&
+      loaderCall.schema.properties.increments.items.properties.steps.items.required.includes('rulings'),
+      "the state loader's schema does not require `rulings` on an increment's steps");
+    assertTrue(!!loaderCall && /\brulings\b/.test(loaderCall.prompt),
+      "the state loader's prompt does not name `rulings` among the fields it fills");
+    // Criterion 3, the resumed-run guarantee: the loader's schema asks each
+    // increment for the rulings its archived attempts carry, not only the
+    // rulings of its current steps — otherwise a resumed run behind a closed
+    // increment could never recover what that increment's own steps ruled.
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.increments &&
+      !!loaderCall.schema.properties.increments.items && !!loaderCall.schema.properties.increments.items.properties &&
+      loaderCall.schema.properties.increments.items.properties.attemptRulings &&
+      loaderCall.schema.properties.increments.items.properties.attemptRulings.type === 'array',
+      "the state loader's schema does not declare `attemptRulings` as an array property on each increment");
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties.increments &&
+      Array.isArray(loaderCall.schema.properties.increments.items.required) &&
+      loaderCall.schema.properties.increments.items.required.includes('attemptRulings'),
+      "the state loader's schema does not require `attemptRulings` on each increment");
+    assertTrue(!!loaderCall && /\battemptRulings\b/.test(loaderCall.prompt),
+      "the state loader's prompt does not name `attemptRulings` among the fields it fills");
   } else if (mode === 'w9') {
     // A recorded step whose return carried a question used to be replayed
     // as-is, so a resumed run dispatched only load-state and publish, forever.
@@ -1273,6 +1547,14 @@ async function main() {
       'the publish prompt does not forbid reading the run state it was just handed');
     assertTrue(!!publishCall && /[Ff]etch the default branch before you compare/.test(publishCall.prompt),
       'the publish prompt does not tell the agent to fetch the default branch before diffing against it');
+    // Criterion 5: this fixture's returns carry no `rulings` anywhere, so the
+    // publish prompt, the result and the chat must add no noise about them.
+    assertTrue(!!publishCall && !/ruling/i.test(publishCall.prompt),
+      'the publish prompt talks about rulings though this run recorded none');
+    assertTrue(!!result && Array.isArray(result.rulings) && result.rulings.length === 0,
+      'the result of a run that recorded no ruling carries one');
+    assertTrue(!logs.some((l) => /ruling/i.test(l)),
+      'a run with no rulings still logs about rulings');
   } else if (mode === 'w19') {
     // The finding: the old answeredBlock pointed the resumed implementer at
     // `## Decisions` in `issue.md`, a read `hooks/read-barrier.mjs` refuses it.
@@ -1397,6 +1679,58 @@ async function main() {
     assertTrue(!!result && Array.isArray(result.increments) && !!result.increments[0] && result.increments[0].depth === 'full',
       "the run's result does not carry the restarted increment's chain depth as full");
   } else if (mode === 'w26') {
+    // Criteria 2 and 4: every ruling any step of the run recorded reaches the
+    // result, each traceable to its step, and reaches the publish prompt under
+    // its own heading.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'the fresh one-increment run does not dispatch its plain sequence');
+    assertEqualArrays((result && result.rulings || []).map((r) => r.step + ': ' + r.ruling),
+      ['decompose: MARKER-RULING-CUT', 'research:i1.0: MARKER-RULING-PLAN', 'tests:i1.0: MARKER-RULING-TESTS',
+       'implement:i1.0: MARKER-RULING-BUILD', 'review:i1.0: MARKER-RULING-VERDICT', 'replan:i1: MARKER-RULING-CLOSE'],
+      "the run's result does not carry every step's ruling, traceable to its step, in dispatch order");
+    const publishCall = calls.find((c) => c.label === 'publish');
+    assertTrue(!!publishCall, 'publish was never dispatched');
+    for (const pair of ['decompose: MARKER-RULING-CUT', 'research:i1.0: MARKER-RULING-PLAN', 'tests:i1.0: MARKER-RULING-TESTS',
+       'implement:i1.0: MARKER-RULING-BUILD', 'review:i1.0: MARKER-RULING-VERDICT', 'replan:i1: MARKER-RULING-CLOSE']) {
+      assertTrue(!!publishCall && publishCall.prompt.includes(pair),
+        'the publish prompt does not carry the ruling ' + JSON.stringify(pair));
+    }
+    assertTrue(!!publishCall && publishCall.prompt.includes('## Rulings'),
+      'the publish prompt does not ask for a heading of its own for the rulings');
+    assertTrue(logs.some((l) => l.includes('MARKER-RULING-PLAN')),
+      "a step's ruling never reached the chat");
+  } else if (mode === 'w27') {
+    // Criterion 3: a resumed run recovers the rulings of the steps it skips,
+    // so the result of a resumed run is not poorer than an uninterrupted one's.
+    assertEqualArrays(labels, ['load-state', 'implement:i1.0', 'review:i1.0', 'replan:i1', 'publish'],
+      'the resumed run did not skip the recorded decompose, researcher and test-author steps');
+    const rulingPairs = (result && result.rulings || []).map((r) => r.step + ': ' + r.ruling);
+    assertTrue(rulingPairs.includes('decompose: MARKER-RULING-CUT'),
+      "the resumed run's result does not carry the recorded decompose step's ruling");
+    assertTrue(rulingPairs.includes('research:i1.0: MARKER-RULING-RESUMED'),
+      "the resumed run's result does not carry the skipped researcher step's ruling");
+    assertTrue(rulingPairs.includes('tests:i1.0: MARKER-RULING-TESTS'),
+      "the resumed run's result does not carry the skipped test-author step's ruling");
+    const publishCall = calls.find((c) => c.label === 'publish');
+    assertTrue(!!publishCall && publishCall.prompt.includes('research:i1.0: MARKER-RULING-RESUMED'),
+      "the resumed run's publish prompt is poorer than an uninterrupted run's — it does not carry the skipped researcher step's ruling");
+  } else if (mode === 'w28') {
+    // Criterion 3, the closed-increment half: a resumed run recovers the
+    // rulings of an increment an earlier session closed, not only those of a
+    // step it skips mid-increment.
+    assertEqualArrays(labels,
+      ['load-state', 'research:i2.0', 'tests:i2.0', 'implement:i2.0', 'review:i2.0', 'replan:i2', 'publish'],
+      'the resumed run did not skip the closed increment i1 and pick up i2');
+    const rulingPairs = (result && result.rulings || []).map((r) => r.step + ': ' + r.ruling);
+    assertTrue(rulingPairs.includes('research:i1.0: MARKER-RULING-ARCHIVED'),
+      "the resumed run's result does not carry the closed increment's archived researcher ruling");
+    assertTrue(rulingPairs.includes('replan:i1: MARKER-RULING-CLOSE'),
+      "the resumed run's result does not carry the closed increment's archived close ruling");
+    const publishCall = calls.find((c) => c.label === 'publish');
+    assertTrue(!!publishCall && publishCall.prompt.includes('research:i1.0: MARKER-RULING-ARCHIVED'),
+      "the resumed run's publish prompt does not carry the closed increment's archived ruling");
+  } else if (mode === 'w29') {
     // A correction round's review is scoped to the previous verdict's findings
     // and the fix's diff range — it judges the fix, not the increment again.
     assertEqualArrays(labels,
@@ -1435,7 +1769,7 @@ async function main() {
       assertTrue(/\bfindings\b/.test(required) && /\bhead\b/.test(required),
         "the VERDICT schema's required: line does not list findings and head");
     }
-  } else if (mode === 'w27') {
+  } else if (mode === 'w30') {
     // A correction round resumed from the state has no findings and no head in
     // hand — idxStep drops both — so it falls back to the first round's form
     // instead of rendering a git command built from values a restart dropped.
@@ -1484,7 +1818,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w5 "$wf_name: the implementer's prompt carries the plan and the checks and not the test plan"
   run_driver "$wf" w6 "$wf_name: the reviewer's prompt carries the checks alone"
   run_driver "$wf" w7 "$wf_name: a question from the researcher ends the run at publish"
-  run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return and push the commit"
+  run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return, name \`rulings\` among the fields it records, and push the commit — and every dispatched schema, including the state loader's, carries \`rulings\` as well as the prompt"
   run_driver "$wf" w9 "$wf_name: a run resumed after a question for the human works that step again with the question in its prompt"
   run_driver "$wf" w10 "$wf_name: a correction round carries the reviewer's findings to the researcher and the reason to the human"
   run_driver "$wf" w11 "$wf_name: a question from the closing planner ends the run and reaches the human"
@@ -1492,7 +1826,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w14 "$wf_name: a Decompose worked again after a session died before recording it has its new cut worked"
   run_driver "$wf" w16 "$wf_name: a correction round whose findings are all direct fixes skips the researcher and the test-author, and is still reviewed"
   run_driver "$wf" w17 "$wf_name: a blocked increment's branch is closed unmerged and named to the closing planner"
-  run_driver "$wf" w18 "$wf_name: the publish prompt carries the run's outcome and sends the agent to read nothing"
+  run_driver "$wf" w18 "$wf_name: the publish prompt carries the run's outcome and sends the agent to read nothing — and a run with no rulings adds no rulings line, heading or log"
   run_driver "$wf" w19 "$wf_name: a resumed run hands the step that asked the human the answer in its prompt"
   run_driver "$wf" w20 "$wf_name: an increment the planner cut direct is worked by the implementer and the reviewer alone"
   run_driver "$wf" w21 "$wf_name: a full increment and a direct increment each take their own path, the direct one judged by the run's last researcher step"
@@ -1500,8 +1834,11 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w23 "$wf_name: an increment the planner cut direct and handed back after a failed attempt is full on its next attempt"
   run_driver "$wf" w24 "$wf_name: a direct increment whose review files only direct fixes still runs the full chain in its correction round"
   run_driver "$wf" w25 "$wf_name: an increment the state shows as having already closed an attempt is full again after a restart"
-  run_driver "$wf" w26 "$wf_name: a correction round's review is dispatched against the findings and the fix's diff"
-  run_driver "$wf" w27 "$wf_name: a correction round resumed from the state is dispatched as a first round, not as a broken one"
+  run_driver "$wf" w26 "$wf_name: the rulings every step recorded reach the run's result and the publish prompt"
+  run_driver "$wf" w27 "$wf_name: a resumed run recovers the rulings of the steps it skips"
+  run_driver "$wf" w28 "$wf_name: a resumed run recovers the rulings of an increment an earlier session closed"
+  run_driver "$wf" w29 "$wf_name: a correction round's review is dispatched against the findings and the fix's diff"
+  run_driver "$wf" w30 "$wf_name: a correction round resumed from the state is dispatched as a first round, not as a broken one"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment

@@ -51,8 +51,7 @@ your whole brief — each carries the claim, the reproduction that names file,
 line and right result, and the criterion it violates.
 
 Make exactly those corrections and nothing else. Where one turns out to need a
-decision — anything beyond the wording, the reference or the value the
-reproduction names — do not build it: report it as a blocker and leave the rest
+material decision, do not build it: report it as a blocker and leave the rest
 of the list done. A reviewer judges the round afterwards like any other, so a
 correction nobody planned is still a correction somebody checks.
 
@@ -65,8 +64,8 @@ and the codemap your prompt sends you to are your whole brief.
 Build exactly those criteria, and write no test — you are not the role that
 decides one is needed, and none was planned.
 
-Where the criteria and the codemap leave a real decision open, build what they
-do settle and report the rest as a `blockers` entry. An increment worked this
+Where the criteria and the codemap leave a material decision open, build what
+they do settle and report the rest as a `blockers` entry. An increment worked this
 way that turns out to need a plan was cut wrongly, and the review is what
 catches that.
 
@@ -90,7 +89,7 @@ catches that.
 - **`blockers`** — what stopped you, one line each, the reviewer included in
   its readers.
 
-Your prompt names every field this step returns, `questions` and `summary`
-among them, and the shared brief says what those two hold. Record the return
+Your prompt names every field this step returns, `questions`, `rulings` and
+`summary` among them, and the shared brief says what those three hold. Record the return
 into `backlog.json` under the label your prompt names, the way that brief
 describes.

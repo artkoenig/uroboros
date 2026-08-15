@@ -189,6 +189,7 @@ classified like any other.
   written — and it is empty when you found nothing.
 - **`questions`** — what the shared brief defines it as, and nothing else:
   everything you can settle yourself is a finding.
+- **`rulings`** — what the shared brief defines it as.
 - **`findingCount`** and **`allDirect`** — how many findings that list holds,
   and whether every one of them is `direct`. They are the two values your caller
   triages the next round on. Your caller also carries your findings into the next

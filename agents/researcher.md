@@ -55,8 +55,8 @@ brief nobody can fill in. Its fields:
   are also your structured return, because your caller triages on them and the
   reviewer, which reads nothing you wrote, is handed `checks` by it.
 
-Your prompt names every field this step returns, `questions` and `summary`
-among them, and the shared brief says what those two hold. Record the return
+Your prompt names every field this step returns, `questions`, `rulings` and
+`summary` among them, and the shared brief says what those three hold. Record the return
 into `backlog.json` under the label your prompt names, the way that brief
 describes: the plan itself lives in that file alone.
 
