@@ -2678,6 +2678,131 @@ fi
 rm -rf "$desc_tmp"
 
 echo
+echo "=== every rule in the shared brief is written in its winning form"
+
+# One collapsed copy of the page for the whole section — every marker below
+# wraps across lines in the page's prose, so a case tests the collapsed copy,
+# never a bare grep on the file. This is the section's own variable: it is not
+# brief_collapsed from "a decidable question gets a ruling" above, which that
+# section owns.
+brief_form="$(tr '\n' ' ' <"$root/skills/agent-brief/SKILL.md" | tr -s ' ')"
+
+# Case 1: the push rule is a priced prohibition quoting the excuses it
+# counters (failure class: a rule skipped under pressure). Break: restore "You
+# commit your work where your page says to, and you push that commit straight
+# away — an unpushed commit dies with the container that made it, and the run
+# state it carries dies with it." — the prohibition and both quoted excuses
+# vanish and the first two markers fail.
+if echo "$brief_form" | grep -q 'Never keep a commit local' &&
+  echo "$brief_form" | grep -q '"one push at the end will do"' &&
+  echo "$brief_form" | grep -q 'an unpushed commit dies with the container'; then
+  ok "the shared brief's push rule is a priced prohibition quoting its excuses"
+else
+  no "the shared brief's push rule is missing its price or its quoted excuses"
+fi
+
+# Case 2: the default-branch rule is a priced prohibition (failure class: a
+# rule skipped under pressure). Break: restore "The default branch moves only
+# through a pull request a human merges, and opening that pull request is your
+# caller's, never yours." — all three markers vanish.
+if echo "$brief_form" | grep -q 'Never push to the default branch' &&
+  echo "$brief_form" | grep -q '"the work is done and the branch is green"' &&
+  echo "$brief_form" | grep -q 'a change no human approved'; then
+  ok "the shared brief closes the default branch with a priced prohibition"
+else
+  no "the shared brief's default-branch rule is missing its price or its quoted excuse"
+fi
+
+# Case 3: reading outside your prompt is a priced prohibition quoting the
+# excuse it counters. Break: restore "and take nothing else out of them:".
+if echo "$brief_form" | grep -q 'never read a step or a field it did not name' &&
+  echo "$brief_form" | grep -q '"it is in the same file anyway"'; then
+  ok "the shared brief prohibits reading outside your prompt, with the excuse quoted"
+else
+  no "the shared brief's read-scope rule is missing its prohibition or its quoted excuse"
+fi
+
+# Case 4: the Bash rule is keyed to an observable predicate, not a judgement
+# call, and the old judgement-call wording is gone even if bolted back on
+# beside the new bullet. Break, either direction: restore "Prefer a dedicated
+# tool over Bash when one fits — reserve Bash for shell-only operations."
+# (fails the presence markers), or append that sentence to the new bullet
+# (fails the absence assertion).
+if echo "$brief_form" | grep -q 'use Bash where the thing needs a shell' &&
+  echo "$brief_form" | grep -q 'Use the tools above where one of them does the thing' &&
+  ! echo "$brief_form" | grep -q 'Prefer a dedicated tool'; then
+  ok "the shared brief keys the Bash choice to an observable predicate"
+else
+  no "the shared brief's Bash rule still reads as a judgement call, present or bolted on"
+fi
+
+# Case 5: the closed command list is a priced prohibition quoting the excuses
+# it counters. Break: restore "run exactly those and nothing else — a suite, a
+# linter or a formatter it does not name is not yours to run, however obvious
+# it looks, and you never go looking for a runner yourself." — all three
+# markers vanish.
+if echo "$brief_form" | grep -q 'Never run a suite, a linter or a formatter the list does not name' &&
+  echo "$brief_form" | grep -q '"the whole suite is right there"' &&
+  echo "$brief_form" | grep -q 'a failure someone else owns'; then
+  ok "the shared brief closes the command list with a priced prohibition"
+else
+  no "the shared brief's command-list rule is missing its price or its quoted excuses"
+fi
+
+# Case 6: a ruling is a required slot in a template, not three elements asked
+# for in prose. Break: restore "— short enough to survive the steering
+# projection that carries it." directly after "...if the default is wrong",
+# which deletes the template. The older case above pinning "one string naming
+# the decision, the reason, and what it costs if the default is wrong" must
+# stay green here too — that clause is kept word for word in the rewrite.
+if echo "$brief_form" | grep -q 'wrong costs <cost>' &&
+  echo "$brief_form" | grep -q 'in that order'; then
+  ok "the shared brief states a ruling's shape as a template, not prose"
+else
+  no "the shared brief no longer gives a ruling's shape as a template"
+fi
+
+# Case 7: hand-writing the run state is a priced prohibition quoting the
+# excuse it counters. Not keyed to "never edit that file by hand" — the
+# replaced wording contains that phrase too, so a case built on it would stay
+# green after a restore. Break: restore "That helper is the only writer of
+# `backlog.json`, so you never edit that file by hand." — all three markers
+# vanish.
+if echo "$brief_form" | grep -q 'never write it with anything else' &&
+  echo "$brief_form" | grep -q '"the helper rejected my argument"' &&
+  echo "$brief_form" | grep -q 'starts over from the beginning'; then
+  ok "the shared brief prohibits hand-writing the run state, with its price and its quoted excuse"
+else
+  no "the shared brief's run-state rule is missing its price or its quoted excuse"
+fi
+
+# Case 8: the announce timing is two branches on a predicate, not an exemption
+# bolted onto the general rule. Break, either direction: restore "Announce
+# before any other work — after only the branch steps your prompt names, so
+# the announcement lands on the branch your step commits to — with the
+# increment id and the label your prompt gives you." (fails the presence
+# markers and the absence assertion at once), or re-append the bolted clause
+# beside the new branches (fails the absence assertion alone).
+if echo "$brief_form" | grep -q 'Where your prompt names branch steps' &&
+  echo "$brief_form" | grep -q 'Where it names none' &&
+  ! echo "$brief_form" | grep -q 'after only the branch steps'; then
+  ok "the shared brief's announce timing is two stated branches on a predicate"
+else
+  no "the shared brief's announce timing still reads as an exemption bolted on"
+fi
+
+# Case 9: not dispatching is a priced prohibition quoting the excuse it
+# counters. Break: restore "You do not dispatch subagents and you do not call
+# the next agent in the chain." — all three markers vanish.
+if echo "$brief_form" | grep -q 'Never dispatch a subagent' &&
+  echo "$brief_form" | grep -q '"one dispatch would finish this"' &&
+  echo "$brief_form" | grep -q 'the run state never records'; then
+  ok "the shared brief prohibits dispatching, with its price and its quoted excuse"
+else
+  no "the shared brief's no-dispatch rule is missing its price or its quoted excuse"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else

@@ -44,6 +44,73 @@
             "summary": "Audited all 44 rules of the shared brief against the four-row form table and the ban on bolted-on exemptions: nine lose and are rewritten — six pressure rules gain a prohibition with its price and the excuse quoted, the Bash rule and the announce-timing rule are re-cut onto observable predicates (the timing rule was the page's only bolted-on exemption), and the ruling shape gains a template — with the rest carrying the reason they need none. Nine new bash cases in test-repo.sh each turn red when its rule is restored to the wording it replaced, and no rule needed its requirements changed, so nothing goes to the human."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on its own branch: `claude/pages-carry-winning-issue-ng2pk5--INC-01`, off `claude/pages-carry-winning-issue-ng2pk5`.\nBefore anything else, on `claude/pages-carry-winning-issue-ng2pk5`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-01 claude/pages-carry-winning-issue-ng2pk5--INC-01`, commit that state change and push `claude/pages-carry-winning-issue-ng2pk5`. Then create the branch with `git checkout -b claude/pages-carry-winning-issue-ng2pk5--INC-01`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 1 is yours:\n  The shared brief carries the winning form — Audit every rule in skills/agent-brief/SKILL.md against the four rows of the form table and the ban on exemption clauses, rewrite the rules whose form loses without changing what any of them requires, and cover each rewrite with a test-repo.sh case that turns red when the rule is restored to its replaced wording. This is the page every agent runs under and the densest set of rules in the repository, so it goes first and settles how the audit is judged and how the verdict is recorded for the rest of the run.\nWhat it has to satisfy:\n  - Every rule on skills/agent-brief/SKILL.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause bolted onto an existing rule on this page is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.\n  - Where the winning form cannot be written without changing what the rule requires, the rule is left as it stands and the conflict is returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - The verdict is recorded rule by rule for this page, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The planner and reviewer pages carry the winning form; The researcher, test-author and implementer pages carry the winning form; The argus, grill and retro skill pages carry the winning form; The two pages carrying the authoring rules carry the winning form.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-01 research:INC-01.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-01 research:INC-01.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:INC-01.0",
+          "at": "2026-08-15T18:52:34.630Z",
+          "return": {
+            "cases": [
+              {
+                "case": "Case 1 — the push rule carries its price and the excuses it counters.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief's push rule is a priced prohibition quoting its excuses\" (=== every rule in the shared brief is written in its winning form)",
+                "got": "Asserts all three markers present on the collapsed page: `Never keep a commit local`, `\"one push at the end will do\"`, `an unpushed commit dies with the container`. Runs red now: FAIL — the shared brief's push rule is missing its price or its quoted excuses."
+              },
+              {
+                "case": "Case 2 — the default branch is closed by a prohibition that names its price.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief closes the default branch with a priced prohibition\"",
+                "got": "Asserts `Never push to the default branch`, `\"the work is done and the branch is green\"`, `a change no human approved`. Runs red now: FAIL — the shared brief's default-branch rule is missing its price or its quoted excuse."
+              },
+              {
+                "case": "Case 3 — reading outside your prompt is prohibited, with the excuse quoted.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief prohibits reading outside your prompt, with the excuse quoted\"",
+                "got": "Asserts `never read a step or a field it did not name`, `\"it is in the same file anyway\"`. Runs red now: FAIL — the shared brief's read-scope rule is missing its prohibition or its quoted excuse."
+              },
+              {
+                "case": "Case 4 — the Bash rule is keyed to an observable predicate, not a judgement call.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief keys the Bash choice to an observable predicate\"",
+                "got": "Asserts presence of `use Bash where the thing needs a shell` and `Use the tools above where one of them does the thing`, and absence of `Prefer a dedicated tool` — catching both a plain restore and the exemption being appended beside the new wording. Runs red now: FAIL — the shared brief's Bash rule still reads as a judgement call, present or bolted on."
+              },
+              {
+                "case": "Case 5 — the closed command list carries its price and the excuses it counters.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief closes the command list with a priced prohibition\"",
+                "got": "Asserts `Never run a suite, a linter or a formatter the list does not name`, `\"the whole suite is right there\"`, `a failure someone else owns`. Runs red now: FAIL — the shared brief's command-list rule is missing its price or its quoted excuses."
+              },
+              {
+                "case": "Case 6 — a ruling has a template, not three elements asked for in prose.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief states a ruling's shape as a template, not prose\"",
+                "got": "Asserts `wrong costs <cost>` and `in that order` on the collapsed page. Confirmed the pre-existing case pinning \"one string naming the decision, the reason, and what it costs if the default is wrong\" (the \"a decidable question gets a ruling\" section, \"the shared brief states the shape of one ruling\") stays green, since that clause is kept word for word. Runs red now: FAIL — the shared brief no longer gives a ruling's shape as a template."
+              },
+              {
+                "case": "Case 7 — hand-writing the run state is prohibited, with its price and the excuse.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief prohibits hand-writing the run state, with its price and its quoted excuse\"",
+                "got": "Asserts `never write it with anything else`, `\"the helper rejected my argument\"`, `starts over from the beginning` — deliberately not keyed on `never edit that file by hand`, which the replaced wording also carries. Runs red now: FAIL — the shared brief's run-state rule is missing its price or its quoted excuse."
+              },
+              {
+                "case": "Case 8 — the announce timing is two branches on a predicate, not an exemption bolted on.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief's announce timing is two stated branches on a predicate\"",
+                "got": "Asserts presence of `Where your prompt names branch steps` and `Where it names none`, and absence of `after only the branch steps`. Runs red now: FAIL — the shared brief's announce timing still reads as an exemption bolted on."
+              },
+              {
+                "case": "Case 9 — not dispatching is a prohibition that names its price.",
+                "file": "test-repo.sh",
+                "testName": "\"the shared brief prohibits dispatching, with its price and its quoted excuse\"",
+                "got": "Asserts `Never dispatch a subagent`, `\"one dispatch would finish this\"`, `the run state never records`. Runs red now: FAIL — the shared brief's no-dispatch rule is missing its price or its quoted excuse."
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added a new \"every rule in the shared brief is written in its winning form\" section to test-repo.sh with the nine planned cases, one per rewritten rule in skills/agent-brief/SKILL.md; all nine run red now (bash test-repo.sh: 9 of 152 cases FAIL, each on the missing marker the plan named), confirming each pins the exact wording the researcher's rewrite is expected to replace."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on branch `claude/pages-carry-winning-issue-ng2pk5--INC-01`. Before anything else make sure you are on it: `git fetch origin claude/pages-carry-winning-issue-ng2pk5--INC-01` and check it out; if the remote does not have it, create it from `claude/pages-carry-winning-issue-ng2pk5` and push it with `-u`.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 1 is yours:\n  The shared brief carries the winning form — Audit every rule in skills/agent-brief/SKILL.md against the four rows of the form table and the ban on exemption clauses, rewrite the rules whose form loses without changing what any of them requires, and cover each rewrite with a test-repo.sh case that turns red when the rule is restored to the replaced wording. This is the page every agent runs under and the densest set of rules in the repository, so it goes first and settles how the audit is judged and how the verdict is recorded for the rest of the run.\nWhat it has to satisfy:\n  - Every rule on skills/agent-brief/SKILL.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause bolted onto an existing rule on this page is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.\n  - Where the winning form cannot be written without changing what the rule requires, the rule is left as it stands and the conflict is returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - The verdict is recorded rule by rule for this page, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The planner and reviewer pages carry the winning form; The researcher, test-author and implementer pages carry the winning form; The argus, grill and retro skill pages carry the winning form; The two pages carrying the authoring rules carry the winning form.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-01 research:INC-01.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-01 tests:INC-01.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-01 tests:INC-01.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
