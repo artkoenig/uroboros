@@ -42,13 +42,15 @@ that asks of you.
    you nothing. Where the list is empty, your reading carries the whole review.
 
    A red run is always a fact you report. Whether it is also a finding turns on
-   one question: did this change cause it? Where the diff touched the code that
-   failed, it is a finding, your first one, and it outranks everything else.
-   Where the diff never touched it, the red was already there: report it in one
-   line and move on — not this change's defect, and not worth a correction
-   round. Where the increment was supposed to fix that red, it is a finding
-   however old the failure is. Where you cannot tell which of these you are in,
-   run the same listed command at the merge base in a sandbox.
+   one question: did this change cause it? Three predicates decide it, in this
+   order. Where an acceptance criterion asked this increment to fix that red,
+   it is a finding however old the failure is. Where the diff never touched the
+   code that failed, the red was already there: report it in one line and move
+   on — not this change's defect, and not worth a correction round. Where the
+   diff touched that code, run the same listed command at the merge base in a
+   sandbox. Red there too and the failure was already there: report it in one
+   line and move on. Green there and this change caused it: it is a finding,
+   your first one, and it outranks everything else.
 2. **The diff against the intent.** Is every acceptance criterion met? Is there
    anything in the diff no criterion asked for? Judge every changed file that
    way. Where a changed file is `backlog.json`, it is not part of the diff you
