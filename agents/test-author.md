@@ -87,6 +87,7 @@ carries any of this. Its fields:
   line each. The next research round picks them up; they do not stop the run.
 - **`questions`** — what the shared brief defines it as. A vague test case is
   not one of those: it goes in `openQuestions`.
+- **`rulings`** — what the shared brief defines it as.
 
 Your prompt names every field this step returns, `summary` among them. Record
 the return into `backlog.json` under the label your prompt names, the way the

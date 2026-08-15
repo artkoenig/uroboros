@@ -828,6 +828,40 @@ test('index counts an increment\'s archived attempts without carrying them', () 
   assert.equal(idx.increments[0].attempts, 1);
   assert.deepEqual(idx.increments[0].steps, [], 'a closed increment has no current step');
   assert.equal(stdout.includes('MARKER-ARCHIVED'), false, 'the archive grows in the file and never in the index');
+  assert.deepEqual(idx.increments[0].attemptRulings, [], 'an archived attempt that ruled nothing carries nothing forward, not an entry per archived step');
+});
+
+test('index carries an archived attempt\'s rulings, the increment\'s own step first and the run-level close after it, with an over-long ruling dropped as content', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    plan: 'MARKER-ARCHIVED-CONTENT'.padEnd(2000, '.'),
+    rulings: ['MARKER-ARCHIVED-RULING'],
+    summary: 'plan summary',
+  })]);
+  run(['record', backlogPath, 'i1', 'review:i1.0', writeJson(dir, 'review.json', {
+    rulings: ['r'.padEnd(4000, 'r')],
+    summary: 'review summary',
+  })]);
+  run(['record', backlogPath, '-', 'replan:i1', writeJson(dir, 'replan.json', {
+    rulings: ['MARKER-ARCHIVED-CLOSE'],
+    summary: 'closed',
+  })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const stdout = run(['index', backlogPath]);
+  const idx = JSON.parse(stdout);
+
+  assert.deepEqual(
+    idx.increments[0].attemptRulings,
+    [
+      { label: 'research:i1.0', rulings: ['MARKER-ARCHIVED-RULING'] },
+      { label: 'replan:i1', rulings: ['MARKER-ARCHIVED-CLOSE'] },
+    ],
+    "the increment's own archived step comes first, the run-level close it recorded comes after it, and the step whose only ruling is over-long content is dropped entirely",
+  );
+  assert.equal(stdout.includes('MARKER-ARCHIVED-CONTENT'), false, "the archive's content still never reaches the index, even through attemptRulings");
 });
 
 test('index on a missing file exits 1 and prints nothing on stdout', () => {
