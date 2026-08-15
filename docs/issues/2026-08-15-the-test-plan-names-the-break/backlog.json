@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "issue": "docs/issues/2026-08-15-the-test-plan-names-the-break/issue.md",
+  "workflow": "agile-loop",
+  "codemap": "agents/researcher.md — the test plan section is the contract criteria 1, 2 and 4 change: per-criterion cases that fail when the behaviour breaks, the breaking production change stated per case, and the say-so-and-why rule for a criterion left without one.\nagents/reviewer.md — the only live statement of the mutation standard today (check 3: would each criterion have a test that fails if the behaviour breaks); criterion 3's single-owner rule has to reconcile this page with the researcher's.\nskills/agent-brief/SKILL.md — the one page preloaded into every agent; candidate owner for the mutation standard, touched only if ownership lands here rather than on a role page.\ntest-repo.sh — where the repository suite pins page content by grep (e.g. the reviewer's backlog.json ban); touched only if the run decides to pin the new requirement the same way.",
+  "increments": [
+    {
+      "id": "name-the-break",
+      "title": "The test plan names the break for every criterion",
+      "goal": "The researcher's test-plan contract requires, for every acceptance criterion of an increment, at least one case that fails when that criterion's behaviour is broken or removed, with the breaking production change stated as part of each case and a stated reason in the plan wherever a criterion is left without such a case; the mutation standard behind this is stated on exactly one owning page, and every other page that needs it points at that owner instead of restating it.",
+      "criteria": [
+        "The researcher's page requires the test plan to name, for every acceptance criterion of the increment, at least one case that fails when that criterion's behaviour is broken or removed.",
+        "The researcher's page requires each planned case to state the production change that would make it fail, as part of the case.",
+        "The mutation standard has one owning page; every other page that needs it points at the owner instead of restating it.",
+        "A test plan that leaves a criterion without such a case must say so and why, in the plan itself."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-15T07:49:27.341Z",
+        "return": {
+          "questions": [],
+          "summary": "Cut of one: all four acceptance criteria interlock — where the mutation standard is owned decides what the researcher's page states versus points at — so splitting would only churn wording across increments. Criteria 1, 2 and 4 (per-criterion break-naming cases, the stated breaking change, the say-so-and-why rule) land in the researcher's test-plan contract, and criterion 3 (one owning page, pointers elsewhere) spans the researcher's and reviewer's pages, whose check 3 is today the standard's only live statement; all four sit in the single full-depth increment name-the-break."
+        },
+        "prompt": "Issue directory: /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break\nOpen the run state for /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/issue.md: map the issue against the codebase, decide the cut, and write both into /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record /workspace/uroboros/docs/issues/2026-08-15-the-test-plan-names-the-break/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
