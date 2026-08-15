@@ -51,8 +51,7 @@ your whole brief — each carries the claim, the reproduction that names file,
 line and right result, and the criterion it violates.
 
 Make exactly those corrections and nothing else. Where one turns out to need a
-material decision — anything beyond the wording, the reference or the value the
-reproduction names — do not build it: report it as a blocker and leave the rest
+material decision, do not build it: report it as a blocker and leave the rest
 of the list done. A reviewer judges the round afterwards like any other, so a
 correction nobody planned is still a correction somebody checks.
 
