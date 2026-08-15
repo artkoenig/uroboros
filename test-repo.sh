@@ -2437,6 +2437,199 @@ else
 fi
 
 echo
+echo "=== a description names the occasion, not the steps"
+
+# desc.js reads .claude/rules/authoring.md the same way table.js above reads
+# it — table lines stripped, paragraphs collapsed to one line each, filtered
+# to the ones mentioning "description" — and reads a skill's frontmatter
+# description the way the plan spells out: line 1 "---" to the next "---",
+# the single "description:" line inside it, key and surrounding quotes
+# stripped, whitespace collapsed. A description folded over several YAML
+# lines, or missing, or empty, fails loudly rather than passing silently.
+desc_tmp="$(mktemp -d)"
+cat >"$desc_tmp/desc.js" <<'JS'
+const fs = require("fs");
+const root = process.argv[2];
+const mode = process.argv[3];
+
+function fail(msg) { console.error(msg); process.exit(1); }
+
+function paragraphsOf(file) {
+  const text = fs.readFileSync(file, "utf8");
+  return text
+    .split(/\n\s*\n/)
+    .map((p) => p.split("\n").filter((l) => !l.trim().startsWith("|")).join(" ").replace(/\s+/g, " ").trim())
+    .filter((p) => p.length > 0);
+}
+
+function descriptionParagraphs() {
+  const paras = paragraphsOf(root + "/.claude/rules/authoring.md").filter((p) => /description/i.test(p));
+  if (paras.length === 0) fail('no paragraph in .claude/rules/authoring.md mentions "description"');
+  return paras;
+}
+
+function readSkillDescription(file) {
+  const text = fs.readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  if ((lines[0] || "").trim() !== "---") fail(file + ": frontmatter does not start with ---");
+  let end = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === "---") { end = i; break; }
+  }
+  if (end === -1) fail(file + ": frontmatter has no closing ---");
+  const fm = lines.slice(1, end);
+  const descLine = fm.find((l) => /^description:/i.test(l.trim()));
+  if (!descLine) fail(file + ": no description: line in frontmatter (folded onto several lines?)");
+  let value = descLine.trim().replace(/^description:\s*/i, "");
+  value = value.replace(/^["']|["']$/g, "");
+  value = value.replace(/\s+/g, " ").trim();
+  if (!value) fail(file + ": description value is empty");
+  return value;
+}
+
+if (mode === "occasion") {
+  const paras = descriptionParagraphs();
+  if (!paras.some((p) => /occasion/i.test(p))) fail('no description paragraph mentions "occasion": ' + JSON.stringify(paras));
+  process.exit(0);
+}
+
+if (mode === "steps-ban") {
+  const paras = descriptionParagraphs();
+  if (!paras.some((p) => /\bnever\b[^.]*\bsteps\b/i.test(p))) fail('no description paragraph bans steps with "never ... steps": ' + JSON.stringify(paras));
+  process.exit(0);
+}
+
+if (mode === "reason") {
+  const paras = descriptionParagraphs();
+  if (!paras.some((p) => /shortcut/i.test(p) && /body/i.test(p))) fail('no description paragraph carries both "shortcut" and "body": ' + JSON.stringify(paras));
+  process.exit(0);
+}
+
+if (mode === "skill-occasion") {
+  const file = process.argv[4];
+  const desc = readSkillDescription(file);
+  if (!/reach for it|\bwhenever\b|\bwhen\b/i.test(desc)) fail("description names no occasion: " + JSON.stringify(desc));
+  process.exit(0);
+}
+
+if (mode === "skill-nosteps") {
+  const file = process.argv[4];
+  const desc = readSkillDescription(file);
+  const markers = [
+    ["\\bhow it [a-z]+s\\b", "how it ...s"],
+    ["\\bfirst\\b[^.]*\\bthen\\b", "first ... then"],
+    ["\\bstep [0-9]", "step N"],
+  ];
+  for (const [rx, label] of markers) {
+    if (new RegExp(rx, "i").test(desc)) fail("description walks the steps (matched " + label + "): " + JSON.stringify(desc));
+  }
+  process.exit(0);
+}
+
+if (mode === "skill-lead") {
+  const file = process.argv[4];
+  const m1 = new RegExp(process.argv[5], "i");
+  const m2 = new RegExp(process.argv[6], "i");
+  const desc = readSkillDescription(file);
+  const firstSentenceMatch = desc.match(/^[^.]*\./);
+  const lead = firstSentenceMatch ? firstSentenceMatch[0] : desc;
+  if (!m1.test(lead)) fail("lead sentence missing " + process.argv[5] + ": " + JSON.stringify(lead));
+  if (!m2.test(lead)) fail("lead sentence missing " + process.argv[6] + ": " + JSON.stringify(lead));
+  process.exit(0);
+}
+
+fail("unknown mode " + mode);
+JS
+
+# Case 1: the rule requires the occasion. Break: delete "names the occasion
+# to reach for the thing it fronts" from the description paragraph, or delete
+# the section.
+if node "$desc_tmp/desc.js" "$root" occasion >/dev/null 2>&1; then
+  ok "the authoring rules require a description to name the occasion"
+else
+  no "the authoring rules do not require a description to name the occasion: $(node "$desc_tmp/desc.js" "$root" occasion 2>&1)"
+fi
+
+# Case 2: the rule forbids the steps. Break: delete "and never walks through
+# the steps inside it", or soften "never" to "try not to".
+if node "$desc_tmp/desc.js" "$root" steps-ban >/dev/null 2>&1; then
+  ok "the authoring rules forbid a description from walking through the steps"
+else
+  no "the authoring rules do not forbid a description from walking through the steps: $(node "$desc_tmp/desc.js" "$root" steps-ban 2>&1)"
+fi
+
+# Case 3: the rule carries its reason. Break: delete the sentence beginning
+# "A description that summarises a workflow becomes the shortcut agents take
+# instead of reading the body."
+if node "$desc_tmp/desc.js" "$root" reason >/dev/null 2>&1; then
+  ok "the authoring rules carry the reason: a summarised workflow becomes a shortcut past the body"
+else
+  no "the authoring rules do not carry the shortcut-past-the-body reason: $(node "$desc_tmp/desc.js" "$root" reason 2>&1)"
+fi
+
+# Cases 4-7: every shipped skill description names an occasion. One case per
+# skills/*/SKILL.md, sorted, naming the skill. Break: strip the occasion
+# clause from any of the four.
+for f in "$root"/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$f")")"
+  if node "$desc_tmp/desc.js" "$root" skill-occasion "$f" >/dev/null 2>&1; then
+    ok "$skill's description names an occasion for using it"
+  else
+    no "$skill's description names no occasion: $(node "$desc_tmp/desc.js" "$root" skill-occasion "$f" 2>&1)"
+  fi
+done
+
+# Cases 8-11: no shipped skill description walks the body's steps. One case
+# per skills/*/SKILL.md, sorted, naming the skill and the marker that
+# matched. Break: restore a description carrying "how it ...s", "first ...
+# then", or "step N".
+for f in "$root"/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$f")")"
+  if node "$desc_tmp/desc.js" "$root" skill-nosteps "$f" >/dev/null 2>&1; then
+    ok "$skill's description does not walk through the steps"
+  else
+    no "$skill's description walks through the steps: $(node "$desc_tmp/desc.js" "$root" skill-nosteps "$f" 2>&1)"
+  fi
+done
+
+# Case 12: the rule has one home. Mirrors exemption_ban_owners and
+# form_table_owners above. Break, either direction: restate the description
+# rule on skills/CLAUDE.md or .claude/rules/agents.md (two paths match), or
+# delete it from the authoring page (none match).
+description_rule_owners="$(grep -lie 'occasion' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$description_rule_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming the occasion"
+else
+  no "the word \"occasion\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${description_rule_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Cases 13-15: a rewritten description still leads with the words a request
+# for that skill would actually contain. Break: rewrite the lead into words a
+# request would not carry, e.g. "Elicitation protocol for underspecified
+# intents" for grill, "Post-run process analysis" for retro, "Cross-role
+# conventions" for agent-brief.
+if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/agent-brief/SKILL.md" 'rules' 'uroboros subagent' >/dev/null 2>&1; then
+  ok "agent-brief's description leads with the words a request for it would contain"
+else
+  no "agent-brief's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/agent-brief/SKILL.md" 'rules' 'uroboros subagent' 2>&1)"
+fi
+
+if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/grill/SKILL.md" 'vague idea' 'acceptance criteria' >/dev/null 2>&1; then
+  ok "grill's description leads with the words a request for it would contain"
+else
+  no "grill's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/grill/SKILL.md" 'vague idea' 'acceptance criteria' 2>&1)"
+fi
+
+if node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/retro/SKILL.md" 'retrospective' 'log' >/dev/null 2>&1; then
+  ok "retro's description leads with the words a request for it would contain"
+else
+  no "retro's description does not lead with the words a request for it would contain: $(node "$desc_tmp/desc.js" "$root" skill-lead "$root/skills/retro/SKILL.md" 'retrospective' 'log' 2>&1)"
+fi
+
+rm -rf "$desc_tmp"
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else
