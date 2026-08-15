@@ -199,6 +199,6 @@ there, never handed over.
 - **`summary`** — why you cut it this way, what you rejected, and on a later
   call what changed against the call before and what taught you that.
 
-Your prompt names every field this step returns, `questions` among them, and
-the shared brief says what it holds. Record the return into `backlog.json`
+Your prompt names every field this step returns, `questions` and `rulings`
+among them, and the shared brief says what they hold. Record the return into `backlog.json`
 under the label your prompt names, the way that brief describes.

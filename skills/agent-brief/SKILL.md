@@ -35,9 +35,9 @@ independent stops being one.
 
 That prompt, the steps it names and the files your page names are everything you
 get: nothing about the project reaches you except through them, and a fact your
-brief omits is a fact you do not have. Where you need one it does not carry, put
-the gap in your return's `questions` and return; do not go looking for it, and
-do not guess.
+brief omits is a fact you do not have. Where you need one it does not carry, do
+not go looking for it: the test below decides whether that gap ends the run as
+a question or is yours to rule on.
 
 Paths are inferred, never handed to you beyond that directory. An agent that
 needs the history runs `git log` itself.
@@ -93,6 +93,22 @@ break: the production change it exists to catch. This page owns that standard;
 a page that needs it points here instead of restating it. What your role does
 with it — plan to it, write to it, judge by it — is your own page's to say.
 
+## Rulings, not stalls
+
+A question is material when it turns on user-visible behaviour, a public
+contract, the data model, the dependency footprint, or anything irreversible.
+Everything else is decidable.
+
+A material question goes in `questions`. A decidable one never does: pick the
+default that costs least to undo, carry on, and record it in `rulings`. A run
+parked on a question a default would have settled costs the human a day; a
+wrong default costs a correction they can see and undo.
+
+Each ruling is one string naming the decision, the reason, and what it costs if
+the default is wrong — short enough to survive the steering projection that
+carries it. Rule on what you would otherwise have asked, and on nothing else:
+the small choices your role makes all day are not rulings.
+
 ## Your step return
 
 Your step return is what you write into `backlog.json`. Your prompt names the
@@ -102,10 +118,12 @@ produce reaches anyone. So the substance goes in the fields, in full — no
 placeholders, no summaries that drop detail — and no file of your own carries
 it.
 
-Two of those fields mean the same in every role, so no page repeats them:
+Three of those fields mean the same in every role, so no page repeats them:
 
-- **`questions`** — decisions only the human can make, each answerable without
-  opening a file. A non-empty list ends the run, so keep it for those.
+- **`questions`** — material decisions only the human can make, each answerable
+  without opening a file. A non-empty list ends the run, so keep it for those.
+- **`rulings`** — the decidable questions you settled yourself, one string
+  each.
 - **`summary`** — one or two sentences a human reads in the chat. It stands on
   its own: name the thing, not the file it is written in.
 
