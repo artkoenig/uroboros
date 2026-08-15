@@ -2209,6 +2209,234 @@ else
 fi
 
 echo
+echo "=== a rule's form is picked by the failure it prevents"
+
+# The four-row table and the exemption-clause ban both live in
+# .claude/rules/authoring.md. table.js reads the table once per case below: it
+# splits the page into pipe-delimited rows, drops the header separator (a row
+# that is only pipes, dashes, colons and spaces), and treats row 1 as the
+# header and the rest as body rows. Its "row" mode additionally selects the
+# one body row whose failure-class cell matches a regex and asserts every
+# marker is in the "works" cell and none is in the "fails" cell — case-
+# insensitively throughout — which is what catches a row whose two forms have
+# been swapped.
+form_tmp="$(mktemp -d)"
+cat >"$form_tmp/table.js" <<'JS'
+const fs = require("fs");
+const root = process.argv[2];
+const mode = process.argv[3];
+
+function fail(msg) { console.error(msg); process.exit(1); }
+
+const text = fs.readFileSync(root + "/.claude/rules/authoring.md", "utf8");
+const lines = text.split("\n").filter((l) => l.trim().startsWith("|"));
+const rows = lines.map((l) => {
+  const cells = l.trim().split("|");
+  cells.shift();
+  cells.pop();
+  return cells.map((c) => c.trim());
+});
+if (rows.length < 2) fail("no table found in .claude/rules/authoring.md");
+const header = rows[0];
+const body = rows.slice(1).filter((r) => !r.every((c) => /^[-:\s]*$/.test(c)));
+
+if (mode === "shape") {
+  if (body.length !== 4) fail("expected exactly 4 body rows, found " + body.length);
+  body.forEach((r, i) => {
+    if (r.length !== 4) fail("row " + i + " has " + r.length + " cells, expected 4");
+    r.forEach((c, j) => { if (!c) fail("row " + i + " cell " + j + " is empty"); });
+  });
+  process.exit(0);
+}
+
+if (mode === "header") {
+  if (!/failure/i.test(header[0] || "")) fail("header cell 1 does not name the failure class: " + JSON.stringify(header[0]));
+  if (!/works/i.test(header[1] || "")) fail("header cell 2 does not name the form that works: " + JSON.stringify(header[1]));
+  if (!/fails/i.test(header[2] || "")) fail("header cell 3 does not name the form that fails: " + JSON.stringify(header[2]));
+  if (!/reason|why/i.test(header[3] || "")) fail("header cell 4 does not name the reason: " + JSON.stringify(header[3]));
+  process.exit(0);
+}
+
+if (mode === "reason") {
+  const oneSentence = /^[^.]+\.$/;
+  body.forEach((r, i) => {
+    if (!oneSentence.test(r[3] || "")) fail("row " + i + " reason cell is not exactly one sentence: " + JSON.stringify(r[3]));
+  });
+  process.exit(0);
+}
+
+if (mode === "row") {
+  const failureRx = new RegExp(process.argv[4], "i");
+  const markers = JSON.parse(process.argv[5]);
+  const matches = body.filter((r) => failureRx.test(r[0] || ""));
+  if (matches.length !== 1) fail("expected exactly one row matching " + process.argv[4] + ", found " + matches.length);
+  const row = matches[0];
+  const works = row[1] || "";
+  const fails = row[2] || "";
+  const problems = [];
+  for (const m of markers) {
+    const rx = new RegExp(m, "i");
+    if (!rx.test(works)) problems.push("marker " + m + " missing from the works cell: " + JSON.stringify(works));
+    if (rx.test(fails)) problems.push("marker " + m + " found in the fails cell: " + JSON.stringify(fails));
+  }
+  if (problems.length) fail(problems.join("; "));
+  process.exit(0);
+}
+
+if (mode === "ban") {
+  const paragraphs = text.split(/\n\s*\n/).map((p) =>
+    p.split("\n").filter((l) => !l.trim().startsWith("|")).join(" ").replace(/\s+/g, " ").trim()
+  );
+  const mentioning = paragraphs.filter((p) => /exemption clause/i.test(p));
+  if (mentioning.length === 0) fail('no paragraph mentions "exemption clause"');
+  const guarded = mentioning.some((p) => /never/i.test(p) && /re-cut/i.test(p) && /observable predicate/i.test(p));
+  if (!guarded) fail('no paragraph mentioning "exemption clause" also carries never, re-cut and observable predicate');
+  process.exit(0);
+}
+
+fail("unknown mode " + mode);
+JS
+
+# Criterion 1: a table of exactly four rows, four named parts each.
+# Break: add a fifth row, delete one, or blank any cell — in particular the
+# "form that fails" cell of any row.
+if node "$form_tmp/table.js" "$root" shape >/dev/null 2>&1; then
+  ok "the form table has exactly four body rows, each with four non-empty cells"
+else
+  no "the form table's shape is wrong: $(node "$form_tmp/table.js" "$root" shape 2>&1)"
+fi
+
+# Criterion 1: column order. Break: swap the "Form that works" and "Form that
+# fails" headers — which inverts all four rows at once while every cell keeps
+# its text, and is why this case is separate from the shape case above.
+if node "$form_tmp/table.js" "$root" header >/dev/null 2>&1; then
+  ok "the form table's header names failure, works, fails and the reason, in order"
+else
+  no "the form table's header is wrong: $(node "$form_tmp/table.js" "$root" header 2>&1)"
+fi
+
+# Criterion 1: one-sentence reason. Break: split any reason cell into two
+# sentences, or empty it.
+if node "$form_tmp/table.js" "$root" reason >/dev/null 2>&1; then
+  ok "every form-table row states its reason in exactly one sentence"
+else
+  no "a form-table reason cell is not one sentence: $(node "$form_tmp/table.js" "$root" reason 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 1 — a rule skipped under pressure.
+# Breaks, each independently red: swap cells 2 and 3 of the row (the failing
+# form names no prohibition); replace "A prohibition" in cell 2 with
+# "A reminder"; delete "carries its price and " from cell 2 (criterion 6, the
+# price); delete ", verbatim," from cell 2, or replace "quotes, verbatim, the
+# rationalisation it counters" with "names the rationalisation it counters"
+# (criterion 6, the verbatim rationalisation); move any marker's wording into
+# cell 3.
+if node "$form_tmp/table.js" "$root" row 'skipped under pressure' '["prohibition","\\bprice\\b","verbatim","rationalisation"]' >/dev/null 2>&1; then
+  ok "row 1 (skipped under pressure) pairs the prohibition, its price and the verbatim rationalisation with the winning form"
+else
+  no "row 1 (skipped under pressure) is wrong: $(node "$form_tmp/table.js" "$root" row 'skipped under pressure' '["prohibition","\\bprice\\b","verbatim","rationalisation"]' 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 2 — a wrong output shape.
+# Breaks: swap cells 2 and 3, so the wrong output shape is paired with a list
+# of prohibitions — the form measured to lose against it (criterion 5);
+# replace cell 2 with "A list of prohibitions"; drop "what the output is"
+# from cell 2.
+if node "$form_tmp/table.js" "$root" row 'output shape' '["recipe","output"]' >/dev/null 2>&1; then
+  ok "row 2 (wrong output shape) pairs the recipe with the winning form"
+else
+  no "row 2 (wrong output shape) is wrong: $(node "$form_tmp/table.js" "$root" row 'output shape' '["recipe","output"]' 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 3 — an omitted required element.
+# Breaks: swap cells 2 and 3, so the omission is paired with prose in the body
+# (criterion 5); replace cell 2 with "Prose in the body asking for the
+# element"; drop "in the schema or the template" from cell 2.
+if node "$form_tmp/table.js" "$root" row 'omitted required element' '["\\bslot\\b","schema|template"]' >/dev/null 2>&1; then
+  ok "row 3 (omitted required element) pairs the required slot with the winning form"
+else
+  no "row 3 (omitted required element) is wrong: $(node "$form_tmp/table.js" "$root" row 'omitted required element' '["\\bslot\\b","schema|template"]' 2>&1)"
+fi
+
+# Criterion 2 and criterion 5, row 4 — behaviour that depends on a condition.
+# Breaks: swap cells 2 and 3, so the conditional behaviour is paired with a
+# judgement call or a bolted-on exemption (criterion 5); replace "keyed to an
+# observable predicate" in cell 2 with "left to the agent's judgement".
+if node "$form_tmp/table.js" "$root" row 'depends on a condition' '["observable predicate"]' >/dev/null 2>&1; then
+  ok "row 4 (depends on a condition) pairs the observable predicate with the winning form"
+else
+  no "row 4 (depends on a condition) is wrong: $(node "$form_tmp/table.js" "$root" row 'depends on a condition' '["observable predicate"]' 2>&1)"
+fi
+
+# Criterion 3 and criterion 6 — the exemption-clause ban. Stripping the table
+# lines before collapsing paragraphs is load-bearing: without it, row 4's
+# cells satisfy the assertion and the ban paragraph can be gutted while the
+# case stays green — that is exactly the hole INC-1's second review round
+# found. Breaks: delete the ban paragraph; replace "Never patch a working
+# rule" with "Consider avoiding patching a working rule"; delete "Re-cut the
+# rule" from it; replace "Re-cut the rule on an observable predicate instead"
+# with "Re-cut the rule on your best judgement instead" (criterion 6, the
+# observable predicate).
+if node "$form_tmp/table.js" "$root" ban >/dev/null 2>&1; then
+  ok "the authoring rules ban patching a working rule with an exemption clause and require re-cutting on an observable predicate"
+else
+  no "the exemption-clause ban is missing or gutted: $(node "$form_tmp/table.js" "$root" ban 2>&1)"
+fi
+
+rm -rf "$form_tmp"
+
+# Criterion 4: the home exists and is scoped to both audiences. Break: delete
+# the file, or drop either pattern from paths:. (The pre-existing scoping
+# cases above add, for free, that the page is path-scoped at all and that both
+# patterns match tracked files.)
+if [ -f "$root/.claude/rules/authoring.md" ] &&
+  sed -n '2,/^---$/p' "$root/.claude/rules/authoring.md" | grep -q 'skills/\*\*' &&
+  sed -n '2,/^---$/p' "$root/.claude/rules/authoring.md" | grep -q 'agents/\*\*'; then
+  ok ".claude/rules/authoring.md exists and is scoped to skills/** and agents/** alike"
+else
+  no ".claude/rules/authoring.md is missing, or its paths: frontmatter does not cover skills/** and agents/**"
+fi
+
+# Criterion 4: the skill-page author is pointed at it. Break: delete the
+# pointer sentence.
+if grep -q '\.claude/rules/authoring\.md' "$root/skills/CLAUDE.md"; then
+  ok "skills/CLAUDE.md points whoever authors a skill page at .claude/rules/authoring.md"
+else
+  no "skills/CLAUDE.md does not point at .claude/rules/authoring.md"
+fi
+
+# Criterion 4: the agent-page author is pointed at it. Break: delete the
+# pointer sentence.
+if grep -q '\.claude/rules/authoring\.md' "$root/.claude/rules/agents.md"; then
+  ok ".claude/rules/agents.md points whoever authors an agent page at .claude/rules/authoring.md"
+else
+  no ".claude/rules/agents.md does not point at .claude/rules/authoring.md"
+fi
+
+# Criterion 4: one home for the ban. Mirrors mutation_standard_owners above.
+# Break, either direction: restate the ban on a second page (two paths
+# match), or delete it from the owner (none match).
+exemption_ban_owners="$(grep -lie 'exemption clause' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$exemption_ban_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming an exemption clause"
+else
+  no "the phrase \"exemption clause\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${exemption_ban_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+# Criterion 4: one home for the table. Same ownership check keyed on
+# "rationalisation", the table's most distinctive word. Break, either
+# direction: restate a table row on another page, or delete row 1 from the
+# owner.
+form_table_owners="$(grep -lie 'rationalisation' "$root"/agents/*.md "$root"/skills/*/SKILL.md "$root/skills/CLAUDE.md" "$root"/.claude/rules/*.md "$root/rulebook.md" "$root/README.md" "$root/GEMINI.md" 2>/dev/null || true)"
+if [ "$form_table_owners" = "$root/.claude/rules/authoring.md" ]; then
+  ok ".claude/rules/authoring.md is the only page naming a rationalisation"
+else
+  no "the phrase \"rationalisation\" is owned by more (or fewer) pages than .claude/rules/authoring.md alone:"
+  echo "${form_table_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else
