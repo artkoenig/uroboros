@@ -1207,6 +1207,10 @@ async function main() {
         c.label + ' is not told to record the prompt it was dispatched with, verbatim');
       assertTrue(/<the return file> <the prompt file>/.test(c.prompt),
         c.label + ' is not given the record call that stores both');
+      // R.1: every recording step's payload list carries `rulings`, matched
+      // as the rendered bullet so a stray mention elsewhere in the prompt
+      // cannot satisfy it.
+      assertTrue(c.prompt.includes('- `rulings`'), c.label + ' is not told that its step return carries `rulings`');
     }
   } else if (mode === 'w9') {
     // A recorded step whose return carried a question used to be replayed
@@ -1538,7 +1542,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w5 "$wf_name: the implementer's prompt carries the plan and the checks and not the test plan"
   run_driver "$wf" w6 "$wf_name: the reviewer's prompt carries the checks alone"
   run_driver "$wf" w7 "$wf_name: a question from the researcher ends the run at publish"
-  run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return and push the commit"
+  run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return, name \`rulings\` among the fields it records, and push the commit"
   run_driver "$wf" w9 "$wf_name: a run resumed after a question for the human works that step again with the question in its prompt"
   run_driver "$wf" w10 "$wf_name: a correction round carries the reviewer's findings to the researcher and the reason to the human"
   run_driver "$wf" w11 "$wf_name: a question from the closing planner ends the run and reaches the human"
