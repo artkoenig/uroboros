@@ -53,8 +53,7 @@ policy; an instruction every agent has to follow belongs in the brief even
 when it reads like a detail.
 
 This section decides where a rule lives; `.claude/rules/authoring.md` decides
-what form it takes, and that page stays out of the brief because it binds
-whoever writes a page here rather than an agent at run time.
+what form it takes.
 
 ## Assets
 
