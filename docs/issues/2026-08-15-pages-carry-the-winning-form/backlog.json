@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "issue": "docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md",
+  "workflow": "agile-loop",
+  "codemap": "Pages in scope — every rule on each is audited against the four rows of the form table and the ban on exemption clauses, and rewritten where its form loses:\n- skills/agent-brief/SKILL.md — the brief every agent runs under; the densest page of rules in the repository.\n- agents/planner.md — the planner role page.\n- agents/reviewer.md — the reviewer role page.\n- agents/researcher.md — the researcher role page.\n- agents/test-author.md — the test-author role page.\n- agents/implementer.md — the implementer role page.\n- skills/argus/SKILL.md — the argus skill page.\n- skills/grill/SKILL.md — the grill skill page.\n- skills/retro/SKILL.md — the retro skill page.\n- skills/CLAUDE.md — repository-local rules for skill authors, one of the two pages carrying the authoring rules.\n- .claude/rules/agents.md — repository-local rules for agent pages, the other page carrying them.\n\nOut of scope by the issue: rulebook.md, GEMINI.md, README.md.\n\nOther files the issue changes:\n- test-repo.sh — the suite that owns facts about this repository; every rewritten rule gets a case here that turns red when the rule is restored to the wording it replaced. It already holds the description-form cases from the previous pass (around 'a description names the occasion, not the steps'), which are the idiom to follow.\n- docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json — where the page-by-page, rule-by-rule verdict is recorded, through the backlog helper; no new document is added to the repository for it.\n\nRead, never changed:\n- .claude/rules/authoring.md — the form table and the exemption-clause ban the audit judges against.\n- test.sh — the one command behind 'the suite is green'; it already runs test-repo.sh, so no wiring changes.\n",
+  "increments": [
+    {
+      "id": "INC-01",
+      "title": "The shared brief carries the winning form",
+      "goal": "Audit every rule in skills/agent-brief/SKILL.md against the four rows of the form table and the ban on exemption clauses, rewrite the rules whose form loses without changing what any of them requires, and cover each rewrite with a test-repo.sh case that turns red when the rule is restored to its replaced wording. This is the page every agent runs under and the densest set of rules in the repository, so it goes first and settles how the audit is judged and how the verdict is recorded for the rest of the run.",
+      "criteria": [
+        "Every rule on skills/agent-brief/SKILL.md is read against all four rows of the form table and against the ban on exemption clauses.",
+        "Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.",
+        "Any exemption clause bolted onto an existing rule on this page is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.",
+        "Where the winning form cannot be written without changing what the rule requires, the rule is left as it stands and the conflict is returned as a question for the human.",
+        "Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.",
+        "The verdict is recorded rule by rule for this page, and every rule left unchanged carries the reason it needs no rewrite.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "INC-02",
+      "title": "The planner and reviewer pages carry the winning form",
+      "goal": "The same audit and rewrite, with its tests and its verdict, for agents/planner.md and agents/reviewer.md — the two longest role pages, and the two whose rules most often read as unpriced reminders and prose-asked required elements.",
+      "criteria": [
+        "Every rule on agents/planner.md and agents/reviewer.md is read against all four rows of the form table and against the ban on exemption clauses.",
+        "Every rule whose form loses is rewritten into the winning form, and no rewrite changes what the rule requires.",
+        "Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.",
+        "A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.",
+        "Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.",
+        "The verdict is recorded page by page and rule by rule, and every rule left unchanged carries the reason it needs no rewrite.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "INC-03",
+      "title": "The researcher, test-author and implementer pages carry the winning form",
+      "goal": "The same audit and rewrite, with its tests and its verdict, for agents/researcher.md, agents/test-author.md and agents/implementer.md — the three remaining role pages.",
+      "criteria": [
+        "Every rule on agents/researcher.md, agents/test-author.md and agents/implementer.md is read against all four rows of the form table and against the ban on exemption clauses.",
+        "Every rule whose form loses is rewritten into the winning form, and no rewrite changes what the rule requires.",
+        "Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.",
+        "A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.",
+        "Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.",
+        "The verdict is recorded page by page and rule by rule, and every rule left unchanged carries the reason it needs no rewrite.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "INC-04",
+      "title": "The argus, grill and retro skill pages carry the winning form",
+      "goal": "The same audit and rewrite, with its tests and its verdict, for skills/argus/SKILL.md, skills/grill/SKILL.md and skills/retro/SKILL.md — the shipped skills other than the shared brief.",
+      "criteria": [
+        "Every rule on skills/argus/SKILL.md, skills/grill/SKILL.md and skills/retro/SKILL.md is read against all four rows of the form table and against the ban on exemption clauses.",
+        "Every rule whose form loses is rewritten into the winning form, and no rewrite changes what the rule requires.",
+        "Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.",
+        "A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.",
+        "Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.",
+        "The verdict is recorded page by page and rule by rule, and every rule left unchanged carries the reason it needs no rewrite.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "INC-05",
+      "title": "The two pages carrying the authoring rules carry the winning form",
+      "goal": "The same audit and rewrite, with its tests and its verdict, for skills/CLAUDE.md and .claude/rules/agents.md — the pages that bind whoever writes the pages above, and the last two in scope.",
+      "criteria": [
+        "Every rule on skills/CLAUDE.md and .claude/rules/agents.md is read against all four rows of the form table and against the ban on exemption clauses.",
+        "Every rule whose form loses is rewritten into the winning form, and no rewrite changes what the rule requires.",
+        "Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own.",
+        "A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.",
+        "Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.",
+        "The verdict is recorded page by page and rule by rule, and every rule left unchanged carries the reason it needs no rewrite.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-15T18:40:25.794Z",
+        "return": {
+          "questions": [],
+          "rulings": [
+            "The page-by-page, rule-by-rule verdict is recorded in the run's step returns in backlog.json rather than in a new document shipped in the repository: every issue directory here holds only issue.md and backlog.json, and backlog.json is already the run's record. If wrong, the cost is one document assembled afterwards from returns that already carry the whole verdict.",
+            "The cut is by page group rather than by form-table row: an increment that audits one row across all eleven pages would touch every page five times and never leave the pages settled, while a page group lands each page finished once. If wrong, the cost is that a single form row is judged slightly differently across increments, correctable by a later sweep.",
+            "Each increment carries the issue's cross-cutting criteria scoped to its own pages, since every criterion is a standard applied per rule rather than a one-off deliverable. If wrong, the cost is repetitive criteria text, not missed work.",
+            "All five increments are depth full: a rewrite decides which form wins for each rule and each rewrite needs a new test that turns red on the old wording, so nothing here is already named down to the wording."
+          ],
+          "summary": "Cut the pass into five increments by page group, the shared brief first because it is the densest and most load-bearing page and it settles how the audit is judged and how the verdict is recorded for the rest of the run: INC-01 skills/agent-brief/SKILL.md, INC-02 agents/planner.md and agents/reviewer.md, INC-03 the three remaining agent pages, INC-04 the argus, grill and retro skill pages, INC-05 skills/CLAUDE.md and .claude/rules/agents.md. The issue's criteria are standards applied per rule rather than separate deliverables, so each of them lands in every increment scoped to that increment's pages: the read against the four form rows and the exemption ban, the rewrite that changes form and never requirement, the re-cut of an exemption clause onto an observable predicate, the conflict returned as a question where the winning form cannot preserve the requirement, the test-repo.sh case per rewritten rule, the rule-by-rule verdict with a reason for every rule left alone, and `bash test.sh` exiting 0. I rejected a cut by form-table row, which would touch all eleven pages five times over and leave none of them settled, and a cut of one increment per page, which would need eleven chains against a limit of eight. The codemap names the eleven pages in scope, test-repo.sh, and .claude/rules/authoring.md as the read-only standard."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nOpen the run state for docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
