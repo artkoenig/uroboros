@@ -3371,6 +3371,244 @@ else
 fi
 
 echo
+echo "=== every rule on the argus, grill and retro skill pages is written in its winning form"
+
+# Three collapsed copies of the pages for the whole section — every marker
+# below wraps across lines in the pages' prose, so a case tests the collapsed
+# copy, never a bare grep on the file. These three names are new; nothing
+# else in the file uses them.
+argus_form="$(tr '\n' ' ' <"$root/skills/argus/SKILL.md" | tr -s ' ')"
+grill_form="$(tr '\n' ' ' <"$root/skills/grill/SKILL.md" | tr -s ' ')"
+retro_form="$(tr '\n' ' ' <"$root/skills/retro/SKILL.md" | tr -s ' ')"
+
+# Case 1: argus, A-4, row 1 — never handing the setup over silently is a
+# priced prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "Say that out loud when you hand this over; it is
+# the one step that silently produces no data." — the three presence markers
+# vanish and the absence assertion fails; bolting the old sentence back
+# beside the new prohibition fails the absence assertion alone.
+if echo "$argus_form" | grep -q 'Never hand the setup over without saying that out loud' &&
+  echo "$argus_form" | grep -q '"they will start a new session anyway"' &&
+  echo "$argus_form" | grep -q 'reads as a broken collector' &&
+  ! echo "$argus_form" | grep -q 'Say that out loud when you hand this over'; then
+  ok "argus's hand-over rule is a priced prohibition quoting its excuse"
+else
+  no "argus's hand-over rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 2: argus, A-5, row 1 — running the probe in the agent's own
+# environment is a priced prohibition quoting its excuse (failure class: a
+# rule skipped under pressure). Break: restore "Run it inside the
+# environment the agent runs in.", alone or appended beside the new
+# prohibition.
+if echo "$argus_form" | grep -q 'Never run it outside the environment the agent runs in' &&
+  echo "$argus_form" | grep -q '"my shell is close enough"' &&
+  echo "$argus_form" | grep -q 'passes on variables nothing is exporting with' &&
+  ! echo "$argus_form" | grep -q 'Run it inside the environment the agent runs in'; then
+  ok "argus's probe-environment rule is a priced prohibition quoting its excuse"
+else
+  no "argus's probe-environment rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 3: argus, A-6, row 1 — never offering to recover unexported telemetry
+# is a priced prohibition quoting its excuse (failure class: a rule skipped
+# under pressure). Break: restore the old paragraph, caught by the absence
+# assertion and by the first three markers. The fourth marker is the
+# requirement the rewrite keeps, and it is asserted so that a later edit
+# cannot drop the "offer a new session" half while the prohibition alone
+# keeps the case green.
+if echo "$argus_form" | grep -q 'Never offer to recover it' &&
+  echo "$argus_form" | grep -q '"there may be a log somewhere"' &&
+  echo "$argus_form" | grep -q 'the search ends empty however long it runs' &&
+  echo "$argus_form" | grep -q 'offer the measurable thing: a new session doing the same work' &&
+  ! echo "$argus_form" | grep -q 'There is nothing to recover. Telemetry not exported at the time was never produced'; then
+  ok "argus's nothing-to-recover rule is a priced prohibition quoting its excuse"
+else
+  no "argus's nothing-to-recover rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 4: grill, G-2, row 1 — never opening the interview before the sweep
+# returns is a priced prohibition quoting its excuse (failure class: a rule
+# skipped under pressure). Break: restore "Ask them last, though." The third
+# marker is the price the rewrite keeps verbatim, so the absence assertion is
+# what catches a restore that appends the old opening.
+if echo "$grill_form" | grep -q 'Never open the interview before the sweep has come back' &&
+  echo "$grill_form" | grep -q '"the idea is clear enough to just ask"' &&
+  echo "$grill_form" | grep -q 'the vagueness that made grilling necessary survives untouched' &&
+  ! echo "$grill_form" | grep -q 'Ask them last, though'; then
+  ok "grill's sweep-before-interview rule is a priced prohibition quoting its excuse"
+else
+  no "grill's sweep-before-interview rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 5: grill, G-3a, row 3 — the sweep's return shape is a recipe, not
+# prose (failure class: an omitted required element asked for in prose).
+# Break: restore the prose sentence "What comes back is the ground the
+# interview stands on — what already exists, what the idea would touch, and
+# which questions the repository cannot answer."
+if echo "$grill_form" | grep -q 'every slot filled' &&
+  echo "$grill_form" | grep -q '<what already exists> — <what the idea would touch> — <the questions the repository cannot answer>' &&
+  ! echo "$grill_form" | grep -q 'what already exists, what the idea would touch, and which questions the repository cannot answer'; then
+  ok "grill's sweep-return shape is a recipe, not prose"
+else
+  no "grill's sweep-return shape still reads as prose"
+fi
+
+# Case 6: grill, G-3b, row 1 — never reading the swept material yourself is a
+# priced prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "You read none of that yourself", alone or
+# beside the new prohibition.
+if echo "$grill_form" | grep -q 'Never read the swept material yourself' &&
+  echo "$grill_form" | grep -q '"one file will be quicker than briefing a subagent"' &&
+  echo "$grill_form" | grep -q 'the sweep exists to keep it clean' &&
+  ! echo "$grill_form" | grep -q 'You read none of that yourself'; then
+  ok "grill's do-not-read-the-sweep rule is a priced prohibition quoting its excuse"
+else
+  no "grill's do-not-read-the-sweep rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 7: grill, G-5, row 1 — never bundling questions is a priced
+# prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "Never bundle questions; bundled questions get
+# half-answers." Note the absence marker carries the semicolon: the new
+# wording opens with the same three words, so only the semicolon form
+# distinguishes the replaced rule.
+if echo "$grill_form" | grep -q 'Never bundle questions — not "these two go together"' &&
+  echo "$grill_form" | grep -q 'the turn that asked both is spent' &&
+  ! echo "$grill_form" | grep -q 'Never bundle questions; bundled questions get half-answers'; then
+  ok "grill's never-bundle-questions rule is a priced prohibition quoting its excuse"
+else
+  no "grill's never-bundle-questions rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 8: grill, G-6, row 1, both halves of step 3 — never letting a vague
+# answer stand and never leaving an edge undecided are priced prohibitions
+# quoting their excuses (failure class: a rule skipped under pressure).
+# Break, two directions: restore the first sentence of the old bullet,
+# caught by the first absence assertion; or restore the second, caught by
+# the second. The second presence marker is the "politely" the rewrite
+# keeps in the rule, so a rewrite that drops it while keeping the
+# prohibition also goes red.
+if echo "$grill_form" | grep -q 'Never let "it should be better" stand as an answer' &&
+  echo "$grill_form" | grep -q 'press politely for the one that can land as an acceptance criterion' &&
+  echo "$grill_form" | grep -q 'an answer nobody can fail is a criterion nobody can test' &&
+  echo "$grill_form" | grep -q 'Never leave an edge the sweep turned up undecided' &&
+  echo "$grill_form" | grep -q '"the centre is what matters"' &&
+  echo "$grill_form" | grep -q 'one role too late' &&
+  ! echo "$grill_form" | grep -q 'Push politely past' &&
+  ! echo "$grill_form" | grep -q 'Close the edges the sweep turned up as well as the centre'; then
+  ok "grill's vague-answer and undecided-edge rules are priced prohibitions quoting their excuses"
+else
+  no "grill's vague-answer and undecided-edge rules still read as unpriced reminders, present or bolted on"
+fi
+
+# Case 9: grill, G-8, row 3 — the criteria document's shape is a recipe, not
+# prose (failure class: an omitted required element). Break: restore the
+# prose list "the problem, the acceptance criteria, and **a decision
+# recorded for every answer the human gave**".
+if echo "$grill_form" | grep -q 'a section per slot and no slot empty: the problem; the acceptance criteria; a decision for every answer the human gave' &&
+  ! echo "$grill_form" | grep -q 'the problem, the acceptance criteria, and'; then
+  ok "grill's criteria-document shape is a recipe, not prose"
+else
+  no "grill's criteria-document shape still reads as prose"
+fi
+
+# Case 10: grill, G-9, row 1 — never starting the loop on unapproved criteria
+# is a priced prohibition quoting its excuse (failure class: a rule skipped
+# under pressure). Break: restore "Then show the criteria to the human for
+# approval:". The fourth presence marker is the requirement the rewrite
+# keeps, asserted so a later edit cannot leave the prohibition without the
+# act it demands.
+if echo "$grill_form" | grep -q 'Never start the loop on criteria the human has not approved' &&
+  echo "$grill_form" | grep -q '"they told me what they want already"' &&
+  echo "$grill_form" | grep -q 'spends every later role on criteria nobody agreed to' &&
+  echo "$grill_form" | grep -q 'Show the criteria and wait for the approval' &&
+  ! echo "$grill_form" | grep -q 'Then show the criteria to the human for approval'; then
+  ok "grill's approve-before-loop rule is a priced prohibition quoting its excuse"
+else
+  no "grill's approve-before-loop rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 11: retro, R-2, row 4 — identifying the log file is a rule keyed to an
+# observable predicate, with each branch stated on its own (failure class:
+# behaviour that depends on a condition, folded into one sentence). Break:
+# restore "Identify the log file to parse (either via an explicit path
+# parameter or by running `bin/parse-agent-log --latest`)." Both branches are
+# asserted separately, so folding the two back into one sentence goes red
+# even if the words survive.
+if echo "$retro_form" | grep -q 'Where the caller named a log file, parse that one' &&
+  echo "$retro_form" | grep -q 'Where the caller named none, run `bin/parse-agent-log --latest`' &&
+  ! echo "$retro_form" | grep -q 'either via an explicit path parameter or by running'; then
+  ok "retro's log-file rule is keyed to an observable predicate, with each branch stated on its own"
+else
+  no "retro's log-file rule still folds both branches into one sentence"
+fi
+
+# Case 12: retro, R-3, row 1 — never going looking for a prose report is a
+# priced prohibition quoting its excuse (failure class: a rule skipped under
+# pressure). Break: restore "no agent writes a prose report of its own, so
+# do not go looking for one." The fourth marker is the fact the rewrite
+# keeps, so gutting it while the prohibition stands also goes red.
+if echo "$retro_form" | grep -q 'Never go looking for a prose report of the run' &&
+  echo "$retro_form" | grep -q '"there must be a summary somewhere"' &&
+  echo "$retro_form" | grep -q 'the search spends the retro' &&
+  echo "$retro_form" | grep -q 'those are the whole record' &&
+  ! echo "$retro_form" | grep -q 'so do not go looking for one'; then
+  ok "retro's no-prose-report rule is a priced prohibition quoting its excuse"
+else
+  no "retro's no-prose-report rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 13: retro, R-5, row 3 — the retrospective document's tables are a
+# recipe, not prose (failure class: an omitted required element). Break:
+# restore "Include a **Session Metrics Summary** table, a **Per-Agent
+# Breakdown** table (main agent vs each subagent), and a **Mermaid Sequence
+# Diagram** illustrating the interaction flow between User, Main Agent,
+# Subagents, and Tools/System."
+if echo "$retro_form" | grep -q 'The retrospective carries these three as well, a section per slot and no slot empty' &&
+  echo "$retro_form" | grep -q 'a table, the main agent against each subagent' &&
+  echo "$retro_form" | grep -q 'the interaction flow between User, Main Agent, Subagents and Tools' &&
+  ! echo "$retro_form" | grep -q 'table (main agent vs each subagent)'; then
+  ok "retro's retrospective-tables shape is a recipe, not prose"
+else
+  no "retro's retrospective-tables shape still reads as prose"
+fi
+
+# Case 14: the three pages carry no vocabulary another page owns — the fast,
+# named signal for a failure the pre-existing ownership cases (lines 185,
+# 455, 508, 666, 2077, 2419, 2431, 2626 and the handoff cases at 327 and 343
+# of this file) would otherwise report as an unexplained ownership drift.
+# Break: reword any of the fourteen replacements with a word another page
+# owns — for instance pricing grill's G-2 with "the rationalisation it
+# counters", or writing A-5's excuse as "the shell it probes is close
+# enough". Read the three pages directly, no collapsing needed.
+case14_words='occasion|exemption clause|rationalisation|chain depth|counts as tested|dependency footprint|probe|hand-off|handoff'
+case14_ok=true
+case14_report=""
+for case14_file in skills/argus/SKILL.md skills/grill/SKILL.md skills/retro/SKILL.md; do
+  case14_ci="$(grep -inE "$case14_words" "$root/$case14_file" || true)"
+  case14_cs="$(grep -n 'rulebook' "$root/$case14_file" || true)"
+  if [ -n "$case14_ci" ]; then
+    case14_ok=false
+    case14_report="${case14_report}${case14_file} (case-insensitive):
+$case14_ci
+"
+  fi
+  if [ -n "$case14_cs" ]; then
+    case14_ok=false
+    case14_report="${case14_report}${case14_file} (rulebook, case-sensitive):
+$case14_cs
+"
+  fi
+done
+if $case14_ok; then
+  ok "argus, grill and retro carry no vocabulary another page owns"
+else
+  no "argus, grill or retro carries vocabulary another page owns:"
+  echo "$case14_report" | sed 's/^/       /'
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else

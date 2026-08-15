@@ -940,6 +940,141 @@
             "summary": "Audited every rule on the argus, grill and retro skill pages against the four rows of the form table and the exemption-clause ban: fourteen rules lose their form and are rewritten verbatim in the plan (three on argus, eight on grill, three on retro), the rest are recorded with the reason they need none, and no page carries an exemption clause. Nothing outside the three pages quotes a replaced sentence, so the only other file that changes is test-repo.sh, which gains fourteen cases plus one guarding the vocabulary other pages own."
           },
           "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on its own branch: `claude/pages-carry-winning-issue-ng2pk5--INC-04`, off `claude/pages-carry-winning-issue-ng2pk5`.\nBefore anything else, on `claude/pages-carry-winning-issue-ng2pk5`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-04 claude/pages-carry-winning-issue-ng2pk5--INC-04`, commit that state change and push `claude/pages-carry-winning-issue-ng2pk5`. Then create the branch with `git checkout -b claude/pages-carry-winning-issue-ng2pk5--INC-04`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 4 is yours:\n  The argus, grill and retro skill pages carry the winning form — The same audit and rewrite, with its tests and its verdict, for skills/argus/SKILL.md, skills/grill/SKILL.md and skills/retro/SKILL.md — the shipped skills other than the shared brief.\nWhat it has to satisfy:\n  - Every rule on skills/argus/SKILL.md, skills/grill/SKILL.md and skills/retro/SKILL.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own, and every case the replaced wording decided comes out the same way under the replacement.\n  - No rewrite adds a requirement the replaced rule did not carry: it prescribes no shape for an artefact the replaced rule left open, it keeps every requirement in the rule rather than in its price, and it forbids nothing that the shared brief or the same page requires the agent to do.\n  - A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - Every comment or document elsewhere in the repository that quotes a rewritten sentence quotes the sentence that replaced it.\n  - The verdict is recorded page by page and rule by rule in this increment's step return, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The two pages carrying the authoring rules carry the winning form.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-04 research:INC-04.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-04 research:INC-04.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:INC-04.0",
+          "at": "2026-08-15T21:24:32.401Z",
+          "return": {
+            "cases": [
+              {
+                "case": "Case 1 — argus A-4, row 1 (a rule skipped under pressure): the hand-over rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "argus's hand-over rule is a priced prohibition quoting its excuse",
+                "demands": "argus_form contains 'Never hand the setup over without saying that out loud', '\"they will start a new session anyway\"', and 'reads as a broken collector', and does not contain 'Say that out loud when you hand this over'.",
+                "got": "FAIL — argus's hand-over rule still reads as an unpriced reminder, present or bolted on (the page still carries the old sentence '...when you hand this over; it is the one step that silently produces no data.' and none of the new markers)."
+              },
+              {
+                "case": "Case 2 — argus A-5, row 1: the probe-environment rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "argus's probe-environment rule is a priced prohibition quoting its excuse",
+                "demands": "argus_form contains 'Never run it outside the environment the agent runs in', '\"my shell is close enough\"', and 'passes on variables nothing is exporting with', and does not contain 'Run it inside the environment the agent runs in'.",
+                "got": "FAIL — argus's probe-environment rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 3 — argus A-6, row 1: the nothing-to-recover rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "argus's nothing-to-recover rule is a priced prohibition quoting its excuse",
+                "demands": "argus_form contains 'Never offer to recover it', '\"there may be a log somewhere\"', 'the search ends empty however long it runs', and 'offer the measurable thing: a new session doing the same work', and does not contain 'There is nothing to recover. Telemetry not exported at the time was never produced'.",
+                "got": "FAIL — argus's nothing-to-recover rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 4 — grill G-2, row 1: the sweep-before-interview rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "grill's sweep-before-interview rule is a priced prohibition quoting its excuse",
+                "demands": "grill_form contains 'Never open the interview before the sweep has come back', '\"the idea is clear enough to just ask\"', and 'the vagueness that made grilling necessary survives untouched', and does not contain 'Ask them last, though'.",
+                "got": "FAIL — grill's sweep-before-interview rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 5 — grill G-3a, row 3 (an omitted required element): the sweep's return shape is a recipe, not prose.",
+                "file": "test-repo.sh",
+                "testName": "grill's sweep-return shape is a recipe, not prose",
+                "demands": "grill_form contains 'every slot filled' and '<what already exists> — <what the idea would touch> — <the questions the repository cannot answer>', and does not contain 'what already exists, what the idea would touch, and which questions the repository cannot answer'.",
+                "got": "FAIL — grill's sweep-return shape still reads as prose."
+              },
+              {
+                "case": "Case 6 — grill G-3b, row 1: the do-not-read-the-sweep rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "grill's do-not-read-the-sweep rule is a priced prohibition quoting its excuse",
+                "demands": "grill_form contains 'Never read the swept material yourself', '\"one file will be quicker than briefing a subagent\"', and 'the sweep exists to keep it clean', and does not contain 'You read none of that yourself'.",
+                "got": "FAIL — grill's do-not-read-the-sweep rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 7 — grill G-5, row 1: the never-bundle-questions rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "grill's never-bundle-questions rule is a priced prohibition quoting its excuse",
+                "demands": "grill_form contains 'Never bundle questions — not \"these two go together\"' and 'the turn that asked both is spent', and does not contain 'Never bundle questions; bundled questions get half-answers' (the semicolon form).",
+                "got": "FAIL — grill's never-bundle-questions rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 8 — grill G-6, row 1, both halves of step 3: the vague-answer and undecided-edge rules are priced prohibitions quoting their excuses.",
+                "file": "test-repo.sh",
+                "testName": "grill's vague-answer and undecided-edge rules are priced prohibitions quoting their excuses",
+                "demands": "grill_form contains 'Never let \"it should be better\" stand as an answer', 'press politely for the one that can land as an acceptance criterion', 'an answer nobody can fail is a criterion nobody can test', 'Never leave an edge the sweep turned up undecided', '\"the centre is what matters\"', and 'one role too late', and does not contain 'Push politely past' nor 'Close the edges the sweep turned up as well as the centre'.",
+                "got": "FAIL — grill's vague-answer and undecided-edge rules still read as unpriced reminders, present or bolted on."
+              },
+              {
+                "case": "Case 9 — grill G-8, row 3: the criteria document's shape is a recipe, not prose.",
+                "file": "test-repo.sh",
+                "testName": "grill's criteria-document shape is a recipe, not prose",
+                "demands": "grill_form contains 'a section per slot and no slot empty: the problem; the acceptance criteria; a decision for every answer the human gave', and does not contain 'the problem, the acceptance criteria, and'.",
+                "got": "FAIL — grill's criteria-document shape still reads as prose."
+              },
+              {
+                "case": "Case 10 — grill G-9, row 1: the approve-before-loop rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "grill's approve-before-loop rule is a priced prohibition quoting its excuse",
+                "demands": "grill_form contains 'Never start the loop on criteria the human has not approved', '\"they told me what they want already\"', 'spends every later role on criteria nobody agreed to', and 'Show the criteria and wait for the approval', and does not contain 'Then show the criteria to the human for approval'.",
+                "got": "FAIL — grill's approve-before-loop rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 11 — retro R-2, row 4 (behaviour that depends on a condition): the log-file rule is keyed to an observable predicate, with each branch stated on its own.",
+                "file": "test-repo.sh",
+                "testName": "retro's log-file rule is keyed to an observable predicate, with each branch stated on its own",
+                "demands": "retro_form contains 'Where the caller named a log file, parse that one' and 'Where the caller named none, run `bin/parse-agent-log --latest`', and does not contain 'either via an explicit path parameter or by running'.",
+                "got": "FAIL — retro's log-file rule still folds both branches into one sentence (the page still carries 'Identify the log file to parse (either via an explicit path parameter or by running `bin/parse-agent-log --latest`).')."
+              },
+              {
+                "case": "Case 12 — retro R-3, row 1: the no-prose-report rule is a priced prohibition quoting its excuse.",
+                "file": "test-repo.sh",
+                "testName": "retro's no-prose-report rule is a priced prohibition quoting its excuse",
+                "demands": "retro_form contains 'Never go looking for a prose report of the run', '\"there must be a summary somewhere\"', 'the search spends the retro', and 'those are the whole record', and does not contain 'so do not go looking for one'.",
+                "got": "FAIL — retro's no-prose-report rule still reads as an unpriced reminder, present or bolted on."
+              },
+              {
+                "case": "Case 13 — retro R-5, row 3: the retrospective document's tables are a recipe, not prose.",
+                "file": "test-repo.sh",
+                "testName": "retro's retrospective-tables shape is a recipe, not prose",
+                "demands": "retro_form contains 'The retrospective carries these three as well, a section per slot and no slot empty', 'a table, the main agent against each subagent', and 'the interaction flow between User, Main Agent, Subagents and Tools', and does not contain 'table (main agent vs each subagent)'.",
+                "got": "FAIL — retro's retrospective-tables shape still reads as prose."
+              },
+              {
+                "case": "Case 14 — the three pages carry no vocabulary another page owns (fast, named signal for the pre-existing ownership cases).",
+                "file": "test-repo.sh",
+                "testName": "argus, grill and retro carry no vocabulary another page owns",
+                "demands": "none of skills/argus/SKILL.md, skills/grill/SKILL.md, skills/retro/SKILL.md matches, case-insensitively, any of: occasion, exemption clause, rationalisation, chain depth, counts as tested, dependency footprint, probe, hand-off, handoff — nor, case-sensitively, 'rulebook'. Hits are reported per file in the no branch.",
+                "got": "ok — argus, grill and retro carry no vocabulary another page owns (green today, since no rewrite has touched the pages yet; it turns red the moment a rewrite reuses one of these words, per the break the plan names)."
+              },
+              {
+                "case": "Every comment or document elsewhere in the repository that quotes a rewritten sentence quotes the sentence that replaced it.",
+                "file": "",
+                "testName": "",
+                "got": "No case, per the plan: a grep over every relevant file outside node_modules and docs/issues finds no file quoting any of the fourteen replaced sentences, so no production change this increment makes could turn a case here red."
+              },
+              {
+                "case": "The verdict is recorded page by page and rule by rule in this increment's step return.",
+                "file": "",
+                "testName": "",
+                "got": "No case, per the plan: satisfied by the research step's plan field in backlog.json, which no suite reads."
+              },
+              {
+                "case": "A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question.",
+                "file": "",
+                "testName": "",
+                "got": "No case, per the plan: no such rule was found by the researcher, so there is nothing to assert."
+              },
+              {
+                "case": "Rules recorded as needing no rewrite.",
+                "file": "",
+                "testName": "",
+                "got": "No case, per the plan: they are unchanged text already held by the pre-existing description cases (test-repo.sh:2600, 2613, 2645-2655) and the ownership cases listed under case 14."
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Appended one new test-repo.sh section, 'every rule on the argus, grill and retro skill pages is written in its winning form', with the 14 cases (Case 1-14) the test plan specified, each an if/then/else over a collapsed per-page variable; `bash test-repo.sh` shows the 13 rewrite cases (Cases 1-13) failing red against the current unrewritten pages and Case 14 (the vocabulary-ownership guard) passing green as expected, for a total of 13 of 206 cases failing."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-15-pages-carry-the-winning-form\nThis increment is worked on branch `claude/pages-carry-winning-issue-ng2pk5--INC-04`. Before anything else make sure you are on it: `git fetch origin claude/pages-carry-winning-issue-ng2pk5--INC-04` and check it out; if the remote does not have it, create it from `claude/pages-carry-winning-issue-ng2pk5` and push it with `-u`.\nThis run works docs/issues/2026-08-15-pages-carry-the-winning-form/issue.md one increment at a time, and increment 4 is yours:\n  The argus, grill and retro skill pages carry the winning form — The same audit and rewrite, with its tests and its verdict, for skills/argus/SKILL.md, skills/grill/SKILL.md and skills/retro/SKILL.md — the shipped skills other than the shared brief.\nWhat it has to satisfy:\n  - Every rule on skills/argus/SKILL.md, skills/grill/SKILL.md and skills/retro/SKILL.md is read against all four rows of the form table and against the ban on exemption clauses.\n  - Every rule whose form loses against the failure it prevents is rewritten into the winning form, and no rewrite changes what the rule requires.\n  - Any exemption clause on these pages is re-cut into a rule keyed to an observable predicate, with each branch stated on its own, and every case the replaced wording decided comes out the same way under the replacement.\n  - No rewrite adds a requirement the replaced rule did not carry: it prescribes no shape for an artefact the replaced rule left open, it keeps every requirement in the rule rather than in its price, and it forbids nothing that the shared brief or the same page requires the agent to do.\n  - A rule whose winning form cannot be written without changing what it requires is left as it stands and returned as a question for the human.\n  - Each rewritten rule has a case in test-repo.sh that turns red when that rule is restored to the wording it replaced.\n  - Every comment or document elsewhere in the repository that quotes a rewritten sentence quotes the sentence that replaced it.\n  - The verdict is recorded page by page and rule by rule in this increment's step return, and every rule left unchanged carries the reason it needs no rewrite.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The two pages carrying the authoring rules carry the winning form.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-04 research:INC-04.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-04 tests:INC-04.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-15-pages-carry-the-winning-form/backlog.json INC-04 tests:INC-04.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
