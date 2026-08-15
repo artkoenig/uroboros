@@ -38,7 +38,7 @@
       "depth": "full",
       "status": "todo",
       "note": "INC-1 blocked on exactly the fifth criterion above; the sixth records what the earlier correction rounds already fixed, so it is not lost when the work is done again.",
-      "branch": "",
+      "branch": "claude/authoring-rule-form-matching-c5ygkt--INC-3",
       "steps": [],
       "attempts": []
     },
