@@ -53,7 +53,7 @@ import path from 'node:path'
 // `general-purpose`, the main conversation, anything foreign — is absent from
 // this table on purpose, and an absent key is a silent pass.
 const RULES = {
-  // agents/implementer.md, "How you work" step 1: "You do not read `issue.md`".
+  // agents/implementer.md, "How you work" step 1: "Never open `issue.md`".
   // agents/researcher.md, on `testPlan`: "the implementer never sees it".
   'uroboros:implementer': {
     role: 'the implementer',
