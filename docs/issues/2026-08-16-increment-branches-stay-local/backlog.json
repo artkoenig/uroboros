@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "issue": "",
+  "workflow": "agile-loop",
+  "codemap": "",
+  "increments": [
+    {
+      "id": "i1",
+      "title": "Increment branches stay local; the issue branch carries the run state to the remote",
+      "goal": "The loop works every increment on a branch that never leaves the checkout, lands accepted work on the issue branch and pushes that branch after each landed increment, asks nobody for a remote branch deletion, and still resumes a dead run from the state on the remote.",
+      "criteria": [
+        "No agent working an increment pushes its increment branch: every step of an increment commits locally and pushes nothing.",
+        "The planner pushes the issue branch to the remote after each increment it lands, so the remote holds every accepted increment up to that point.",
+        "No agent page and no workflow prompt asks for a remote branch deletion: the `git push origin --delete` instruction is gone from workflows/agile-loop.js and from agents/planner.md, and no other page asks for one.",
+        "The run state a resume reads reaches the remote with the issue branch, and the resume path no longer depends on an increment branch existing on the remote.",
+        "A resumed run works the increments still open and does not redo an increment the run state records as closed.",
+        "The reviewer still receives the increment's diff range and can read that diff with the increment branch present only locally.",
+        "An increment the review does not accept stays unmerged as it does today, its commits stay local and reach no remote, and the note the planner closes with still names its branch.",
+        "The run opens one pull request, for the issue branch, as it does today."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-16T15:05:25.401Z",
+        "return": {
+          "questions": [],
+          "rulings": [
+            "Cut the whole issue as one increment rather than splitting the branch-push change from the resume path, because criterion 4 ties them — dropping the increment-branch push while the resume still recovers state from that branch would leave a window where a dead container loses recorded steps; wrong costs one large increment that a reviewer judges in one diff instead of two smaller ones.",
+            "Proceeded on the reading that the increment's agents share one git directory, because every agent of an increment is a subagent dispatched from the same session and checkout by workflows/agile-loop.js rather than from a clone of its own; wrong costs the run one research step that raises the blocker the issue names instead of building.",
+            "Left agents/reviewer.md and README.md out of the codemap, because the reviewer's diff range is a fact of local git and the README's flow already describes the issue branch as the one that is pushed; wrong costs one extra file the researcher discovers and reports back."
+          ],
+          "summary": "The issue is one change — the loop's durability moves off the increment branch and onto the issue branch — so the cut is a single increment, i1, carrying all eight acceptance criteria: no increment-branch push, the planner pushing the issue branch after each landing, the remote delete gone from workflows/agile-loop.js and agents/planner.md, the run state reaching the remote with the issue branch, a resume that works only the open increments, the reviewer's local diff range, an unaccepted increment staying local and unmerged, and one pull request. Criterion map: no agent pushes an increment branch -> i1; planner pushes the issue branch after each landing -> i1; no remote deletion asked for anywhere -> i1; run state reaches the remote with the issue branch -> i1; a resumed run does not redo closed increments -> i1; the reviewer reads the increment diff locally -> i1; an unaccepted increment stays unmerged and local -> i1; one pull request for the issue branch -> i1. I rejected splitting the resume path into its own increment because the first half alone would regress state durability mid-run, and I rejected splitting by file because every file listed in the codemap carries the same one rule. The codemap names workflows/agile-loop.js, agents/planner.md, agents/implementer.md, agents/test-author.md, skills/agent-brief/SKILL.md and test-repo.sh; the shared brief's blanket push-your-step rule and the implementer's and test-author's frontmatter are the places the pushes are actually mandated, beyond the two the issue names."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-16-increment-branches-stay-local\nOpen the run state for docs/issues/2026-08-16-increment-branches-stay-local/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-16-increment-branches-stay-local/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-increment-branches-stay-local/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-increment-branches-stay-local/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
