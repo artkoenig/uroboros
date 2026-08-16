@@ -2259,9 +2259,11 @@ fi
 # "probe", "checkout", "commit" and "diff" in one paragraph, and an unscoped
 # grep would go green on it for criterion 6 below.
 declare -a reviewer_break_rules=(
+  '^## .*break:criterion, the prompt hands the reviewer a break or a reason per criterion, and that block plus the closed command list are the only two things about the plan it is given:hands you|prompt hands:only two things'
   '^## .*break:criterion, unbreakable criteria are judged by reading the diff against them:no break:read:diff'
   '^## .*break:criterion, an applied break runs in the sandbox worktree with the commands the prompt already names and verification rests on that run failing:break:sandbox|worktree:command:verif'
-  '^## .*break:criterion, a break that leaves every listed command green is a finding against the criterion it was named for:break:green:finding'
+  '^## .*break:criterion, a break that leaves every listed command green is a finding against the criterion it was named for:break:turned red|stayed green:finding'
+  '^## .*break:criterion, a failure produced by applying a break is never a finding against the change:break:never a finding|not a finding:check 1|unmodified checkout'
   '^## .*break:criterion, an applied break never reaches the checkout and never reaches the diff:break:checkout:diff'
   '^## .*break:criterion, a round handed no break at all applies none and the four checks stand as they otherwise would:no break:apply:four checks|as they stand'
 )
@@ -2280,7 +2282,15 @@ for rule in "${reviewer_break_rules[@]}"; do
     matched="$(echo "$matched" | grep -iE -- "$term" || true)"
   done
   if [ -z "$matched" ]; then
-    reviewer_break_misses="${reviewer_break_misses}${label}
+    matched_count=0
+  else
+    matched_count="$(echo "$matched" | grep -c .)"
+  fi
+  # A rule counts only when its terms land in exactly one paragraph of the
+  # section: two paragraphs matching one entry's terms is the defect this
+  # section exists to catch, and treating that as a pass is the break.
+  if [ "$matched_count" -ne 1 ]; then
+    reviewer_break_misses="${reviewer_break_misses}${label} (matched ${matched_count} paragraphs)
 "
   fi
 done
