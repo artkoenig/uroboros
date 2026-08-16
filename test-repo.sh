@@ -722,6 +722,78 @@ else
 fi
 
 echo
+echo "=== nobody asks for a remote branch deletion"
+
+# docs/issues/2026-08-16-increment-branches-stay-local, criterion 3: the
+# environment's egress proxy refuses a remote branch delete outright, so
+# nothing may still ask for one — not the literal command, in either form git
+# accepts, and not prose asking a page's reader to delete a merged branch from
+# the remote by hand. docs/issues is excluded the same way the licence check
+# excludes it above: that directory is the record of past runs and quotes the
+# old prompt verbatim, which is not a claim. Break: restore
+# `git push origin --delete ${incrementBranch}` to workflows/agile-loop.js, or
+# restore the "delete that merged branch from the remote" sentence to
+# agents/planner.md.
+declare -a delete_command_patterns=(
+  'git push origin --delete'
+  'git push origin :'
+)
+delete_hits=""
+for pattern in "${delete_command_patterns[@]}"; do
+  hits="$(grep -rl --include='*.md' --include='*.js' --include='*.mjs' \
+    --exclude-dir=node_modules --exclude-dir=issues --exclude='test-repo.sh' \
+    -- "$pattern" "$root" 2>/dev/null || true)"
+  if [ -n "$hits" ]; then
+    delete_hits="${delete_hits}${hits}
+"
+  fi
+done
+prose_hits="$(grep -rliE --include='*.md' --include='*.js' --include='*.mjs' \
+  --exclude-dir=node_modules --exclude-dir=issues --exclude='test-repo.sh' \
+  -- 'delete[^.]*branch[^.]*remote|remote[^.]*branch[^.]*delete' "$root" 2>/dev/null || true)"
+if [ -n "$prose_hits" ]; then
+  delete_hits="${delete_hits}${prose_hits}
+"
+fi
+delete_hits="$(echo "$delete_hits" | sed '/^$/d' | sort -u)"
+if [ -z "$delete_hits" ]; then
+  ok "no tracked page or script orders a remote branch deletion"
+else
+  no "these files still order or describe a remote branch deletion:"
+  echo "$delete_hits" | sed 's/^/       /'
+fi
+
+echo
+echo "=== an increment's own agents push only where their prompt asks"
+
+# docs/issues/2026-08-16-increment-branches-stay-local, criterion 1: an
+# increment's own agents work on a branch that never leaves the checkout, so
+# their pages may not claim an unconditional push — only a conditional one,
+# for the runs whose prompt does ask for a push (the issue branch, on a direct
+# increment). agents/planner.md is excluded: its steps stay on the issue
+# branch, so its unconditional push claim is correct as it stands. Break:
+# restore "and commits and pushes the code" to agents/implementer.md's
+# description, or "and commits and pushes the tests" to
+# agents/test-author.md's.
+push_claim_fail=""
+for page in "$root/agents/implementer.md" "$root/agents/test-author.md"; do
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    case "$line" in
+      *'where its prompt asks for a push'*) ;;
+      *) push_claim_fail="${push_claim_fail}$(basename "$page"): $line
+" ;;
+    esac
+  done < <(grep -i 'push' "$page")
+done
+if [ -z "$push_claim_fail" ]; then
+  ok "agents/implementer.md and agents/test-author.md only claim a push where their prompt asks for one"
+else
+  no "these lines claim a push without naming it conditional on the prompt:"
+  echo "$push_claim_fail" | sed 's/^/       /'
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
@@ -913,6 +985,18 @@ const resumeState = () =>
       }),
     ],
     [idxStep('decompose', decomposeReturnOne)],
+  );
+
+// A run whose loaded state names no issue branch at all. `stateOf` normally
+// hard-codes `branch: 'issue-branch'`; this overrides it to the empty string a
+// session that died before decompose ever named one would leave behind.
+// docs/issues/2026-08-16-increment-branches-stay-local, criterion 4's edge:
+// with no issue branch, no increment branch exists either, so the run state
+// reaches the remote only through each step's own push.
+const noIssueBranchState = () =>
+  Object.assign(
+    stateOf([idxIncrement('i1', { steps: [] })], [idxStep('decompose', decomposeReturnOne)]),
+    { branch: '' },
   );
 
 // A session that died right after round 0's review filed a finding, before the
@@ -1194,6 +1278,8 @@ function contextFor(m) {
       return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
     case 'w35':
       return { stateReturn: closedBreakState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
+    case 'w36':
+      return { stateReturn: noIssueBranchState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1269,6 +1355,13 @@ async function main() {
       c.label + ' is told to read the issue file its page closes: ' + JSON.stringify(ordered));
   }
 
+  // docs/issues/2026-08-16-increment-branches-stay-local, criterion 3: the
+  // environment's egress proxy refuses a remote branch delete, so no dispatch
+  // in any mode may order one. Checked in every mode.
+  for (const c of calls) {
+    assertTrue(!c.prompt.includes('--delete'), c.label + ' orders a remote branch delete: ' + JSON.stringify(c.prompt.split('\n').filter((line) => line.includes('--delete'))));
+  }
+
   if (mode === 'w1') {
     const expected = ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1',
       'research:i2.0', 'tests:i2.0', 'implement:i2.0', 'review:i2.0', 'replan:i2', 'publish'];
@@ -1286,6 +1379,15 @@ async function main() {
       'the state loader is told to read the whole state file, which is what the index exists to avoid');
     assertTrue(!!loader && /## Decisions/.test(loader.prompt) && loader.prompt.includes('docs/issues/x/issue.md'),
       "the state loader is not asked for the human's answer under ## Decisions in issue.md, so a resumed step would have no route to it");
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 4: the
+    // resume path no longer depends on an increment branch existing on the
+    // remote, so the loader is told to trust the state file alone.
+    assertTrue(!!loader && !loader.prompt.includes('git show origin/'),
+      'the state loader still checks a trailing copy of the state on the remote');
+    assertTrue(!!loader && !loader.prompt.includes('merge-base --is-ancestor'),
+      'the state loader still compares a remote increment branch as an ancestor');
+    assertTrue(!!loader && !loader.prompt.includes('git fetch'),
+      'the state loader still fetches from the remote');
     // The planner said what files the issue changes; every researcher reads
     // that map out of the state, and the prompt asking for the cut asks for
     // the map too.
@@ -1305,6 +1407,54 @@ async function main() {
       "increment i1's first dispatch is not told to record the branch in the run state");
     assertTrue(!!byLabel('replan:i1') && byLabel('replan:i1').prompt.includes('merge') && byLabel('replan:i1').prompt.includes('issue-branch--i1'),
       'the accepted replan is not told to merge the increment branch into the issue branch');
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 1's merge
+    // side: the increment branch it merges was never pushed, so there is
+    // nothing on the remote to fetch before merging it.
+    assertTrue(!!byLabel('replan:i1') && !byLabel('replan:i1').prompt.includes('git fetch'),
+      "the accepted replan's merge still fetches the increment branch from the remote, though it was never pushed there");
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 1: no
+    // dispatch of an increment step may push the increment branch. Matched
+    // line by line, because the first dispatch legitimately pushes
+    // `issue-branch` (criterion 4) and a whole-prompt `/push/` assertion would
+    // be wrong.
+    for (const l of ['research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0']) {
+      const call = byLabel(l);
+      const pushedIncrementBranch = call
+        ? call.prompt.split('\n').filter((line) => /push/i.test(line) && line.includes('issue-branch--i1'))
+        : [];
+      assertTrue(!!call && pushedIncrementBranch.length === 0,
+        l + ' pushes the increment branch: ' + JSON.stringify(pushedIncrementBranch));
+    }
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 4: the
+    // first dispatch of the increment commits the branch name into the run
+    // state and pushes `issue-branch` before creating the increment branch —
+    // that push is what puts the resume point on the remote.
+    const firstDispatchLines = byLabel('research:i1.0').prompt.split('\n');
+    const issueBranchPush = firstDispatchLines.filter((line) => /push/i.test(line) && line.includes('issue-branch') && !line.includes('issue-branch--i1'));
+    assertTrue(issueBranchPush.length > 0,
+      "increment i1's first dispatch does not commit and push issue-branch before creating the increment branch");
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 2: the
+    // planner pushes the issue branch to the remote after landing an
+    // increment, and its own record instruction still pushes its step's
+    // commit — the planner's steps stay on the issue branch, unlike an
+    // increment's own steps.
+    assertTrue(!!byLabel('replan:i1') && /push[^\n]*issue-branch(?!--i1)/.test(byLabel('replan:i1').prompt),
+      'the accepted replan is not told to push issue-branch after merging');
+    assertTrue(!!byLabel('replan:i1') && byLabel('replan:i1').prompt.includes('push the commit'),
+      "replan:i1's record instruction does not push the commit");
+    assertTrue(!!byLabel('decompose') && byLabel('decompose').prompt.includes('push the commit'),
+      "decompose's record instruction does not push the commit");
+    for (const l of ['research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0']) {
+      assertTrue(!!byLabel(l) && !byLabel(l).prompt.includes('push the commit'),
+        l + "'s record instruction pushes the commit, but an increment step commits locally and pushes nothing");
+    }
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 8: the
+    // run opens one pull request, for the issue branch, and the publish
+    // prompt never pushes an increment branch.
+    assertTrue(!!byLabel('publish') && byLabel('publish').prompt.includes('git push -u origin issue-branch'),
+      'the publish prompt does not push the issue branch');
+    assertTrue(!!byLabel('publish') && !byLabel('publish').prompt.includes('issue-branch--i1'),
+      'the publish prompt pushes an increment branch');
   } else if (mode === 'w2') {
     assertTrue(!labels.some((l) => l.startsWith('research:')), 'the researcher was dispatched even though its step was already recorded');
     assertTrue(!labels.some((l) => l.startsWith('tests:')), 'the test-author was dispatched even though its step was already recorded');
@@ -1328,6 +1478,13 @@ async function main() {
       "the resumed implementer's prompt does not carry the recorded increment branch");
     assertTrue(!!afterLoadState && !afterLoadState.prompt.includes('git checkout -b issue-branch--i1'),
       'the resumed increment is told to create its branch instead of continuing on it');
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 4: the
+    // resumed dispatch checks the recorded branch out in this checkout — it
+    // was never pushed, so there is nothing on the remote to fetch it from.
+    assertTrue(!!afterLoadState && /git checkout issue-branch--i1/.test(afterLoadState.prompt),
+      "the resumed implementer's prompt does not tell the agent to check out the recorded branch in this checkout");
+    assertTrue(!!afterLoadState && !afterLoadState.prompt.includes('git fetch origin issue-branch--i1'),
+      "the resumed implementer's prompt fetches the increment branch from the remote, which criterion 1 never pushed it to");
     const reviewCall = calls.find((c) => c.label === 'review:i1.0');
     assertTrue(!!reviewCall && reviewCall.prompt.includes('CHECK-MARKER'),
       'the resumed reviewer was handed no checks, so the recorded plan never reached the one role that cannot read it');
@@ -1381,6 +1538,11 @@ async function main() {
       'the reviewer is not told that the run state is closed to it');
     assertTrue(!!reviewCall && reviewCall.prompt.includes('git diff issue-branch...HEAD'),
       "the reviewer's prompt does not name the increment's diff range against the issue branch");
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 6: the
+    // reviewer reads the diff with the increment branch present only locally,
+    // so its prompt never fetches that branch from the remote.
+    assertTrue(!!reviewCall && !reviewCall.prompt.includes('git fetch origin issue-branch--i1'),
+      "the reviewer's prompt fetches the increment branch from the remote, which criterion 1 never pushed it to");
     // Criterion 2: the break the plan named for a criterion reaches the
     // reviewer's prompt, labelled as itself and tied to the criterion it was
     // named for.
@@ -1404,8 +1566,19 @@ async function main() {
       if (c.label === 'load-state' || c.label === 'publish') continue;
       assertTrue(/backlog\.json/.test(c.prompt) && /\brecord\b/i.test(c.prompt),
         c.label + ' is not told to record its return into backlog.json');
-      assertTrue(/\bpush\b/i.test(c.prompt),
-        c.label + " is not told to push its step's commit");
+      // docs/issues/2026-08-16-increment-branches-stay-local, criterion 1: an
+      // increment's own step commits locally and pushes nothing; the steps on
+      // the issue branch (decompose, replan) still push their commit. Matched
+      // on the record instruction's own literal phrase, not a bare `push`
+      // regex: a first dispatch legitimately says "push" elsewhere in its
+      // prompt too, for the issue-branch push criterion 4 keeps.
+      if (c.label.startsWith('replan:') || c.label === 'decompose') {
+        assertTrue(c.prompt.includes('push the commit'),
+          c.label + " is not told to push its step's commit");
+      } else {
+        assertTrue(!c.prompt.includes('push the commit'),
+          c.label + "'s record instruction pushes the commit, but an increment's own step commits locally and pushes nothing");
+      }
       assertTrue(/verbatim/i.test(c.prompt) && /prompt/i.test(c.prompt),
         c.label + ' is not told to record the prompt it was dispatched with, verbatim');
       assertTrue(/<the return file> <the prompt file>/.test(c.prompt),
@@ -1622,6 +1795,14 @@ async function main() {
       'the blocked replan is not told to keep the increment branch unmerged');
     assertTrue(!!closeCall && !/Land it first/.test(closeCall.prompt),
       'the blocked replan carries the accepted-merge instruction');
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 7: an
+    // increment the review does not accept stays unmerged and its commits stay
+    // local — nothing in the closing prompt orders a push of that branch.
+    const pushedUnmergedBranch = closeCall
+      ? closeCall.prompt.split('\n').filter((line) => /push/i.test(line) && line.includes('issue-branch--i1'))
+      : [];
+    assertTrue(!!closeCall && pushedUnmergedBranch.length === 0,
+      'the blocked replan is told to push the unmerged increment branch: ' + JSON.stringify(pushedUnmergedBranch));
   } else if (mode === 'w18') {
     // Everything the pull request body is made of reaches the publishing agent
     // in its prompt. Same run as w17 — one increment, blocked with a finding
@@ -2014,6 +2195,19 @@ async function main() {
     assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.increments.items.required) &&
       loaderCall.schema.properties.increments.items.required.includes('attemptBreaks'),
       "w35: the state loader's schema does not require `attemptBreaks` on an increment");
+  } else if (mode === 'w36') {
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 4's edge
+    // case: the loaded state names no issue branch, so no increment branch
+    // exists either and the run state reaches the remote only through each
+    // step's own push — every dispatched step pushes its commit, and none
+    // creates a branch.
+    for (const c of calls) {
+      if (c.label === 'load-state' || c.label === 'publish') continue;
+      assertTrue(c.prompt.includes('push the commit'),
+        c.label + " is not told to push its step's commit, though the run names no issue branch to carry the state to the remote instead");
+      assertTrue(!c.prompt.includes('git checkout -b') && !c.prompt.includes('stays in this checkout'),
+        c.label + " names a branch to create or names the checkout it stays in, though the run state names no issue branch to branch from");
+    }
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -2049,7 +2243,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w5 "$wf_name: the implementer's prompt carries the plan and the checks and not the test plan"
   run_driver "$wf" w6 "$wf_name: the reviewer's prompt carries the checks and the break the plan named for a criterion"
   run_driver "$wf" w7 "$wf_name: a question from the researcher ends the run at publish"
-  run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return, name \`rulings\` among the fields it records, and push the commit — and every dispatched schema, including the state loader's, carries \`rulings\` as well as the prompt"
+  run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return and name \`rulings\` among the fields it records — pushing the commit for the steps on the issue branch, not for an increment's own steps — and every dispatched schema, including the state loader's, carries \`rulings\` as well as the prompt"
   run_driver "$wf" w9 "$wf_name: a run resumed after a question for the human works that step again with the question in its prompt"
   run_driver "$wf" w10 "$wf_name: a correction round carries the reviewer's findings to the researcher and the reason to the human"
   run_driver "$wf" w11 "$wf_name: a question from the closing planner ends the run and reaches the human"
@@ -2075,6 +2269,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w33 "$wf_name: a criterion the plan named a break for is not carried as unchecked"
   run_driver "$wf" w34 "$wf_name: an increment worked direct carries all its criteria as unchecked"
   run_driver "$wf" w35 "$wf_name: a run resumed behind a closed increment reports the same unchecked list as one that never restarted, and the state loader's schema asks for the archive that carries it"
+  run_driver "$wf" w36 "$wf_name: a run whose state names no issue branch pushes every step's own commit and creates no branch, since the run state reaches the remote no other way"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
@@ -3235,6 +3430,20 @@ if echo "$brief_form" | grep -q 'Never dispatch a subagent' &&
   ok "the shared brief prohibits dispatching, with its price and its quoted excuse"
 else
   no "the shared brief's no-dispatch rule is missing its price or its quoted excuse"
+fi
+
+# Case 10 (docs/issues/2026-08-16-increment-branches-stay-local, criterion 1):
+# the push rule states both branches of its predicate now — the unconditional
+# push case above, unchanged, and a second branch for a prompt whose step
+# stays on a branch that never leaves the checkout, carrying its own price and
+# its own quoted excuse. Break: delete the local-branch branch, leaving only
+# the unconditional "push that commit straight away".
+if echo "$brief_form" | grep -q 'stays in the checkout' &&
+  echo "$brief_form" | grep -q '"it should go up too"' &&
+  echo "$brief_form" | grep -q 'this environment can never delete again'; then
+  ok "the shared brief's push rule states the local-branch branch of its predicate, priced and quoting its excuse"
+else
+  no "the shared brief's push rule does not state the local-branch branch of its predicate"
 fi
 
 echo

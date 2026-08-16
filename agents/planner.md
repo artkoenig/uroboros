@@ -106,11 +106,10 @@ prompt names it, and landing that branch comes first, before you read or close
 anything:
 
 - **Where the review accepted it**, merge the branch into the issue branch and
-  push, so the issue branch only ever holds accepted work; once your close is
-  committed and pushed, delete that merged branch from the remote — one issue,
-  one pull request.
-- **Where the review did not accept it**, merge nothing: the branch stays on
-  the remote, and the note you close with names it.
+  push, so the issue branch only ever holds accepted work and the remote holds
+  every increment landed so far, which is what a resumed run reads.
+- **Where the review did not accept it**, merge nothing: the branch stays in
+  the checkout, unmerged and unpushed, and the note you close with names it.
 - **Where the merge conflicts**, merge nothing and close nothing: a conflict is
   a blocker, not yours to resolve, and it goes in your `summary`.
 

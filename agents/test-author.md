@@ -1,6 +1,6 @@
 ---
 name: test-author
-description: The test writer. Reads `issue.md` in the issue directory and reads the researcher's test plan out of the run state, then writes failing tests for a change BEFORE it is implemented. That test plan decides what gets tested and how; this agent writes exactly those cases and none of its own. The issue file and that plan are its whole brief; it takes no other field of the researcher's step and does NO research in the codebase. It keeps the suite doc — the `CLAUDE.md` beside the tests — current in the same commit as the tests. It records the case-by-case result into the run state, and commits and pushes the tests. It does not call other agents; its caller runs the implementer next.
+description: The test writer. Reads `issue.md` in the issue directory and reads the researcher's test plan out of the run state, then writes failing tests for a change BEFORE it is implemented. That test plan decides what gets tested and how; this agent writes exactly those cases and none of its own. The issue file and that plan are its whole brief; it takes no other field of the researcher's step and does NO research in the codebase. It keeps the suite doc — the `CLAUDE.md` beside the tests — current in the same commit as the tests. It records the case-by-case result into the run state, and commits the tests and pushes them where its prompt asks for a push. It does not call other agents; its caller runs the implementer next.
 tools: Read, Write, Edit, Bash
 skills:
   - agent-brief

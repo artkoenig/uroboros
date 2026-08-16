@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: Builds the implementation plan the run state holds. Its prompt names the steps it reads — the researcher's plan, module map and environment, and the cases the test-author wrote — and carries the commands the work is judged by; those are its whole brief, and it does no research of its own and writes no tests itself. Where the prompt names no researcher step, nobody planned the increment and the criteria in the prompt plus the codemap it points at are the whole brief instead. It records what it changed and what every command exited into the run state, and commits and pushes the code. It does not call other agents; its caller runs the reviewer next.
+description: Builds the implementation plan the run state holds. Its prompt names the steps it reads — the researcher's plan, module map and environment, and the cases the test-author wrote — and carries the commands the work is judged by; those are its whole brief, and it does no research of its own and writes no tests itself. Where the prompt names no researcher step, nobody planned the increment and the criteria in the prompt plus the codemap it points at are the whole brief instead. It records what it changed and what every command exited into the run state, and commits the code and pushes it where its prompt asks for a push. It does not call other agents; its caller runs the reviewer next.
 tools: Read, Write, Edit, Bash
 skills:
   - agent-brief
