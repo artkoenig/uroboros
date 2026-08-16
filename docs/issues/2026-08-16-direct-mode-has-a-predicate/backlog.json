@@ -78,6 +78,97 @@
             "summary": "Direct Mode gets a two-case predicate in the session's rules page — the issue file costs more than the change, or the loop cannot be run — with every other task sent to Issue Mode and a priced prohibition quoting the excuse it counters, the same predicate restated in the README, and eight new cases in the repository suite guarding each added rule plus the GEMINI/rulebook identity. The plan pins the exact phrases the suite greps and lists the words the new text may not contain, because four existing ownership cases scan the rulebook and README for them."
           },
           "prompt": "Issue directory: docs/issues/2026-08-16-direct-mode-has-a-predicate\nThis run works docs/issues/2026-08-16-direct-mode-has-a-predicate/issue.md one increment at a time, and increment 1 is yours:\n  Direct Mode is keyed to two observable cases — The session's rules and the README stop offering a judgement call as the test for Direct Mode and offer an observable predicate instead, with the price of taking it wrongly written down and every new rule guarded by a case in the repository suite.\nWhat it has to satisfy:\n  - `rulebook.md` keys Direct Mode to two observable cases: writing the issue file costs more than the change itself, and the loop cannot be run.\n  - `rulebook.md` sends every task outside those two cases to Issue Mode.\n  - `rulebook.md` states what taking Direct Mode for a task outside those two cases costs: the loop would have cut it `direct` and put a reviewer on the diff, and the session gives it no reviewer and spends the run's most expensive context on it.\n  - `rulebook.md` quotes, verbatim, the rationalisation that price counters.\n  - `rulebook.md` offers \"small or obvious\" nowhere as the test for Direct Mode.\n  - `rulebook.md` keeps the rest of the Direct Mode section as it stands: read the code, change the code and the tests, run them, commit, push, open the pull request, and hand a broad search to a subagent.\n  - `rulebook.md` keeps the mode-picking rule as it stands, including that an unanswered mode question falls to Issue Mode.\n  - `GEMINI.md` is byte-identical to `rulebook.md`.\n  - `test-repo.sh` has a case that turns red when `GEMINI.md` and `rulebook.md` differ.\n  - Each rule this adds to `rulebook.md` gets a case in `test-repo.sh` that turns red when that rule is removed.\n  - The paragraph in `README.md` that names the two modes states the same predicate as `rulebook.md` and states no other test.\n  - `bash test.sh` exits 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-16-direct-mode-has-a-predicate/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-direct-mode-has-a-predicate/backlog.json inc-1 research:inc-1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-direct-mode-has-a-predicate/backlog.json inc-1 research:inc-1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `breaks`\n  - `unbreakable`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:inc-1.0",
+          "at": "2026-08-16T15:55:56.288Z",
+          "return": {
+            "cases": [
+              {
+                "case": "rulebook.md keys Direct Mode to two observable cases: writing the issue file costs more than the change itself, and the loop cannot be run (each half asserted separately)",
+                "file": "test-repo.sh",
+                "testName": "rulebook.md's Direct Mode section names writing the issue file costing more than the change as one of its two cases / rulebook.md's Direct Mode section names the loop cannot be run as the other of its two cases",
+                "want": "direct_section of rulebook.md contains, case-insensitively, both 'the issue file costs more than the change' and 'the loop cannot be run', each checked by its own assertion so removing either alone goes red",
+                "got": "both FAIL: 'rulebook.md's Direct Mode section does not name the issue-file-costs-more-than-the-change case' and 'rulebook.md's Direct Mode section does not name the loop-cannot-be-run case' — current Direct Mode section reads 'Small or obvious work: you do it.' and carries neither phrase"
+              },
+              {
+                "case": "rulebook.md sends every task outside those two cases to Issue Mode",
+                "file": "test-repo.sh",
+                "testName": "rulebook.md's Direct Mode section sends every other task to Issue Mode",
+                "want": "direct_section of rulebook.md contains 'Every other task goes to Issue Mode'",
+                "got": "FAIL — rulebook.md's Direct Mode section does not send every other task to Issue Mode"
+              },
+              {
+                "case": "rulebook.md states the price of taking Direct Mode outside the two cases: the loop would have cut it direct and put a reviewer on the diff, the session gives it no reviewer and spends the run's most expensive context on it",
+                "file": "test-repo.sh",
+                "testName": "exactly one paragraph of rulebook.md's Direct Mode section prices taking it outside the two cases: cut direct, no reviewer, most expensive context",
+                "want": "exactly one paragraph of direct_section carries all four markers: a backticked `direct`, 'reviewer on the diff', 'no reviewer', 'most expensive context'",
+                "got": "FAIL — rulebook.md's Direct Mode section does not carry the price of taking Direct Mode outside the two cases in exactly one paragraph (matched 0); verified the detector goes green (matched 1) against a synthetic fixture carrying the four markers, so the failure pins the missing price paragraph, not a detector bug"
+              },
+              {
+                "case": "rulebook.md quotes, verbatim, the rationalisation that price counters",
+                "file": "test-repo.sh",
+                "testName": "rulebook.md's Direct Mode section quotes, verbatim, \"this is too small to file an issue for\"",
+                "want": "direct_section of rulebook.md contains the exact ASCII-quoted string \"this is too small to file an issue for\", quote marks included",
+                "got": "FAIL — rulebook.md's Direct Mode section does not quote \"this is too small to file an issue for\" verbatim"
+              },
+              {
+                "case": "rulebook.md offers \"small or obvious\" nowhere as the test for Direct Mode",
+                "file": "test-repo.sh",
+                "testName": "rulebook.md offers \"small or obvious\" nowhere as the test for Direct Mode",
+                "want": "the whole of rulebook.md has no case-insensitive match for 'small or obvious'",
+                "got": "FAIL — rulebook.md still offers \"small or obvious\" as a test (current text: 'Small or obvious work: you do it.')"
+              },
+              {
+                "case": "rulebook.md keeps the rest of the Direct Mode section as it stands: read the code, change the code and the tests, run them, commit, push, open the pull request, and hand a broad search to a subagent (each half asserted separately)",
+                "file": "test-repo.sh",
+                "testName": "rulebook.md's Direct Mode section still reads the code, changes the code and the tests, runs them, commits, pushes and opens the pull request / rulebook.md's Direct Mode section still hands a broad search through the code to a subagent",
+                "want": "direct_section (joined across the source's line wrap) carries all of 'Read the code', 'change the code and the tests', 'run them', 'commit', 'push', 'pull request'; and exactly one paragraph carries both 'broad search' and 'subagent'",
+                "got": "both pass today, as the plan requires this text unchanged: ok — rulebook.md's Direct Mode section still reads the code, changes the code and the tests, runs them, commits, pushes and opens the pull request; ok — rulebook.md's Direct Mode section still hands a broad search through the code to a subagent"
+              },
+              {
+                "case": "rulebook.md keeps the mode-picking rule as it stands, including that an unanswered mode question falls to Issue Mode",
+                "file": "test-repo.sh",
+                "testName": "rulebook.md's mode-picking rule still has the human name the mode, and an unanswered question fall to Issue Mode",
+                "want": "modes_section of rulebook.md carries both 'The human names it' and 'unanswered it falls to Issue Mode'",
+                "got": "passes today, as the plan requires this rule unchanged: ok — rulebook.md's mode-picking rule still has the human name the mode, and an unanswered question fall to Issue Mode"
+              },
+              {
+                "case": "GEMINI.md is byte-identical to rulebook.md, and test-repo.sh has a case that turns red when they differ",
+                "file": "test-repo.sh",
+                "testName": "GEMINI.md is byte-identical to rulebook.md",
+                "want": "cmp -s GEMINI.md rulebook.md succeeds; GEMINI.md is a symlink to rulebook.md today so the case is green by construction and exists to catch a future divergent copy",
+                "got": "passes today: ok — GEMINI.md is byte-identical to rulebook.md (GEMINI.md is currently a symlink to rulebook.md)"
+              },
+              {
+                "case": "the paragraph in README.md that names the two modes states the same predicate as rulebook.md and states no other test (split into a positive case for the predicate and a negative case for the stale tests)",
+                "file": "test-repo.sh",
+                "testName": "README.md's two-modes paragraph states the same predicate as rulebook.md / README.md still offers \"you name which one\" as the test for Direct Mode",
+                "want": "the blank-line-delimited paragraph of README.md containing 'Direct Mode' contains both 'the issue file costs more than the change' and 'the loop cannot be run'; and README.md contains neither 'small or obvious' nor 'you name which one'",
+                "got": "both FAIL: 'README.md's two-modes paragraph does not state both of rulebook.md's two observable cases' (current paragraph reads 'Two modes, and you name which one...') and 'README.md still offers \"you name which one\" as the test for Direct Mode'"
+              },
+              {
+                "case": "each rule this adds to rulebook.md gets a case in test-repo.sh that turns red when that rule is removed",
+                "file": "",
+                "testName": "",
+                "got": "not a case of its own — the plan discharges this criterion through cases 1-7 above, each pinned to exactly one added rule and one break; no extra case was written"
+              },
+              {
+                "case": "bash test.sh exits 0",
+                "file": "",
+                "testName": "",
+                "got": "not a case of its own — the plan discharges this criterion by running `bash test.sh` from /home/user/uroboros as one of the closed-list commands, not by a new test-repo.sh case. Ran it now, before implementation: exit 1 (FAIL: 1 of 8 suite(s)), driven by the new test-repo.sh cases above going red as expected until rulebook.md and README.md are rewritten"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [
+              "checked the four price markers ('`direct`', 'reviewer on the diff', 'no reviewer', 'most expensive context') within exactly one paragraph of direct_section rather than as four independent whole-section greps, because the criterion names one priced paragraph and a single-paragraph check still goes red if any one marker is dropped; wrong costs a paragraph that scatters the four markers across the section passing when it should not",
+              "joined each extracted section's lines with a single space before phrase-matching (direct_joined, modes_joined, the README paragraph), because the markdown source hard-wraps at ~80 columns and a phrase split across that wrap would otherwise miss a plain multi-line grep even though the rendered text reads as one sentence; wrong costs a case that fails to fire on a real removal it should catch, or one that never goes green once the rule is written correctly"
+            ],
+            "summary": "Added a new '=== Direct Mode is keyed to two observable cases' section to test-repo.sh (before the closing summary block) with 12 ok/no cases covering every criterion the plan lists, extracting rulebook.md's Direct Mode and mode-picking sections with the awk helpers the plan specifies. `bash test-repo.sh` now reports 8 of 248 cases failing, all on the missing rulebook.md/README.md rewrite (the two observable cases, the Issue-Mode fall-through, the price paragraph, the quoted excuse, the stale 'small or obvious' test, and the README predicate/stale-test pair); the four cases pinned to text the plan keeps unchanged (the rest of the Direct Mode section, the subagent paragraph, the mode-picking rule, and GEMINI.md's byte-identity) already pass, as expected before any production change. `bash test.sh` currently exits 1, driven by those same new failures."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-16-direct-mode-has-a-predicate\nThis run works docs/issues/2026-08-16-direct-mode-has-a-predicate/issue.md one increment at a time, and increment 1 is yours:\n  Direct Mode is keyed to two observable cases — The session's rules and the README stop offering a judgement call as the test for Direct Mode and offer an observable predicate instead, with the price of taking it wrongly written down and every new rule guarded by a case in the repository suite.\nWhat it has to satisfy:\n  - `rulebook.md` keys Direct Mode to two observable cases: writing the issue file costs more than the change itself, and the loop cannot be run.\n  - `rulebook.md` sends every task outside those two cases to Issue Mode.\n  - `rulebook.md` states what taking Direct Mode for a task outside those two cases costs: the loop would have cut it `direct` and put a reviewer on the diff, and the session gives it no reviewer and spends the run's most expensive context on it.\n  - `rulebook.md` quotes, verbatim, the rationalisation that price counters.\n  - `rulebook.md` offers \"small or obvious\" nowhere as the test for Direct Mode.\n  - `rulebook.md` keeps the rest of the Direct Mode section as it stands: read the code, change the code and the tests, run them, commit, push, open the pull request, and hand a broad search to a subagent.\n  - `rulebook.md` keeps the mode-picking rule as it stands, including that an unanswered mode question falls to Issue Mode.\n  - `GEMINI.md` is byte-identical to `rulebook.md`.\n  - `test-repo.sh` has a case that turns red when `GEMINI.md` and `rulebook.md` differ.\n  - Each rule this adds to `rulebook.md` gets a case in `test-repo.sh` that turns red when that rule is removed.\n  - The paragraph in `README.md` that names the two modes states the same predicate as `rulebook.md` and states no other test.\n  - `bash test.sh` exits 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-16-direct-mode-has-a-predicate/backlog.json inc-1 research:inc-1.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-direct-mode-has-a-predicate/backlog.json inc-1 tests:inc-1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-direct-mode-has-a-predicate/backlog.json inc-1 tests:inc-1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []

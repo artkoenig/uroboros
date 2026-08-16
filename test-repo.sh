@@ -4309,6 +4309,166 @@ else
 fi
 
 echo
+echo "=== Direct Mode is keyed to two observable cases"
+
+# Direct Mode's own section of rulebook.md, and nothing around it — a
+# page-wide grep would pass on a phrase that survives somewhere else on the
+# page. Starts after the heading, exits on the next heading of level 1-3
+# (that next heading is "## The Human", not a "###").
+direct_section="$(awk '
+  /^### Direct Mode/ { insection = 1; next }
+  /^#{1,3} / { if (insection) exit }
+  insection { print }
+' "$root/rulebook.md")"
+
+# The mode-picking rule's own section: "## The two modes" up to the first
+# "### " heading (Issue Mode).
+modes_section="$(awk '
+  /^## The two modes/ { insection = 1; next }
+  /^### / { if (insection) exit }
+  insection { print }
+' "$root/rulebook.md")"
+
+# Line-wrapped joins of the two sections above, for phrase checks that must
+# not miss a match split across the markdown source's line wrap.
+direct_joined="$(echo "$direct_section" | tr '\n' ' ' | tr -s ' ')"
+modes_joined="$(echo "$modes_section" | tr '\n' ' ' | tr -s ' ')"
+
+# Criterion: rulebook.md keys Direct Mode to two observable cases. The two
+# case sentences are asserted separately, so deleting either one alone goes
+# red. Break 1: delete "the issue file costs more than the change" from the
+# Direct Mode section.
+if echo "$direct_joined" | grep -qi 'the issue file costs more than the change'; then
+  ok "rulebook.md's Direct Mode section names writing the issue file costing more than the change as one of its two cases"
+else
+  no "rulebook.md's Direct Mode section does not name the issue-file-costs-more-than-the-change case"
+fi
+
+# Break 2: delete "the loop cannot be run" from the Direct Mode section.
+if echo "$direct_joined" | grep -qi 'the loop cannot be run'; then
+  ok "rulebook.md's Direct Mode section names the loop cannot be run as the other of its two cases"
+else
+  no "rulebook.md's Direct Mode section does not name the loop-cannot-be-run case"
+fi
+
+# Criterion: rulebook.md sends every task outside those two cases to Issue
+# Mode. Break: delete that sentence, or soften it to "most other tasks".
+if echo "$direct_joined" | grep -q 'Every other task goes to Issue Mode'; then
+  ok "rulebook.md's Direct Mode section sends every other task to Issue Mode"
+else
+  no "rulebook.md's Direct Mode section does not send every other task to Issue Mode"
+fi
+
+# Criterion: rulebook.md states the price of taking Direct Mode outside the
+# two cases, in one paragraph carrying all four markers. Break: delete the
+# price clause, or drop the "no reviewer" half, or drop the "most expensive
+# context" half — each alone goes red, because the paragraph then fails to
+# carry all four.
+direct_price_paragraphs="$(echo "$direct_section" | awk -v RS='' '
+  {
+    text = $0
+    gsub(/\n/, " ", text)
+    low = tolower(text)
+    if (index(low, "`direct`") > 0 && index(low, "reviewer on the diff") > 0 && \
+        index(low, "no reviewer") > 0 && index(low, "most expensive context") > 0) c++
+  }
+  END { print c + 0 }
+')"
+if [ "$direct_price_paragraphs" -eq 1 ]; then
+  ok "exactly one paragraph of rulebook.md's Direct Mode section prices taking it outside the two cases: cut direct, no reviewer, most expensive context"
+else
+  no "rulebook.md's Direct Mode section does not carry the price of taking Direct Mode outside the two cases in exactly one paragraph (matched $direct_price_paragraphs)"
+fi
+
+# Criterion: rulebook.md quotes, verbatim, the rationalisation that price
+# counters. Break: replace the quoted excuse with an unquoted paraphrase, or
+# drop the quote marks.
+if echo "$direct_joined" | grep -qF '"this is too small to file an issue for"'; then
+  ok "rulebook.md's Direct Mode section quotes, verbatim, \"this is too small to file an issue for\""
+else
+  no "rulebook.md's Direct Mode section does not quote \"this is too small to file an issue for\" verbatim"
+fi
+
+# Criterion: rulebook.md offers "small or obvious" nowhere as the test for
+# Direct Mode. Break: restore "Small or obvious work: you do it."
+if grep -qi 'small or obvious' "$root/rulebook.md"; then
+  no "rulebook.md still offers \"small or obvious\" as a test"
+else
+  ok "rulebook.md offers \"small or obvious\" nowhere as the test for Direct Mode"
+fi
+
+# Criterion: rulebook.md keeps the rest of the Direct Mode section as it
+# stands. Break: delete the "Read the code..." sentence — any one of these
+# six markers going missing goes red.
+if echo "$direct_joined" | grep -qi 'Read the code' && \
+   echo "$direct_joined" | grep -qi 'change the code and the tests' && \
+   echo "$direct_joined" | grep -qi 'run them' && \
+   echo "$direct_joined" | grep -qi 'commit' && \
+   echo "$direct_joined" | grep -qi 'push' && \
+   echo "$direct_joined" | grep -qi 'pull request'; then
+  ok "rulebook.md's Direct Mode section still reads the code, changes the code and the tests, runs them, commits, pushes and opens the pull request"
+else
+  no "rulebook.md's Direct Mode section dropped one of: read the code, change the code and the tests, run them, commit, push, pull request"
+fi
+
+# Break: delete the subagent-search paragraph.
+direct_subagent_paragraphs="$(echo "$direct_section" | awk -v RS='' '
+  {
+    text = $0
+    gsub(/\n/, " ", text)
+    low = tolower(text)
+    if (index(low, "broad search") > 0 && index(low, "subagent") > 0) c++
+  }
+  END { print c + 0 }
+')"
+if [ "$direct_subagent_paragraphs" -eq 1 ]; then
+  ok "rulebook.md's Direct Mode section still hands a broad search through the code to a subagent"
+else
+  no "rulebook.md's Direct Mode section does not hand a broad search to a subagent in exactly one paragraph (matched $direct_subagent_paragraphs)"
+fi
+
+# Criterion: rulebook.md keeps the mode-picking rule as it stands, including
+# that an unanswered mode question falls to Issue Mode. Break: delete either
+# sentence, or change the fall-through to Direct Mode.
+if echo "$modes_joined" | grep -q 'The human names it' && \
+   echo "$modes_joined" | grep -q 'unanswered it falls to Issue Mode'; then
+  ok "rulebook.md's mode-picking rule still has the human name the mode, and an unanswered question fall to Issue Mode"
+else
+  no "rulebook.md's mode-picking rule no longer has the human name the mode and an unanswered question fall to Issue Mode"
+fi
+
+# Criteria: GEMINI.md is byte-identical to rulebook.md, and this case turns
+# red when they differ. GEMINI.md is a symlink to rulebook.md today, so this
+# case is green by construction — it exists to catch someone replacing the
+# symlink with a copy that carries one different byte, or deleting GEMINI.md.
+if cmp -s "$root/GEMINI.md" "$root/rulebook.md"; then
+  ok "GEMINI.md is byte-identical to rulebook.md"
+else
+  no "GEMINI.md differs from rulebook.md"
+fi
+
+# Criterion: the README.md paragraph that names the two modes states the
+# same predicate as rulebook.md. Extract the paragraph mentioning "Direct
+# Mode" and require both case sentences.
+readme_modes_paragraph="$(awk -v RS='' '/Direct Mode/ { print; exit }' "$root/README.md" | tr '\n' ' ' | tr -s ' ')"
+if echo "$readme_modes_paragraph" | grep -qi 'the issue file costs more than the change' && \
+   echo "$readme_modes_paragraph" | grep -qi 'the loop cannot be run'; then
+  ok "README.md's two-modes paragraph states the same predicate as rulebook.md"
+else
+  no "README.md's two-modes paragraph does not state both of rulebook.md's two observable cases"
+fi
+
+# Criterion: that paragraph states no other test. Break: leave "small or
+# obvious" or "you name which one" in README.md.
+if grep -qi 'small or obvious' "$root/README.md"; then
+  no "README.md still offers \"small or obvious\" as a test"
+elif grep -qi 'you name which one' "$root/README.md"; then
+  no "README.md still offers \"you name which one\" as the test for Direct Mode"
+else
+  ok "README.md states no test for Direct Mode beyond rulebook.md's predicate"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else
