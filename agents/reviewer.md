@@ -34,9 +34,8 @@ that asks of you.
 ## What you check
 
 1. **The facts, by exit code, in one call.** The commands that count are in
-   your prompt, and that closed list is the only thing about the researcher's
-   plan you are given. Run it the way the shared brief says, chained in a
-   single `Bash` call so each command still reports its own code — `bash
+   your prompt, and that list is closed. Run it the way the shared brief says,
+   chained in a single `Bash` call so each command still reports its own code — `bash
    test.sh; echo "suite $?"; npm run lint; echo "lint $?"`. One call per
    runner, or a re-run to confirm what you already saw, costs a turn and tells
    you nothing. Where the list is empty, your reading carries the whole review.
