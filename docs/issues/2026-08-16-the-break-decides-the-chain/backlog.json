@@ -285,6 +285,75 @@
             "summary": "Increment 2 is two files: agents/reviewer.md gains one new section on the break it runs and the criterion it reads, a re-cut check 3 that stops filing missing tests against criteria the plan named no break for, and a `summary` bullet that reports both — and test-repo.sh gains a paragraph-scoped case per rule, matched the way the probe-licence case already is so a rule deleted from the page turns the suite red. `bash test.sh` is the whole closed list, and nothing was run for this plan."
           },
           "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nThis increment is worked on its own branch: `claude/break-decides-issue-6ozelk--inc-2`, off `claude/break-decides-issue-6ozelk`.\nBefore anything else, on `claude/break-decides-issue-6ozelk`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-2 claude/break-decides-issue-6ozelk--inc-2`, commit that state change and push `claude/break-decides-issue-6ozelk`. Then create the branch with `git checkout -b claude/break-decides-issue-6ozelk--inc-2`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-16-the-break-decides-the-chain/issue.md one increment at a time, and increment 2 is yours:\n  The reviewer executes the break and reads the unbreakable — The reviewer stops filing coverage findings against criteria no test can reach and judges them by reading the diff instead, and it stops trusting a named break: it applies each one in its sandbox and only a red run counts as verification.\nWhat it has to satisfy:\n  - The reviewer does not file the absence of a test for a criterion the researcher declared unbreakable.\n  - The reviewer judges each unbreakable criterion by reading the diff against it, and says in its `summary` what it judged and on what.\n  - The reviewer applies each named break in its sandbox worktree, runs the commands its prompt already names, and reports the criterion as verified only where that run fails.\n  - A named break that leaves every one of those commands green is a finding against the criterion it was named for.\n  - An applied break never reaches the checkout and never reaches the diff.\n  - The reviewer's rules hold for a review round that is handed no break at all, which is what an increment worked `direct` and an increment whose plan named none both produce.\n  - Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The run tells the human what was accepted unchecked.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-2 research:inc-2.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-2 research:inc-2.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:inc-2.0",
+          "at": "2026-08-16T10:03:53.529Z",
+          "return": {
+            "cases": [
+              {
+                "case": "The reviewer does not file the absence of a test for a criterion the researcher declared unbreakable. — check 3 of `## What you check` on `agents/reviewer.md`, whitespace collapsed, has to carry both the mutation-standard hold and the branch for a criterion the prompt names as one the plan named no break for.",
+                "file": "test-repo.sh",
+                "testName": "check 3 of agents/reviewer.md's 'What you check' holds the mutation standard and the branch for a criterion the plan named no break for",
+                "want": "The collapsed text of numbered check 3 matches both /mutation standard/i and /no break/i.",
+                "got": "FAIL — check 3 of agents/reviewer.md's 'What you check' does not carry both the mutation standard and the no-break branch: '3. **The tests against the intent.** ... A criterion no test would catch is a finding, named as that criterion and that gap, never as the test you would have written instead. ...' — the mutation-standard clause is there, the no-break branch is not."
+              },
+              {
+                "case": "The reviewer judges each unbreakable criterion by reading the diff against it, and says in its `summary` what it judged and on what. — the paragraphs of the new break section pair the no-break criteria with reading the diff against them.",
+                "file": "test-repo.sh",
+                "testName": "every rule the break section needs stands in its own paragraph of agents/reviewer.md",
+                "want": "A paragraph inside the `## `-heading section whose heading names 'break' matches all of /no break/i, /read/i and /diff/i.",
+                "got": "FAIL — these rules of the break section stand in no paragraph of agents/reviewer.md: 'criterion, unbreakable criteria are judged by reading the diff against them' listed among the misses, because agents/reviewer.md carries no heading naming 'break' yet."
+              },
+              {
+                "case": "The reviewer judges each unbreakable criterion by reading the diff against it, and says in its `summary` what it judged and on what. — the `summary` half: the `summary` bullet and its continuation lines ask for the criteria judged by reading and what they were judged on, and for the breaks that were run.",
+                "file": "test-repo.sh",
+                "testName": "the summary bullet on agents/reviewer.md reports which unbreakable criteria were judged by reading the diff, and which breaks were run",
+                "want": "`grep -A4 -- '- \\*\\*`summary`\\*\\*' agents/reviewer.md` matches both /diff/i and /break/i.",
+                "got": "FAIL — the summary bullet on agents/reviewer.md does not report the unbreakable criteria read against the diff and the breaks run: '- **`summary`** — one sentence on the review: the run of the listed commands, and how many probes you ran and what they showed.' — no mention of `diff` or `break`."
+              },
+              {
+                "case": "The reviewer applies each named break in its sandbox worktree, runs the commands its prompt already names, and reports the criterion as verified only where that run fails. — one paragraph of the new break section pairs applying a break with the sandbox worktree, the listed commands, and verification resting on a failing run.",
+                "file": "test-repo.sh",
+                "testName": "every rule the break section needs stands in its own paragraph of agents/reviewer.md",
+                "want": "A paragraph inside the break-named section matches /break/i, /sandbox|worktree/i, /command/i and /verif/i.",
+                "got": "FAIL — 'criterion, an applied break runs in the sandbox worktree with the commands the prompt already names and verification rests on that run failing' listed among the misses, because agents/reviewer.md carries no heading naming 'break' yet."
+              },
+              {
+                "case": "A named break that leaves every one of those commands green is a finding against the criterion it was named for. — one paragraph of the new break section pairs a break that leaves the listed commands green with a finding against its criterion.",
+                "file": "test-repo.sh",
+                "testName": "every rule the break section needs stands in its own paragraph of agents/reviewer.md",
+                "want": "A paragraph inside the break-named section matches /break/i, /green/i and /finding/i.",
+                "got": "FAIL — 'criterion, a break that leaves every listed command green is a finding against the criterion it was named for' listed among the misses, because agents/reviewer.md carries no heading naming 'break' yet."
+              },
+              {
+                "case": "An applied break never reaches the checkout and never reaches the diff. — one paragraph of the new break section forbids an applied break in the checkout and in the diff, scoped by section name so '## The probe' (which already pairs probe/checkout/commit/diff) cannot satisfy it.",
+                "file": "test-repo.sh",
+                "testName": "every rule the break section needs stands in its own paragraph of agents/reviewer.md",
+                "want": "A paragraph inside the section whose `## ` heading names 'break' (never '## The probe') matches /break/i, /checkout/i and /diff/i.",
+                "got": "FAIL — 'criterion, an applied break never reaches the checkout and never reaches the diff' listed among the misses, because agents/reviewer.md carries no heading naming 'break' yet."
+              },
+              {
+                "case": "The reviewer's rules hold for a review round that is handed no break at all, which is what an increment worked `direct` and an increment whose plan named none both produce. — one paragraph of the new break section states the branch for a prompt that names no break for any criterion and says what the reviewer does then.",
+                "file": "test-repo.sh",
+                "testName": "every rule the break section needs stands in its own paragraph of agents/reviewer.md",
+                "want": "A paragraph inside the break-named section matches /no break/i, /apply/i and /four checks|as they stand/i.",
+                "got": "FAIL — 'criterion, a round handed no break at all applies none and the four checks stand as they otherwise would' listed among the misses, because agents/reviewer.md carries no heading naming 'break' yet."
+              },
+              {
+                "case": "`bash test.sh` exits 0.",
+                "file": "",
+                "testName": "",
+                "want": "",
+                "got": "No case of its own, as the plan directs: `bash test.sh` is the listed command and its exit code is the check, carried by cases 2 and 4 through 7 above going red until the whole break section lands."
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added one new section to test-repo.sh, \"the reviewer executes the break and reads the unbreakable\", pinning the 7 testable criteria the plan named (criterion 7 deliberately left uncased, per the plan's own reasoning). `bash test-repo.sh` now reports FAIL: 3 of 229 cases (the new section's three ok/no pairs, one of them aggregating five conjunction checks over the not-yet-written break section), each failing only because the corresponding text does not exist yet on agents/reviewer.md. `bash test.sh` exits 1 accordingly (FAIL: 1 of 8 suite(s)), for the same missing-behaviour reason."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nThis increment is worked on branch `claude/break-decides-issue-6ozelk--inc-2`. Before anything else make sure you are on it: `git fetch origin claude/break-decides-issue-6ozelk--inc-2` and check it out; if the remote does not have it, create it from `claude/break-decides-issue-6ozelk` and push it with `-u`.\nThis run works docs/issues/2026-08-16-the-break-decides-the-chain/issue.md one increment at a time, and increment 2 is yours:\n  The reviewer executes the break and reads the unbreakable — The reviewer stops filing coverage findings against criteria no test can reach and judges them by reading the diff instead, and it stops trusting a named break: it applies each one in its sandbox and only a red run counts as verification.\nWhat it has to satisfy:\n  - The reviewer does not file the absence of a test for a criterion the researcher declared unbreakable.\n  - The reviewer judges each unbreakable criterion by reading the diff against it, and says in its `summary` what it judged and on what.\n  - The reviewer applies each named break in its sandbox worktree, runs the commands its prompt already names, and reports the criterion as verified only where that run fails.\n  - A named break that leaves every one of those commands green is a finding against the criterion it was named for.\n  - An applied break never reaches the checkout and never reaches the diff.\n  - The reviewer's rules hold for a review round that is handed no break at all, which is what an increment worked `direct` and an increment whose plan named none both produce.\n  - Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The run tells the human what was accepted unchecked.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-2 research:inc-2.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-2 tests:inc-2.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-2 tests:inc-2.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []

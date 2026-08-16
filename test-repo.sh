@@ -2226,6 +2226,84 @@ else
 fi
 
 echo
+echo "=== the reviewer executes the break and reads the unbreakable"
+
+reviewer_break_page="$root/agents/reviewer.md"
+
+# Criterion "The reviewer does not file the absence of a test for a criterion
+# the researcher declared unbreakable." — check 3 of '## What you check' has
+# to carry both the mutation-standard hold and a branch for a criterion the
+# prompt names as one the plan named no break for, in the same paragraph.
+# Extracted directly rather than through the paragraph-scoped loop below,
+# because the numbered checks 1-4 share one blank-line paragraph on this page
+# and only the text of check 3 itself decides this criterion.
+# Break: delete the branch clause from check 3, leaving "A criterion no test
+# would catch is a finding" unqualified.
+reviewer_break_check3="$(awk '
+  /^3\. \*\*The tests against the intent\.\*\*/ { flag = 1 }
+  /^4\. \*\*Beyond the criteria\.\*\*/ { flag = 0 }
+  flag { print }
+' "$reviewer_break_page" | tr '\n' ' ' | tr -s ' ')"
+if echo "$reviewer_break_check3" | grep -qi 'mutation standard' && echo "$reviewer_break_check3" | grep -qi 'no break'; then
+  ok "check 3 of agents/reviewer.md's 'What you check' holds the mutation standard and the branch for a criterion the plan named no break for"
+else
+  no "check 3 of agents/reviewer.md's 'What you check' does not carry both the mutation standard and the no-break branch:"
+  echo "$reviewer_break_check3" | sed 's/^/       /'
+fi
+
+# Same shape as the probe table above, for the same reason: a flat page-wide
+# grep would pass on a word the frontmatter already carries, so each rule
+# below is pinned to one paragraph of the new break section that owns it. The
+# section-selector pattern requires the "## " heading itself to name "break",
+# which also keeps this loop off '## The probe' — that section already pairs
+# "probe", "checkout", "commit" and "diff" in one paragraph, and an unscoped
+# grep would go green on it for criterion 6 below.
+declare -a reviewer_break_rules=(
+  '^## .*break:criterion, unbreakable criteria are judged by reading the diff against them:no break:read:diff'
+  '^## .*break:criterion, an applied break runs in the sandbox worktree with the commands the prompt already names and verification rests on that run failing:break:sandbox|worktree:command:verif'
+  '^## .*break:criterion, a break that leaves every listed command green is a finding against the criterion it was named for:break:green:finding'
+  '^## .*break:criterion, an applied break never reaches the checkout and never reaches the diff:break:checkout:diff'
+  '^## .*break:criterion, a round handed no break at all applies none and the four checks stand as they otherwise would:no break:apply:four checks|as they stand'
+)
+reviewer_break_misses=""
+for rule in "${reviewer_break_rules[@]}"; do
+  IFS=':' read -ra rule_fields <<<"$rule"
+  want="${rule_fields[0]}"
+  label="${rule_fields[1]}"
+  paragraphs="$(awk -v RS='' -v want="$want" '
+    /^## / { inside = tolower($0) ~ want; next }
+    inside { gsub(/\n/, " "); print }
+  ' "$reviewer_break_page")"
+  matched="$paragraphs"
+  for ((field_index = 2; field_index < ${#rule_fields[@]}; field_index++)); do
+    term="${rule_fields[$field_index]}"
+    matched="$(echo "$matched" | grep -iE -- "$term" || true)"
+  done
+  if [ -z "$matched" ]; then
+    reviewer_break_misses="${reviewer_break_misses}${label}
+"
+  fi
+done
+if [ -z "$reviewer_break_misses" ]; then
+  ok "every rule the break section needs stands in its own paragraph of agents/reviewer.md"
+else
+  no "these rules of the break section stand in no paragraph of agents/reviewer.md:"
+  echo "$reviewer_break_misses" | sed 's/^/       /'
+fi
+
+# Criterion "The reviewer judges each unbreakable criterion by reading the
+# diff against it, and says in its `summary` what it judged and on what." —
+# the summary half. Extracted the way the probe-summary case above extracts
+# the bullet. Break: delete the added clause from the `summary` bullet.
+reviewer_break_summary_bullet="$(grep -A4 -- '- \*\*`summary`\*\*' "$reviewer_break_page" || true)"
+if echo "$reviewer_break_summary_bullet" | grep -qi 'diff' && echo "$reviewer_break_summary_bullet" | grep -qi 'break'; then
+  ok "the summary bullet on agents/reviewer.md reports which unbreakable criteria were judged by reading the diff, and which breaks were run"
+else
+  no "the summary bullet on agents/reviewer.md does not report the unbreakable criteria read against the diff and the breaks run:"
+  echo "$reviewer_break_summary_bullet" | sed 's/^/       /'
+fi
+
+echo
 echo "=== a correction round judges the fix"
 
 # Same shape as the probe table above, for the same reason: a flat page-wide
