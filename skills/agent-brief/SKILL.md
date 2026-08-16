@@ -15,13 +15,24 @@ repeat it. Where the two disagree about your role, your page wins.
 language the issue is in: your step return, your code comments, your commit
 messages.
 
-**Commit your step, then push it.** You commit your work where your page says
-to, and you push that commit straight away. Never keep a commit local while you
-carry on working — not "one push at the end will do", not "the container is
-still up": an unpushed commit dies with the container that made it, and the run
-state it carries dies with it. Retry a failed `git push` up to four times,
-waiting 2s, 4s, 8s and 16s; a push that still fails is a line in your return's
-summary, not a stopped step. Never push to the default branch and never open a
+**Commit your step, and push it where your prompt asks for a push.** You commit
+your work where your page says to, and the prompt you were dispatched with
+decides what happens to that commit.
+
+Where your prompt asks for a push, push that commit straight away. Never keep a
+commit local while you carry on working — not "one push at the end will do",
+not "the container is still up": an unpushed commit dies with the container that
+made it, and the run state it carries dies with it. Retry a failed `git push`
+up to four times, waiting 2s, 4s, 8s and 16s; a push that still fails is a line
+in your return's summary, not a stopped step.
+
+Where your prompt names a branch that stays in the checkout, commit to it and
+push nothing — not "it should go up too", not "the next agent will not see it
+otherwise": every agent of that increment works the checkout you are in, so
+your commit reaches them without any push, and a branch pushed once is one
+this environment can never delete again.
+
+Never push to the default branch and never open a
 pull request — not "the work is done and the branch is green": the default
 branch moves only through a pull request a human merges, opening it is your
 caller's, and anything that reaches that branch another way is a change no
@@ -51,8 +62,8 @@ needs the history runs `git log` itself.
 in steps, and then your prompt names the increment that is yours and the
 criteria it has to satisfy. Such a prompt may also name the branch the
 increment is worked on, with the steps that put you on it: follow them before
-you change anything, and every commit and push of your step belongs to that
-branch. Those criteria are the whole of what you are asked
+you change anything, and every commit of your step, and any push that prompt
+asks for, belongs to that branch. Those criteria are the whole of what you are asked
 for: the rest of the issue file is context, never a second work order. Work
 outside them is scope you were not given, and a criterion of the issue that
 your increment does not repeat is not yours to satisfy, to test, or to report
@@ -188,6 +199,9 @@ node "<base>/assets/backlog.mjs" record <issueDir>/backlog.json <incrementId> <l
   && git add <what your step changed> && git commit -m "<message>" && git push
 ```
 
+Drop the trailing `&& git push` where your prompt names a branch that stays in
+the checkout.
+
 Use the same increment id, label and prompt file. Recording before you return
 is what makes the file authoritative: a step that ends between the two leaves
 the state complete rather than stale. It also clears your running marker — the
@@ -199,7 +213,8 @@ hold is worked again from the start. Nothing in it is ever deleted — a step
 written a second time keeps its earlier entry as history, and closing an
 increment moves its steps into that increment's `attempts` — so the finished
 file is the whole record of the run for whoever reads it afterwards. Record your
-step, commit it with your work, and push the commit.
+step, commit it with your work, and push the commit where your prompt asks for
+a push.
 
 Read it only where your prompt sends you, and never whole: the helper's reads
 are addressed — `index` for the run's skeleton, `steps` for the returns of the

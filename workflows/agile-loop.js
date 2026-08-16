@@ -587,8 +587,16 @@ function findingList(findings) {
 // produced it. Both belong to every role alike, so why they exist, what goes in
 // the files and that the structured return is not a second copy of them are the
 // shared brief's, and this carries only what varies — the state file, the
-// increment id, the label, and which fields this step returns.
-function recordStep(incrementId, label, fields) {
+// increment id, the label, which fields this step returns, and whether the
+// step's commit is pushed.
+//
+// A step worked on an increment branch pushes nothing: that branch never leaves
+// the checkout, and `branchBlock` above carries the prohibition and its price,
+// so this line stops at the commit rather than stating the rule a second time.
+// Every other step — the planner's, and every step of a run whose increments
+// have no branch of their own — pushes, because the run state reaches the
+// remote no other way.
+function recordStep(incrementId, label, fields, pushes = true) {
   return (
     `Announce this step before you begin it and record it before you return, the way your ` +
     `shared brief describes, with the backlog helper it names:\n` +
@@ -596,7 +604,8 @@ function recordStep(incrementId, label, fields) {
     `prompt you were given, verbatim and whole, in a file outside the repository.\n` +
     `  - \`record ${dir}/backlog.json ${incrementId} ${label} <the return file> ` +
     `<the prompt file>\` — your return, in a file outside the repository, with that same ` +
-    `prompt file. Commit it with your work and push the commit.\n` +
+    `prompt file. Commit it with your work` +
+    (pushes ? ` and push the commit.\n` : `.\n`) +
     `The fields your return carries, and your page says what each one holds:\n` +
     fields.map((name) => `  - \`${name}\``).join('\n') +
     '\n'
@@ -714,14 +723,8 @@ const state = await agent(
     `dispatch is for.\n` +
     `If the file does not exist, return exists false with both lists empty.\n` +
     `Return the branch the checkout is on, from \`git branch --show-current\`, in branch.\n` +
-    `The checkout's copy of the state can trail the copy an in-flight increment carries: ` +
-    `where an increment in the index has status "todo" and a non-empty \`branch\` field, run ` +
-    `\`git fetch origin <that branch>\` and then ` +
-    `\`git merge-base --is-ancestor HEAD origin/<that branch>\`. Exit 0 means that branch ` +
-    `continues this checkout, so write ` +
-    `\`git show origin/<that branch>:${dir}/backlog.json\` to a file outside the repository, ` +
-    `run the helper's \`index\` on that file, and return that index instead. A failed fetch, ` +
-    `or any other exit, means the branch is an abandoned attempt: keep the checkout's copy.\n` +
+    `The run state reaches the remote only with the issue branch, so this checkout's copy is ` +
+    `the whole of it: read it as it stands and look for no other copy.\n` +
     `The human's answers to whatever ended an earlier run are under a \`## Decisions\` heading ` +
     `in ${dir}/issue.md: return everything under that heading in decisions, verbatim and ` +
     `without the heading itself, up to the next \`## \` heading or the end of the file. Return ` +
@@ -736,9 +739,10 @@ const savedIndex = state && state.exists ? state : null
 
 // The branch the run publishes: whatever the checkout was on when it started.
 // Every increment is worked on its own branch off it and merged back into it
-// on acceptance, so the issue branch only ever holds accepted work. When the
-// state loader could not name it, the branch machinery stands down and the
-// run works the checkout as it is.
+// on acceptance, so the issue branch only ever holds accepted work. It is also
+// the only branch this run pushes: an increment branch never leaves the
+// checkout. When the state loader could not name it, the branch machinery
+// stands down and the run works the checkout as it is.
 const issueBranch = (state && typeof state.branch === 'string' && state.branch.trim()) || ''
 if (!issueBranch) {
   log('The state loader named no branch — increments are worked on the current checkout.')
@@ -814,8 +818,8 @@ function incrementHasHistory(id) {
 
 // The name of a fresh attempt's branch. The first attempt gets
 // `<issueBranch>--<id>`; a later one bumps a `-take<n>` suffix onto the name
-// the state still holds, so the abandoned branch keeps its name on the remote
-// and the new one never collides with it.
+// the state still holds, so the abandoned branch keeps its name in the state
+// and in the checkout, and the new one never collides with it.
 function nextBranchName(id) {
   const base = `${issueBranch}--${id}`
   const prior = branches.get(id)
@@ -826,25 +830,38 @@ function nextBranchName(id) {
 
 // What every dispatch of an increment is told about the branch it works on.
 // The first dispatch of a fresh attempt records the name in the run state
-// while still on the issue branch — that commit is how a resumed session finds
-// the branch — and then creates it; every later dispatch makes sure it is on
-// it. The shared brief owns the rule that the step's commits and pushes belong
-// to the branch the prompt names.
+// while still on the issue branch and pushes the issue branch — that commit is
+// how a resumed session finds the branch, and it is the only push of the whole
+// increment — and then creates the increment branch; every later dispatch
+// makes sure it is on it. The increment branch itself never leaves the
+// checkout, so the prohibition that says so is stated here, once, and every
+// step of the increment inherits it with this block.
 function branchBlock(taskId, incrementBranch, create) {
   if (!incrementBranch) return ''
+  const local =
+    `That branch stays in this checkout and is never pushed — not "an unpushed commit dies ` +
+    `with the container", not "the reviewer will want to see it": a branch this environment ` +
+    `puts on the remote is one it can never remove again, and an increment's commits are ` +
+    `disposable until the planner lands them.\n` +
+    `Every agent of this increment works this same checkout, so a commit here is visible to ` +
+    `all of them without any push.\n`
   if (create) {
     return (
       `This increment is worked on its own branch: \`${incrementBranch}\`, off \`${issueBranch}\`.\n` +
-      `Before anything else, on \`${issueBranch}\`: record the name with the backlog helper's ` +
-      `\`branch\` subcommand, as \`branch ${dir}/backlog.json ${taskId} ${incrementBranch}\`, ` +
-      `commit that state change and push \`${issueBranch}\`. Then create the branch with ` +
-      `\`git checkout -b ${incrementBranch}\`, push it with \`-u\`, and work on it from there.\n`
+      `Before anything else, on \`${issueBranch}\`, record the name with the backlog helper's ` +
+      `\`branch\` subcommand, as \`branch ${dir}/backlog.json ${taskId} ${incrementBranch}\`.\n` +
+      `Commit that state change and push \`${issueBranch}\`: that push is what puts the resume ` +
+      `point on the remote.\n` +
+      `Then create the branch with \`git checkout -b ${incrementBranch}\` and work on it from ` +
+      `there.\n` +
+      local
     )
   }
   return (
-    `This increment is worked on branch \`${incrementBranch}\`. Before anything else make sure ` +
-    `you are on it: \`git fetch origin ${incrementBranch}\` and check it out; if the remote ` +
-    `does not have it, create it from \`${issueBranch}\` and push it with \`-u\`.\n`
+    `This increment is worked on branch \`${incrementBranch}\`, which lives in this checkout ` +
+    `alone. Before anything else make sure you are on it: \`git checkout ${incrementBranch}\`, ` +
+    `and where this checkout does not have it, create it from \`${issueBranch}\`.\n` +
+    local
   )
 }
 
@@ -1144,7 +1161,7 @@ if (!blockedOnHuman.length) {
                         : '',
                     ].filter(Boolean),
                   )) +
-              recordStep(task.id, researchLabel, PLAN_PAYLOAD),
+              recordStep(task.id, researchLabel, PLAN_PAYLOAD, !incrementBranch),
             { agentType: 'uroboros:researcher', phase: 'Research', label: researchLabel, schema: PLAN, effort: 'high' },
           ),
         )
@@ -1171,7 +1188,7 @@ if (!blockedOnHuman.length) {
                   readStep(task.id, planLabel, 'testPlan', `the test plan.`),
                 ]) +
                 (round === 0 ? '' : `This is correction round ${round} of this increment.\n`) +
-                recordStep(task.id, label, TESTS_PAYLOAD),
+                recordStep(task.id, label, TESTS_PAYLOAD, !incrementBranch),
               { agentType: 'uroboros:test-author', phase: 'Tests', label, schema: TESTS, effort: 'medium' },
             ),
           )
@@ -1225,7 +1242,7 @@ if (!blockedOnHuman.length) {
             // is the one the run's last researcher step closed. It is the same
             // code being judged.
             checkList(lastChecks) +
-            recordStep(task.id, buildLabel, BUILD_PAYLOAD),
+            recordStep(task.id, buildLabel, BUILD_PAYLOAD, !incrementBranch),
           {
             agentType: 'uroboros:implementer',
             phase: 'Implement',
@@ -1292,7 +1309,7 @@ if (!blockedOnHuman.length) {
             // on. Its page says so at length; this prompt is what makes the
             // instruction arrive with the dispatch that could break it.
             `Read nothing out of ${dir}/backlog.json — not with the helper, not by hand.\n` +
-            recordStep(task.id, reviewLabel, VERDICT_PAYLOAD),
+            recordStep(task.id, reviewLabel, VERDICT_PAYLOAD, !incrementBranch),
           { agentType: 'uroboros:reviewer', phase: 'Review', label: reviewLabel, schema: VERDICT, effort: 'high' },
         ),
       )
@@ -1350,14 +1367,13 @@ if (!blockedOnHuman.length) {
               `${findingCount} findings open: ${verdict.reason || verdict.summary}\n`) +
           (incrementBranch
             ? accepted
-              ? `Land it first: check out \`${issueBranch}\`, run ` +
-                `\`git fetch origin ${incrementBranch}\`, merge that branch and push ` +
-                `\`${issueBranch}\`.\n` +
-                `Once your close is committed and pushed, delete the merged branch on the ` +
-                `remote with \`git push origin --delete ${incrementBranch}\` — one issue, one ` +
-                `pull request. A failed delete is a line in your summary, not a blocker.\n`
+              ? `Land it first: check out \`${issueBranch}\` and merge \`${incrementBranch}\`, ` +
+                `which is in this checkout.\n` +
+                `Then push \`${issueBranch}\`: that push is what puts every increment landed so ` +
+                `far, and the run state a resumed run reads, on the remote.\n`
               : `Its work was not accepted, so it stays off the issue branch: do not merge ` +
-                `\`${incrementBranch}\`. Check out \`${issueBranch}\` first, so the state you ` +
+                `\`${incrementBranch}\`, and leave its commits in this checkout.\n` +
+                `Check out \`${issueBranch}\` first, so the state you ` +
                 `write lands there, and name that unmerged branch in the note you close with.\n`
             : '') +
           (accepted && !othersOpen
@@ -1437,7 +1453,12 @@ function runOutcome() {
   const lines = ['Run outcome, from the run itself. This is the whole record the body needs:']
   lines.push(`- The backlog now holds ${increments.length} increment(s):`)
   for (const t of increments) {
-    const worksOn = branches.get(t.id) || t.branch || ''
+    // A delivered increment's branch is merged into the issue branch and lives
+    // in this checkout alone, so naming it in the pull request body would send
+    // the reader after a branch that is neither on the remote nor holding
+    // anything the diff does not. An increment still open or blocked keeps its
+    // name here, which is the only place its unmerged work is findable.
+    const worksOn = t.status === 'done' ? '' : branches.get(t.id) || t.branch || ''
     lines.push(
       `  - ${t.id} — ${t.title} [${t.status || 'todo'}]` +
         (worksOn ? `, worked on branch \`${worksOn}\`` : '') +
@@ -1468,7 +1489,8 @@ function runOutcome() {
   return lines.join('\n') + '\n'
 }
 
-// Every agent above commits and pushes its own step; this one makes sure the
+// Every agent above commits its own step, and the ones on the issue branch push
+// it as well; this one makes sure the
 // branch has a pull request, which is the human's gate. It is dispatched every
 // time, recorded or not: a finished run re-asserting an open pull request costs
 // one cheap step, and a run whose push failed silently costs the work. Like the
