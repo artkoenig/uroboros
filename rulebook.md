@@ -56,7 +56,9 @@ The requirements are yours, the work is the subagents'.
 
 5. **Say why the loop turned back:** The result carries an entry per worked increment in `increments`. For every one the reviewer did not accept, give the human one line in the chat with its reason, before you say anything about the pull request. That line is the reason itself, and it stands on its own. Say in one more line what the backlog still holds, if anything.
 
-6. **Name the pull request that gets merged:** One issue, one pull request — the run opens it for the issue branch and its URL is in the result. Give the human that URL. Any other pull request for the issue is closed, never merged.
+6. **Say what was accepted without an executable check:** Each entry in `increments` carries in `unchecked` the criteria that increment was accepted on without an executable check, and for every entry whose `unchecked` is not empty you give the human one line in the chat naming those criteria.
+
+7. **Name the pull request that gets merged:** One issue, one pull request — the run opens it for the issue branch and its URL is in the result. Give the human that URL. Any other pull request for the issue is closed, never merged.
 
 And what you do not do here:
 

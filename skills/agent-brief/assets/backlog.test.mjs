@@ -761,6 +761,32 @@ test('index carries the cut, the step labels and the small steering values, and 
   assert.equal(idx.hasCodemap, true, 'the index says a codemap is there without carrying it');
 });
 
+test('index carries an open step\'s breaks and unbreakable lists verbatim, and carries neither key for a later step whose return recorded none, so a run resumed mid-increment replays the same criteria named the first time', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  const longBreak = 'does i1 — MARKER-LONG-BREAK'.padEnd(520, '.');
+  const longUnbreakable = 'does i1 also — MARKER-LONG-UNBREAKABLE'.padEnd(520, '.');
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    ...researchReturn,
+    breaks: [longBreak],
+    unbreakable: [longUnbreakable],
+  })]);
+  run(['record', backlogPath, 'i1', 'implement:i1.0', writeJson(dir, 'implement.json', { summary: 'build summary' })]);
+
+  const stdout = run(['index', backlogPath]);
+  const idx = JSON.parse(stdout);
+  const researchStep = idx.increments[0].steps.find((s) => s.label === 'research:i1.0');
+  const implementStep = idx.increments[0].steps.find((s) => s.label === 'implement:i1.0');
+
+  assert.deepEqual(researchStep.return.breaks, [longBreak], "the resumed run's open research step still names its break verbatim, past the cut that would otherwise drop it as content");
+  assert.deepEqual(researchStep.return.unbreakable, [longUnbreakable], 'and its unbreakable list verbatim too');
+  assert.equal('breaks' in implementStep.return, false, "a step whose return never recorded breaks carries no such key, so a resume cannot invent one for it");
+  assert.equal('unbreakable' in implementStep.return, false, 'nor unbreakable');
+  assert.equal(stdout.includes('MARKER-PLAN-CONTENT'), false, "the research step's plan is still content and stays out of the index");
+  assert.equal(stdout.includes('MARKER-TESTPLAN-CONTENT'), false, 'so is its test plan');
+});
+
 test('index projects each increment\'s chain depth, and reads a state written before the field existed as full', () => {
   const dir = tmpDir();
   const backlogPath = path.join(dir, 'backlog.json');
@@ -862,6 +888,113 @@ test('index carries an archived attempt\'s rulings, the increment\'s own step fi
     "the increment's own archived step comes first, the run-level close it recorded comes after it, and the step whose only ruling is over-long content is dropped entirely",
   );
   assert.equal(stdout.includes('MARKER-ARCHIVED-CONTENT'), false, "the archive's content still never reaches the index, even through attemptRulings");
+});
+
+test('index carries an archived research step\'s breaks and unbreakable lists as an attemptBreaks entry, and steps still returns nothing for the closed increment', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: ['does i1 — MARKER-BREAK'],
+    unbreakable: ['does i1 also — MARKER-UNBREAKABLE'],
+    summary: 'plan summary',
+  })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const stdout = run(['index', backlogPath]);
+  const idx = JSON.parse(stdout);
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: ['does i1 — MARKER-BREAK'], unbreakable: ['does i1 also — MARKER-UNBREAKABLE'] }],
+    "the archived research step's breaks and unbreakable lists are not carried forward as an attemptBreaks entry",
+  );
+  assert.deepEqual(JSON.parse(run(['steps', backlogPath, 'i1'])), [], 'a closed increment still has no current step to return');
+});
+
+test('index\'s attemptBreaks drops an archived step that recorded neither list and keeps one that recorded both as empty arrays', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: [],
+    unbreakable: [],
+    summary: 'plan summary',
+  })]);
+  run(['record', backlogPath, 'i1', 'implement:i1.0', writeJson(dir, 'implement.json', { summary: 'build summary' })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const stdout = run(['index', backlogPath]);
+  const idx = JSON.parse(stdout);
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: [], unbreakable: [] }],
+    "the implementer's step, whose return carried neither key, contributed no entry, while the research step's empty-but-recorded lists still did",
+  );
+});
+
+test('index carries a long break verbatim through attemptBreaks, so a run resumed from backlog.json reports the same criteria a run that never restarted would', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  const longBreak = 'does i1 — MARKER-LONG-BREAK'.padEnd(520, '.');
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: [longBreak],
+    unbreakable: [],
+    summary: 'plan summary',
+  })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const idx = JSON.parse(run(['index', backlogPath]));
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: [longBreak], unbreakable: [] }],
+    'a break long enough to be cut as content elsewhere in the projection still comes back byte-identical through attemptBreaks',
+  );
+});
+
+test('index carries a long unbreakable entry verbatim through attemptBreaks, so the criterion it declares unbreakable does not disappear from the run result', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  const longUnbreakable = 'does i1 also — MARKER-LONG-UNBREAKABLE'.padEnd(520, '.');
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: ['does i1 — short break'],
+    unbreakable: [longUnbreakable],
+    summary: 'plan summary',
+  })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const idx = JSON.parse(run(['index', backlogPath]));
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: ['does i1 — short break'], unbreakable: [longUnbreakable] }],
+    'the long unbreakable entry comes back verbatim, alongside the short break',
+  );
+});
+
+test('index carries all 51 entries of an over-long unbreakable list through attemptBreaks, in the recorded order, past the cut that empties a list of more than 50 items', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  const unbreakable = Array.from({ length: 51 }, (_, i) => `does i1 #${i + 1}`);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: [],
+    unbreakable,
+    summary: 'plan summary',
+  })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const idx = JSON.parse(run(['index', backlogPath]));
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: [], unbreakable }],
+    'every one of the 51 entries survives, in the order it was recorded, even though the list-length cut would otherwise empty a list this long',
+  );
 });
 
 test('index on a missing file exits 1 and prints nothing on stdout', () => {

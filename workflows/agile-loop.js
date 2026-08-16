@@ -53,11 +53,10 @@ export const meta = {
 // filesystem: the workflow runtime gives it `args`, `agent`, `log` and `phase`
 // and nothing else.
 //
-// The reviewer is the one role outside all of this. It reads nothing and is
-// handed nothing any other role produced, because it is the check on them. The
-// single thing it is handed is what its own role filed in the round before: a
-// correction round's reviewer is given those findings and the diff of the fix
-// that answers them.
+// The reviewer is the one role outside all of this. It reads no run state, and
+// what reaches it comes through its prompt: the commands that count, the break
+// the plan named for each criterion, and in a correction round the findings its
+// own role filed the round before with the diff of the fix that answers them.
 
 const MAX_CORRECTIONS = 2
 
@@ -134,6 +133,18 @@ const INDEX_STEP = {
       items: { type: 'string' },
       description: 'The step return\'s `checks` when the index carried them. Empty otherwise.',
     },
+    breaks: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'The step return\'s `breaks` when the index carried them, each entry verbatim and never paraphrased or shortened. Empty otherwise.',
+    },
+    unbreakable: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'The step return\'s `unbreakable` when the index carried them, each entry verbatim and never paraphrased or shortened. Empty otherwise.',
+    },
     findingCount: {
       type: 'integer',
       description: 'The step return\'s `findingCount` when the index carried one, 0 otherwise.',
@@ -147,7 +158,19 @@ const INDEX_STEP = {
       description: 'The step return\'s `reason` when the index carried one, empty otherwise.',
     },
   },
-  required: ['label', 'asked', 'questions', 'rulings', 'needsTests', 'checks', 'findingCount', 'allDirect', 'reason'],
+  required: [
+    'label',
+    'asked',
+    'questions',
+    'rulings',
+    'needsTests',
+    'checks',
+    'breaks',
+    'unbreakable',
+    'findingCount',
+    'allDirect',
+    'reason',
+  ],
   additionalProperties: false,
 }
 
@@ -190,6 +213,21 @@ const STATE = {
               additionalProperties: false,
             },
           },
+          attemptBreaks: {
+            type: 'array',
+            description:
+              'The index\'s `attemptBreaks` for this increment: the `breaks` and `unbreakable` lists of the steps its closed attempts archived, each with the label of the step that recorded them. Carry every entry of both lists verbatim, never paraphrased or shortened. Empty when the index carries none.',
+            items: {
+              type: 'object',
+              properties: {
+                label: { type: 'string' },
+                breaks: { type: 'array', items: { type: 'string' } },
+                unbreakable: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['label', 'breaks', 'unbreakable'],
+              additionalProperties: false,
+            },
+          },
         },
         required: [
           'id',
@@ -203,6 +241,7 @@ const STATE = {
           'steps',
           'attempts',
           'attemptRulings',
+          'attemptBreaks',
         ],
         additionalProperties: false,
       },
@@ -285,6 +324,22 @@ const PLAN = {
         'The `checks` you recorded, verbatim. The reviewer reads nothing you wrote, so the ' +
         'list reaches it through here.',
     },
+    breaks: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'The `breaks` you recorded, verbatim: one entry per acceptance criterion your test ' +
+        'plan named a break for, each `<criterion> — <the production change that would make ' +
+        'it fail>`. The reviewer reads nothing you wrote, so the break reaches it through here.',
+    },
+    unbreakable: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'The `unbreakable` you recorded, verbatim: one entry per acceptance criterion your ' +
+        'test plan named no break for, each `<criterion> — <why no test can catch it>`. The ' +
+        'reviewer reads nothing you wrote, so that fact reaches it through here.',
+    },
     questions: {
       type: 'array',
       items: { type: 'string' },
@@ -297,7 +352,7 @@ const PLAN = {
     },
     summary: { type: 'string' },
   },
-  required: ['needsTests', 'checks', 'questions', 'rulings', 'summary'],
+  required: ['needsTests', 'checks', 'breaks', 'unbreakable', 'questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -452,6 +507,8 @@ const PLAN_PAYLOAD = [
   'environment',
   'testPlan',
   'checks',
+  'breaks',
+  'unbreakable',
   'questions',
   'rulings',
   'summary',
@@ -474,16 +531,37 @@ const VERDICT_PAYLOAD = [
 
 const CUT_PAYLOAD = ['questions', 'rulings', 'summary']
 
-// The reviewer is handed no part of the plan — that is what keeps it an
-// independent pair of eyes. So the one thing it needs, the list of commands
-// that count for this increment, is handed to it here instead: what to run,
-// never why.
+// The list of commands that count for this increment is handed to the reviewer
+// here: what to run, never why.
 function checkList(checks) {
   return checks && checks.length
     ? 'The commands that count for this increment:\n' +
         checks.map((c) => `  - \`${c}\``).join('\n') +
         '\n'
     : 'No command counts for this increment: the list is empty.\n'
+}
+
+// What the plan already settled about each criterion: the break it named, or
+// the reason it named none. The reviewer reads no run state, so a fact the plan
+// settled reaches it through its prompt or not at all.
+function breakList(breaks, unbreakable) {
+  const named = breaks && breaks.length ? breaks : []
+  const none = unbreakable && unbreakable.length ? unbreakable : []
+  if (!named.length && !none.length) {
+    return 'No plan named a break for any criterion of this increment.\n'
+  }
+  return (
+    (named.length
+      ? 'The break the plan named for each criterion it named one for:\n' +
+        named.map((b) => `  - ${b}`).join('\n') +
+        '\n'
+      : '') +
+    (none.length
+      ? 'The criteria the plan named no break for, with the reason:\n' +
+        none.map((u) => `  - ${u}`).join('\n') +
+        '\n'
+      : '')
+  )
 }
 
 // The findings the round before filed, as the reviewer that judges the fix is
@@ -627,10 +705,11 @@ const state = await agent(
     `\`find "$HOME/.claude/plugins" -path '*agent-brief/assets/backlog.mjs' | head -1\`.\n` +
     `Return exists true, the index's \`increments\` in increments and its \`run.steps\` in ` +
     `runSteps. Each step of either carries the index's \`label\` and \`asked\`; fill ` +
-    `questions, rulings, needsTests, checks, findingCount, allDirect and reason from that step's ` +
+    `questions, rulings, needsTests, checks, breaks, unbreakable, findingCount, allDirect and ` +
+    `reason from that step's ` +
     `\`return\` object where the index carried them, and leave them empty otherwise.\n` +
-    `Each increment also carries the index's \`attemptRulings\`, returned as it stands and ` +
-    `empty where the index has none.\n` +
+    `Each increment also carries the index's \`attemptRulings\` and \`attemptBreaks\`, returned ` +
+    `as they stand and empty where the index has none.\n` +
     `Do NOT read the file itself and do NOT return its content: the index is what this ` +
     `dispatch is for.\n` +
     `If the file does not exist, return exists false with both lists empty.\n` +
@@ -896,6 +975,21 @@ log(`Backlog: ${increments.map((t, i) => `${i + 1}. ${t.title}`).join(' | ')}`)
 // sits in the main conversation and opens no file, so `log` puts it in front of
 // them while the run goes, and `worked` comes back with the result so the
 // session can repeat it once the run is done.
+// The criteria an increment was accepted on without an executable check. When
+// both lists are empty no plan determined anything about this increment's
+// criteria — an increment worked `direct` dispatches no researcher, so that is
+// exactly its case — and every criterion of it comes back verbatim; otherwise
+// the plan's `unbreakable` entries come back verbatim, each already carrying its
+// criterion and the reason no test can catch it.
+function uncheckedCriteria(criteria, breaks, unbreakable) {
+  const named = Array.isArray(breaks) ? breaks.filter(Boolean) : []
+  const none = Array.isArray(unbreakable) ? unbreakable.filter(Boolean) : []
+  if (!named.length && !none.length) {
+    return Array.isArray(criteria) ? criteria.filter(Boolean) : []
+  }
+  return none
+}
+
 const worked = []
 const attempts = new Map()
 let stopped = ''
@@ -914,6 +1008,10 @@ let lastChecks = []
 // close archived, so its note is the reason this result carries.
 for (const t of increments) {
   if (t.status === 'done' || t.status === 'blocked') {
+    // The last archived entry, because the live path reports the increment's
+    // last plan — a correction round's researcher overwrites the pair — and the
+    // two paths have to agree.
+    const archived = (Array.isArray(t.attemptBreaks) ? t.attemptBreaks : []).slice(-1)[0]
     worked.push({
       n: worked.length + 1,
       id: t.id,
@@ -922,6 +1020,14 @@ for (const t of increments) {
       accepted: t.status === 'done',
       findings: t.status === 'done' ? 0 : null,
       reason: t.note || `closed as ${t.status} in an earlier session`,
+      unchecked:
+        t.status === 'done'
+          ? uncheckedCriteria(
+              t.criteria || [],
+              (archived && archived.breaks) || [],
+              (archived && archived.unbreakable) || [],
+            )
+          : [],
     })
   }
 }
@@ -972,6 +1078,12 @@ if (!blockedOnHuman.length) {
     }
 
     let plan = null
+    // Unlike `lastChecks`, these two never cross an increment boundary. A
+    // command judges whatever code is in front of it, while a break names a
+    // criterion and criteria belong to one increment: carrying them would hand
+    // an increment worked `direct` the breaks of the increment before it.
+    let lastBreaks = []
+    let lastUnbreakable = []
     let planLabel = ''
     let testsLabel = ''
     let previousTestsLabel = ''
@@ -1038,6 +1150,8 @@ if (!blockedOnHuman.length) {
         )
         planLabel = researchLabel
         lastChecks = Array.isArray(plan.checks) ? plan.checks : []
+        lastBreaks = Array.isArray(plan.breaks) ? plan.breaks : []
+        lastUnbreakable = Array.isArray(plan.unbreakable) ? plan.unbreakable : []
         if (asksTheHuman(researchLabel, plan)) break
         log(
           `Increment ${n} round ${round}: tests needed: ${plan.needsTests}; ` +
@@ -1172,6 +1286,7 @@ if (!blockedOnHuman.length) {
             (priorFindings.length ? correctionScope : incrementRange) +
             scope(task, increments, n) +
             checkList(lastChecks) +
+            breakList(lastBreaks, lastUnbreakable) +
             // The one role that reads nothing. It records into the state and
             // never opens it, because that state holds the plan it is the check
             // on. Its page says so at length; this prompt is what makes the
@@ -1209,6 +1324,9 @@ if (!blockedOnHuman.length) {
       accepted,
       findings: findingCount,
       reason: (verdict && (verdict.reason || verdict.summary)) || '',
+      unchecked: accepted
+        ? uncheckedCriteria(task.criteria || [], lastBreaks, lastUnbreakable)
+        : [],
     })
 
     // Runs whether the review accepted or not: the planner owns the answer to a

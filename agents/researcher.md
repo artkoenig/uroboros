@@ -61,6 +61,13 @@ brief nobody can fill in. Its fields:
 - **`needsTests`** and **`checks`** — the two decisions of that plan. These two
   are also your structured return, because your caller triages on them and the
   reviewer, which reads nothing you wrote, is handed `checks` by it.
+- **`breaks`** and **`unbreakable`** — what your test plan settled per
+  acceptance criterion, as two lists of strings. A `breaks` entry is
+  `<criterion> — <the production change that would make it fail>`, one per
+  criterion you named a break for. An `unbreakable` entry is `<criterion> —
+  <why no test can catch it>`, one per criterion you named none for. Of this
+  increment's acceptance criteria, every criterion stands in exactly one of the
+  two lists, and a plan that needs no tests puts every criterion in unbreakable.
 
 Your prompt names every field this step returns, `questions`, `rulings` and
 `summary` among them, and the shared brief says what those three hold. Record the return
