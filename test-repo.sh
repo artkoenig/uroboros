@@ -4678,6 +4678,48 @@ else
 fi
 
 echo
+echo "=== the agent pages stay at their compressed size"
+# docs/issues/2026-08-16-compress-the-rules — each of the five agent pages
+# is shorter, in words, than it stood before the compression. Break: append
+# the page's pre-compression body back onto the current body, regrowing the
+# word count to its old value.
+
+implementer_words="$(wc -w < "$root/agents/implementer.md")"
+if [ "$implementer_words" -lt 1095 ]; then
+  ok "agents/implementer.md is shorter than its pre-compression 1095 words ($implementer_words)"
+else
+  no "agents/implementer.md is not shorter than its pre-compression 1095 words ($implementer_words)"
+fi
+
+planner_words="$(wc -w < "$root/agents/planner.md")"
+if [ "$planner_words" -lt 2203 ]; then
+  ok "agents/planner.md is shorter than its pre-compression 2203 words ($planner_words)"
+else
+  no "agents/planner.md is not shorter than its pre-compression 2203 words ($planner_words)"
+fi
+
+researcher_words="$(wc -w < "$root/agents/researcher.md")"
+if [ "$researcher_words" -lt 1561 ]; then
+  ok "agents/researcher.md is shorter than its pre-compression 1561 words ($researcher_words)"
+else
+  no "agents/researcher.md is not shorter than its pre-compression 1561 words ($researcher_words)"
+fi
+
+reviewer_words="$(wc -w < "$root/agents/reviewer.md")"
+if [ "$reviewer_words" -lt 2909 ]; then
+  ok "agents/reviewer.md is shorter than its pre-compression 2909 words ($reviewer_words)"
+else
+  no "agents/reviewer.md is not shorter than its pre-compression 2909 words ($reviewer_words)"
+fi
+
+test_author_words="$(wc -w < "$root/agents/test-author.md")"
+if [ "$test_author_words" -lt 1134 ]; then
+  ok "agents/test-author.md is shorter than its pre-compression 1134 words ($test_author_words)"
+else
+  no "agents/test-author.md is not shorter than its pre-compression 1134 words ($test_author_words)"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else

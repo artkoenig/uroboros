@@ -53,6 +53,89 @@
             "summary": "Plan for compressing the five agent pages: keep every phrase test-repo.sh greps for verbatim and cut only the unkeyed prose, so no existing case needs re-keying; the test-author adds five word-cap cases (pages stand at 1095/2203/1561/2909/1134 words and must end strictly below), and bash test.sh alone judges the work."
           },
           "prompt": "Issue directory: docs/issues/2026-08-16-compress-the-rules\nThis run works docs/issues/2026-08-16-compress-the-rules/issue.md one increment at a time, and increment 1 is yours:\n  Compress the five agent pages — Every page under agents/ says all it said in fewer words, and the suite still guards it.\nWhat it has to satisfy:\n  - Each of agents/implementer.md, agents/planner.md, agents/researcher.md, agents/reviewer.md and agents/test-author.md is shorter than it was, measured in words.\n  - Everything the old text of these pages required is still required, and everything it forbade is still forbidden.\n  - Each page states each rule once, in short imperative sentences of common words; history, anecdotes and self-justification are gone, and no reason runs past one sentence.\n  - Each page's role, audience, file location and English are unchanged.\n  - Every test-repo.sh case keyed on wording these pages changed is re-keyed to the new wording and still turns red when its rule is removed; no case is deleted.\n  - bash test.sh exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: Compress the workflow's dispatched rule text; Compress the four skill pages; Compress the rulebook and the pages under .claude/rules/.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-16-compress-the-rules/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-compress-the-rules/backlog.json agent-pages research:agent-pages.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-compress-the-rules/backlog.json agent-pages research:agent-pages.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `breaks`\n  - `unbreakable`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:agent-pages.0",
+          "at": "2026-08-16T20:40:26.809Z",
+          "return": {
+            "cases": [
+              {
+                "case": "agents/implementer.md — the file at HEAD → wc -w < agents/implementer.md prints a number strictly below 1095",
+                "file": "test-repo.sh",
+                "testName": "agents/implementer.md is shorter than its pre-compression 1095 words ($implementer_words)",
+                "want": "wc -w < agents/implementer.md is strictly less than 1095",
+                "got": "FAIL — agents/implementer.md is not shorter than its pre-compression 1095 words (1095)"
+              },
+              {
+                "case": "agents/planner.md — same shape — strictly below 2203",
+                "file": "test-repo.sh",
+                "testName": "agents/planner.md is shorter than its pre-compression 2203 words ($planner_words)",
+                "want": "wc -w < agents/planner.md is strictly less than 2203",
+                "got": "FAIL — agents/planner.md is not shorter than its pre-compression 2203 words (2203)"
+              },
+              {
+                "case": "agents/researcher.md — same shape — strictly below 1561",
+                "file": "test-repo.sh",
+                "testName": "agents/researcher.md is shorter than its pre-compression 1561 words ($researcher_words)",
+                "want": "wc -w < agents/researcher.md is strictly less than 1561",
+                "got": "FAIL — agents/researcher.md is not shorter than its pre-compression 1561 words (1561)"
+              },
+              {
+                "case": "agents/reviewer.md — same shape — strictly below 2909",
+                "file": "test-repo.sh",
+                "testName": "agents/reviewer.md is shorter than its pre-compression 2909 words ($reviewer_words)",
+                "want": "wc -w < agents/reviewer.md is strictly less than 2909",
+                "got": "FAIL — agents/reviewer.md is not shorter than its pre-compression 2909 words (2909)"
+              },
+              {
+                "case": "agents/test-author.md — same shape — strictly below 1134",
+                "file": "test-repo.sh",
+                "testName": "agents/test-author.md is shorter than its pre-compression 1134 words ($test_author_words)",
+                "want": "wc -w < agents/test-author.md is strictly less than 1134",
+                "got": "FAIL — agents/test-author.md is not shorter than its pre-compression 1134 words (1134)"
+              },
+              {
+                "case": "Everything the old text of these pages required is still required, and everything it forbade is still forbidden",
+                "file": "",
+                "testName": "",
+                "want": "carried by existing test-repo.sh cases that already turn red when a guarded rule is removed",
+                "got": "no new case: plan marks this covered by existing cases, none of which key on wording this compression changes"
+              },
+              {
+                "case": "Each page states each rule once, in short imperative sentences of common words; history, anecdotes and self-justification are gone, and no reason runs past one sentence",
+                "file": "",
+                "testName": "",
+                "want": "no computable predicate distinguishes a rule worded twice from two rules, or a common word from a rare one",
+                "got": "no new case: plan marks this deliberately untested, left to the reviewer's reading against the merge-base text"
+              },
+              {
+                "case": "Each page's role, audience, file location and English are unchanged",
+                "file": "",
+                "testName": "",
+                "want": "file-location half carried by the existing plugin.json-agrees-with-agents/ case; role, audience and English are reviewer's reading",
+                "got": "no new case: plan marks this covered by an existing case plus reviewer judgement"
+              },
+              {
+                "case": "Every test-repo.sh case keyed on wording these pages changed is re-keyed to the new wording and still turns red when its rule is removed; no case is deleted",
+                "file": "",
+                "testName": "",
+                "want": "the plan changes no keyed wording, so no case is re-keyed; verified by the test-repo.sh diff holding only the five added cases",
+                "got": "no new case: nothing to re-key per the test plan"
+              },
+              {
+                "case": "bash test.sh exits 0",
+                "file": "",
+                "testName": "",
+                "want": "the judging command itself",
+                "got": "no new case: running it is the test, not something a case pins"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added one section of five cases to test-repo.sh, one per agents/ page, each asserting wc -w on the page is strictly below its pre-compression count (implementer 1095, planner 2203, researcher 1561, reviewer 2909, test-author 1134). Ran bash test-repo.sh: exactly these five cases FAIL today (each equal to its old count), all 252 other cases still pass — 5 of 257 cases fail. No CLAUDE.md exists or was created beside test-repo.sh, per the plan's instruction."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-16-compress-the-rules\nThis run works docs/issues/2026-08-16-compress-the-rules/issue.md one increment at a time, and increment 1 is yours:\n  Compress the five agent pages — Every page under agents/ says all it said in fewer words, and the suite still guards it.\nWhat it has to satisfy:\n  - Each of agents/implementer.md, agents/planner.md, agents/researcher.md, agents/reviewer.md and agents/test-author.md is shorter than it was, measured in words.\n  - Everything the old text of these pages required is still required, and everything it forbade is still forbidden.\n  - Each page states each rule once, in short imperative sentences of common words; history, anecdotes and self-justification are gone, and no reason runs past one sentence.\n  - Each page's role, audience, file location and English are unchanged.\n  - Every test-repo.sh case keyed on wording these pages changed is re-keyed to the new wording and still turns red when its rule is removed; no case is deleted.\n  - bash test.sh exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: Compress the workflow's dispatched rule text; Compress the four skill pages; Compress the rulebook and the pages under .claude/rules/.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-16-compress-the-rules/backlog.json agent-pages research:agent-pages.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-compress-the-rules/backlog.json agent-pages tests:agent-pages.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-compress-the-rules/backlog.json agent-pages tests:agent-pages.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
