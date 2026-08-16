@@ -384,6 +384,26 @@ function steering(ret) {
   return out
 }
 
+// The two lists the projection is not allowed to cut. A plan's `breaks` and
+// `unbreakable` are the only path by which the criteria a run reports as
+// accepted-without-an-executable-check survive a restart, so a cut that
+// silently empties one makes a resumed run report a different list than a live
+// one. This returns those two keys and no others, each filtered to its
+// non-empty strings and carried whole however long the entry or the list — the
+// same computed-rather-than-projected device `asked` uses below, for the same
+// reason. A key the return does not carry as an array is absent from the
+// result, so 'the step recorded neither list' stays distinguishable from 'the
+// step recorded them empty'.
+function criterionLists(ret) {
+  const out = {}
+  if (!ret || typeof ret !== 'object') return out
+  for (const key of ['breaks', 'unbreakable']) {
+    if (!Array.isArray(ret[key])) continue
+    out[key] = ret[key].filter((item) => typeof item === 'string' && item)
+  }
+  return out
+}
+
 // A close archives an attempt's steps, and nothing in that archive is steering
 // any more — except a ruling, which is a decision taken on the human's behalf
 // and has to reach the result of the run that resumes after the close. So the
@@ -406,23 +426,23 @@ function attemptRulings(increment) {
 // with them — yet the run has to report, after that close, which criteria the
 // increment was accepted on without an executable check. So the index carries
 // the archived steps' `breaks` and `unbreakable` lists forward beside their
-// rulings, one entry per archived step whose projection carries either key,
-// INCLUDING when the recorded list is empty. That is the one place this differs
-// from `attemptRulings`, which keeps only non-empty rulings: the run reports the
-// increment's LAST plan, so a later plan that named nothing has to be able to
-// overwrite an earlier one that did.
+// rulings, one entry per archived step that recorded either list. It differs
+// from `attemptRulings` in two ways. It keeps a recorded-but-empty list: the run
+// reports the increment's LAST plan, so a later plan that named nothing has to
+// be able to overwrite an earlier one that did. And it reads through
+// `criterionLists` rather than the projection, for the reason that helper gives.
 function attemptBreaks(increment) {
   const out = []
   for (const attempt of increment.attempts || []) {
     for (const step of attempt.steps || []) {
-      const projected = steering(step && step.return)
-      const hasBreaks = Array.isArray(projected.breaks)
-      const hasUnbreakable = Array.isArray(projected.unbreakable)
+      const lists = criterionLists(step && step.return)
+      const hasBreaks = Array.isArray(lists.breaks)
+      const hasUnbreakable = Array.isArray(lists.unbreakable)
       if (!hasBreaks && !hasUnbreakable) continue
       out.push({
         label: (step && step.label) || '',
-        breaks: hasBreaks ? projected.breaks.filter(Boolean) : [],
-        unbreakable: hasUnbreakable ? projected.unbreakable.filter(Boolean) : [],
+        breaks: hasBreaks ? lists.breaks : [],
+        unbreakable: hasUnbreakable ? lists.unbreakable : [],
       })
     }
   }
@@ -441,7 +461,7 @@ function indexStep(step) {
     label: step.label,
     at: step.at || '',
     asked: questions.length > 0,
-    return: steering(ret),
+    return: { ...steering(ret), ...criterionLists(ret) },
   }
 }
 

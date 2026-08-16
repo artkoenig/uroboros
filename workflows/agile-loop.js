@@ -136,12 +136,14 @@ const INDEX_STEP = {
     breaks: {
       type: 'array',
       items: { type: 'string' },
-      description: 'The step return\'s `breaks` when the index carried them. Empty otherwise.',
+      description:
+        'The step return\'s `breaks` when the index carried them, each entry verbatim and never paraphrased or shortened. Empty otherwise.',
     },
     unbreakable: {
       type: 'array',
       items: { type: 'string' },
-      description: 'The step return\'s `unbreakable` when the index carried them. Empty otherwise.',
+      description:
+        'The step return\'s `unbreakable` when the index carried them, each entry verbatim and never paraphrased or shortened. Empty otherwise.',
     },
     findingCount: {
       type: 'integer',
@@ -214,7 +216,7 @@ const STATE = {
           attemptBreaks: {
             type: 'array',
             description:
-              'The index\'s `attemptBreaks` for this increment: the `breaks` and `unbreakable` lists of the steps its closed attempts archived, each with the label of the step that recorded them. Empty when the index carries none.',
+              'The index\'s `attemptBreaks` for this increment: the `breaks` and `unbreakable` lists of the steps its closed attempts archived, each with the label of the step that recorded them. Carry every entry of both lists verbatim, never paraphrased or shortened. Empty when the index carries none.',
             items: {
               type: 'object',
               properties: {
