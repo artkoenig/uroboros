@@ -548,6 +548,42 @@ else
 fi
 
 echo
+echo "=== the break the test plan named reaches the reviewer"
+
+# These three cases are the whole of the page rules this increment adds — all
+# on agents/researcher.md's '## What you record'. Collapsed first, the way the
+# mutation-standard section above collapses agents/reviewer.md: the sentences
+# below wrap across a line break in the page's prose, and a plain grep would
+# miss them there.
+break_researcher_collapsed="$(tr '\n' ' ' <"$root/agents/researcher.md" | tr -s ' ')"
+
+# Criterion 1: `breaks` and `unbreakable` each get their own template on the
+# page. Break: delete the new breaks/unbreakable bullet from '## What you
+# record'.
+if echo "$break_researcher_collapsed" | grep -q '<criterion> — <the production change that would make it fail>' &&
+  echo "$break_researcher_collapsed" | grep -q '<criterion> — <why no test can catch it>'; then
+  ok "agents/researcher.md gives both breaks and unbreakable their own template"
+else
+  no "agents/researcher.md does not give both breaks and unbreakable their own template"
+fi
+
+# Criterion 1: every criterion stands in exactly one of the two lists. Break:
+# delete that sentence from the bullet.
+if echo "$break_researcher_collapsed" | grep -qi 'every criterion stands in exactly one of the two lists'; then
+  ok "agents/researcher.md requires every criterion to stand in exactly one of the two lists"
+else
+  no "agents/researcher.md does not require every criterion to stand in exactly one of the two lists"
+fi
+
+# Criterion 1: the needs-no-tests edge is decided on the page, not left to
+# judgement. Break: delete that clause from the bullet.
+if echo "$break_researcher_collapsed" | grep -qi 'a plan that needs no tests puts every criterion in unbreakable'; then
+  ok "agents/researcher.md decides that a plan that needs no tests puts every criterion in unbreakable"
+else
+  no "agents/researcher.md does not decide where a plan that needs no tests puts its criteria"
+fi
+
+echo
 echo "=== a decidable question gets a ruling, not a stall"
 
 brief_collapsed="$(tr '\n' ' ' <"$root/skills/agent-brief/SKILL.md" | tr -s ' ')"
@@ -742,6 +778,8 @@ const DISJOINT_MARKERS = [
   'MARKER-RULING-CLOSE',
   'MARKER-RULING-RESUMED',
   'MARKER-RULING-ARCHIVED',
+  'MARKER-BREAK',
+  'MARKER-UNBREAKABLE',
 ];
 
 // The read a prompt has to carry for its role to have a brief at all. Written
@@ -760,10 +798,18 @@ const readStep = (id, label, fields) =>
 const planReturn = {
   needsTests: true,
   checks: [CHECK_MARKER],
+  breaks: ['does i1 — MARKER-BREAK'],
+  unbreakable: [],
   questions: [],
   summary: 'plan summary',
 };
 const planReturnWithQuestion = Object.assign({}, planReturn, { questions: ['ask the human'] });
+// w31's fixture for the criterion the plan named no break for: the break list
+// is empty and the criterion sits in `unbreakable` instead, with the reason.
+const planReturnUnbreakable = Object.assign({}, planReturn, {
+  breaks: [],
+  unbreakable: ['does i1 — MARKER-UNBREAKABLE'],
+});
 const testsReturn = { questions: [], summary: 'tests summary' };
 const buildReturn = { questions: [], summary: 'build summary' };
 const verdictReturnClean = {
@@ -815,6 +861,8 @@ function idxStep(label, ret) {
     questions,
     needsTests: r.needsTests === true,
     checks: Array.isArray(r.checks) ? r.checks : [],
+    breaks: Array.isArray(r.breaks) ? r.breaks : [],
+    unbreakable: Array.isArray(r.unbreakable) ? r.unbreakable : [],
     findingCount: r.findingCount || 0,
     allDirect: r.allDirect === true,
     reason: r.reason || '',
@@ -1113,6 +1161,8 @@ function contextFor(m) {
       return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn, verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithFinding : verdictReturnClean) };
     case 'w30':
       return { stateReturn: correctionResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w31':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturnUnbreakable };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1250,6 +1300,8 @@ async function main() {
     const reviewCall = calls.find((c) => c.label === 'review:i1.0');
     assertTrue(!!reviewCall && reviewCall.prompt.includes('CHECK-MARKER'),
       'the resumed reviewer was handed no checks, so the recorded plan never reached the one role that cannot read it');
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('MARKER-BREAK'),
+      'the resumed reviewer was handed no break, so the recorded plan never reached the one role that cannot read it');
   } else if (mode === 'w3') {
     assertEqualArrays(labels, ['load-state', 'publish'], 'a fully-closed backlog dispatches more than the state loader and publish');
     // Criterion 5, the closed-increment edge: this fixture's one increment is
@@ -1298,6 +1350,15 @@ async function main() {
       'the reviewer is not told that the run state is closed to it');
     assertTrue(!!reviewCall && reviewCall.prompt.includes('git diff issue-branch...HEAD'),
       "the reviewer's prompt does not name the increment's diff range against the issue branch");
+    // Criterion 2: the break the plan named for a criterion reaches the
+    // reviewer's prompt, labelled as itself and tied to the criterion it was
+    // named for.
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('MARKER-BREAK'),
+      "the reviewer's prompt does not carry the break the plan named");
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('does i1'),
+      "the reviewer's prompt does not carry the criterion the break was named for");
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('The break the plan named for each criterion it named one for:'),
+      "the reviewer's prompt does not carry the breaks heading");
   } else if (mode === 'w7') {
     assertEqualArrays(labels, ['load-state', 'decompose', 'research:i1.0', 'publish'], 'a question from the researcher does not stop the run at publish');
     assertTrue(!!result && !!result.blockedOnHuman, 'the returned result does not carry blockedOnHuman');
@@ -1409,6 +1470,9 @@ async function main() {
       "the first round's researcher is sent to a review that does not exist yet");
     assertTrue(logs.some((l) => l.includes('MARKER-VERDICT-REASON')),
       "the reviewer's reason sentence never reached the human in the chat");
+    const round1Review = calls.find((c) => c.label === 'review:i1.1');
+    assertTrue(!!round1Review && round1Review.prompt.includes('MARKER-BREAK'),
+      "the correction round's reviewer prompt does not carry the break the plan named — the block is round-0 only");
   } else if (mode === 'w11') {
     // A question the closing planner asks has to reach the human: no
     // blockedOnHuman, no log line, and the run reports itself finished.
@@ -1603,6 +1667,10 @@ async function main() {
       "the direct round's reviewer prompt does not say no command counts for this increment");
     assertTrue(!!reviewCall && reviewCall.prompt.includes('git diff issue-branch...HEAD'),
       "the direct round's reviewer prompt does not name the increment's diff range against the issue branch");
+    // Criterion 2, the empty-list edge: a run with no researcher step yet has
+    // no break to carry, and says so instead of an empty heading or nothing.
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('No plan named a break for any criterion of this increment.'),
+      "the direct round's reviewer prompt does not say no plan named a break for any criterion of this increment");
     assertTrue(!!result && Array.isArray(result.increments) && !!result.increments[0] && result.increments[0].depth === 'direct',
       "the run's result does not carry increment 1's chain depth as direct");
     assertTrue(logs.some((l) => /Increment 1 round 0/.test(l) && /direct/i.test(l)),
@@ -1621,6 +1689,12 @@ async function main() {
     const reviewCall = calls.find((c) => c.label === 'review:i2.0');
     assertTrue(!!reviewCall && reviewCall.prompt.includes('CHECK-MARKER'),
       "increment 2's direct reviewer prompt does not carry the checks the run's last researcher step closed");
+    // The lists reset at the increment boundary: increment 2's own plan named
+    // no break, and increment 1's break must not carry over.
+    assertTrue(!!reviewCall && !reviewCall.prompt.includes('MARKER-BREAK'),
+      "increment 2's direct reviewer prompt carries increment 1's break, though the lists should reset at the increment boundary");
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('No plan named a break for any criterion of this increment.'),
+      "increment 2's direct reviewer prompt does not say no plan named a break for any criterion of this increment");
     assertTrue(!!result && Array.isArray(result.increments),
       'the run result does not carry an increments list');
     assertEqualArrays((result && result.increments || []).map((w) => w.depth), ['full', 'direct'],
@@ -1783,6 +1857,74 @@ async function main() {
       "the resumed correction round's review prompt renders a git command built from values the restart dropped");
     assertTrue(!!round1Review && !/correction round/i.test(round1Review.prompt),
       "the resumed correction round's review prompt announces a correction round while naming no finding it corrects");
+  } else if (mode === 'w31') {
+    // Criterion 1: the structured return demands both lists, per criterion —
+    // whether the plan named a break, and the break itself where it did.
+    const researchCall = byLabel('research:i1.0');
+    assertTrue(!!researchCall && !!researchCall.schema && !!researchCall.schema.properties &&
+      !!researchCall.schema.properties.breaks && researchCall.schema.properties.breaks.type === 'array',
+      "research:i1.0's schema does not declare `breaks` as an array property");
+    assertTrue(!!researchCall && !!researchCall.schema && !!researchCall.schema.properties &&
+      !!researchCall.schema.properties.unbreakable && researchCall.schema.properties.unbreakable.type === 'array',
+      "research:i1.0's schema does not declare `unbreakable` as an array property");
+    assertTrue(!!researchCall && !!researchCall.schema && Array.isArray(researchCall.schema.required) &&
+      researchCall.schema.required.includes('breaks'),
+      "research:i1.0's schema does not require `breaks`");
+    assertTrue(!!researchCall && !!researchCall.schema && Array.isArray(researchCall.schema.required) &&
+      researchCall.schema.required.includes('unbreakable'),
+      "research:i1.0's schema does not require `unbreakable`");
+
+    // Criterion 1: the researcher is told to record both lists.
+    assertTrue(!!researchCall && researchCall.prompt.includes('- `breaks`'),
+      "research:i1.0's prompt does not tell the researcher to record `breaks`");
+    assertTrue(!!researchCall && researchCall.prompt.includes('- `unbreakable`'),
+      "research:i1.0's prompt does not tell the researcher to record `unbreakable`");
+
+    // Criterion 2: the criterion the plan named no break for reaches the
+    // reviewer's prompt, under its own heading, and the breaks heading is
+    // absent since this fixture's `breaks` list is empty.
+    const reviewCall = byLabel('review:i1.0');
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('MARKER-UNBREAKABLE'),
+      "review:i1.0's prompt does not carry the criterion the plan declared unbreakable");
+    assertTrue(!!reviewCall && reviewCall.prompt.includes('The criteria the plan named no break for, with the reason:'),
+      "review:i1.0's prompt does not carry the unbreakable heading");
+    assertTrue(!!reviewCall && !reviewCall.prompt.includes('The break the plan named for each criterion it named one for:'),
+      "review:i1.0's prompt carries the breaks heading though the plan named no break for any criterion");
+
+    // Criterion 2's resumed-run mechanism: the state loader's schema asks for
+    // both lists, on the run-level steps and on an increment's own steps, so a
+    // resumed run is actually given them — the fixture-driven case above
+    // cannot catch a schema that stopped asking, because the stub returns its
+    // fixture whatever the schema says.
+    const loaderCall = byLabel('load-state');
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties &&
+      !!loaderCall.schema.properties.runSteps && !!loaderCall.schema.properties.runSteps.items &&
+      !!loaderCall.schema.properties.runSteps.items.properties &&
+      !!loaderCall.schema.properties.runSteps.items.properties.breaks,
+      "the state loader's schema does not ask runSteps for `breaks`");
+    assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.runSteps.items.required) &&
+      loaderCall.schema.properties.runSteps.items.required.includes('breaks'),
+      "the state loader's schema does not require `breaks` on runSteps");
+    assertTrue(!!loaderCall && !!loaderCall.schema.properties.runSteps.items.properties.unbreakable,
+      "the state loader's schema does not ask runSteps for `unbreakable`");
+    assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.runSteps.items.required) &&
+      loaderCall.schema.properties.runSteps.items.required.includes('unbreakable'),
+      "the state loader's schema does not require `unbreakable` on runSteps");
+    assertTrue(!!loaderCall && !!loaderCall.schema.properties.increments &&
+      !!loaderCall.schema.properties.increments.items && !!loaderCall.schema.properties.increments.items.properties &&
+      !!loaderCall.schema.properties.increments.items.properties.steps &&
+      !!loaderCall.schema.properties.increments.items.properties.steps.items &&
+      !!loaderCall.schema.properties.increments.items.properties.steps.items.properties &&
+      !!loaderCall.schema.properties.increments.items.properties.steps.items.properties.breaks,
+      "the state loader's schema does not ask an increment's steps for `breaks`");
+    assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.increments.items.properties.steps.items.required) &&
+      loaderCall.schema.properties.increments.items.properties.steps.items.required.includes('breaks'),
+      "the state loader's schema does not require `breaks` on an increment's steps");
+    assertTrue(!!loaderCall && !!loaderCall.schema.properties.increments.items.properties.steps.items.properties.unbreakable,
+      "the state loader's schema does not ask an increment's steps for `unbreakable`");
+    assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.increments.items.properties.steps.items.required) &&
+      loaderCall.schema.properties.increments.items.properties.steps.items.required.includes('unbreakable'),
+      "the state loader's schema does not require `unbreakable` on an increment's steps");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1816,7 +1958,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w3 "$wf_name: a backlog whose increments are all closed dispatches only the state loader and publish"
   run_driver "$wf" w4 "$wf_name: the test-author's prompt carries the test plan and not the implementation plan"
   run_driver "$wf" w5 "$wf_name: the implementer's prompt carries the plan and the checks and not the test plan"
-  run_driver "$wf" w6 "$wf_name: the reviewer's prompt carries the checks alone"
+  run_driver "$wf" w6 "$wf_name: the reviewer's prompt carries the checks and the break the plan named for a criterion"
   run_driver "$wf" w7 "$wf_name: a question from the researcher ends the run at publish"
   run_driver "$wf" w8 "$wf_name: every step's prompt tells the agent to record its return, name \`rulings\` among the fields it records, and push the commit — and every dispatched schema, including the state loader's, carries \`rulings\` as well as the prompt"
   run_driver "$wf" w9 "$wf_name: a run resumed after a question for the human works that step again with the question in its prompt"
@@ -1839,6 +1981,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w28 "$wf_name: a resumed run recovers the rulings of an increment an earlier session closed"
   run_driver "$wf" w29 "$wf_name: a correction round's review is dispatched against the findings and the fix's diff"
   run_driver "$wf" w30 "$wf_name: a correction round resumed from the state is dispatched as a first round, not as a broken one"
+  run_driver "$wf" w31 "$wf_name: the structured return names both lists, the state loader asks for both, and a criterion the plan named no break for reaches the reviewer under its own heading"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment

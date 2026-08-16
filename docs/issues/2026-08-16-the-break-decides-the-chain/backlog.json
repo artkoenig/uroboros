@@ -43,6 +43,110 @@
             "summary": "Planned increment 1: the researcher's structured return gains two required string lists — `breaks`, one entry per criterion the test plan named a break for, and `unbreakable`, one per criterion it named none for — and agile-loop.js renders them into every reviewer dispatch beside the commands that count, resetting them at each increment boundary. Twelve test-repo.sh cases cover it: three greps on the researcher page for the rules it adds, and nine driver cases across new mode w31 and existing modes w2, w6, w10, w20 and w21."
           },
           "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nThis increment is worked on its own branch: `claude/break-decides-issue-6ozelk--inc-1`, off `claude/break-decides-issue-6ozelk`.\nBefore anything else, on `claude/break-decides-issue-6ozelk`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-1 claude/break-decides-issue-6ozelk--inc-1`, commit that state change and push `claude/break-decides-issue-6ozelk`. Then create the branch with `git checkout -b claude/break-decides-issue-6ozelk--inc-1`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-16-the-break-decides-the-chain/issue.md one increment at a time, and increment 1 is yours:\n  The break reaches the reviewer — The fact the test plan already determines — whether a criterion has a break, and what it is — travels out of the researcher's structured return and into the prompt of the reviewer that judges the increment.\nWhat it has to satisfy:\n  - The researcher's structured return names, for every acceptance criterion of the increment, whether the test plan named a break for it, and carries that break where it named one.\n  - The workflow carries those criteria and their breaks into the prompt of the reviewer that judges the increment as a whole.\n  - Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The reviewer executes the break and reads the unbreakable; The run tells the human what was accepted unchecked.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-1 research:inc-1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-1 research:inc-1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:inc-1.0",
+          "at": "2026-08-16T09:29:18.840Z",
+          "return": {
+            "cases": [
+              {
+                "case": "The researcher's structured return names the break per criterion",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: the structured return names both lists, the state loader asks for both, and a criterion the plan named no break for reaches the reviewer under its own heading (mode w31)",
+                "want": "byLabel('research:i1.0').schema.properties.breaks.type === 'array', the same for unbreakable, and schema.required includes both names",
+                "got": "research:i1.0's schema does not declare `breaks` as an array property (also: does not declare `unbreakable` as an array property; does not require `breaks`; does not require `unbreakable`)"
+              },
+              {
+                "case": "The researcher is told to record both lists",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: the structured return names both lists, the state loader asks for both, and a criterion the plan named no break for reaches the reviewer under its own heading (mode w31)",
+                "want": "the research prompt contains the rendered bullets '- `breaks`' and '- `unbreakable`'",
+                "got": "research:i1.0's prompt does not tell the researcher to record `breaks` (also: does not tell it to record `unbreakable`)"
+              },
+              {
+                "case": "agents/researcher.md gives both lists their template",
+                "file": "test-repo.sh",
+                "testName": "agents/researcher.md gives both breaks and unbreakable their own template",
+                "want": "the collapsed page contains '<criterion> — <the production change that would make it fail>' and '<criterion> — <why no test can catch it>'",
+                "got": "agents/researcher.md does not give both breaks and unbreakable their own template"
+              },
+              {
+                "case": "Every criterion stands in exactly one of the two lists",
+                "file": "test-repo.sh",
+                "testName": "agents/researcher.md requires every criterion to stand in exactly one of the two lists",
+                "want": "the collapsed page contains the sentence 'every criterion stands in exactly one of the two lists'",
+                "got": "agents/researcher.md does not require every criterion to stand in exactly one of the two lists"
+              },
+              {
+                "case": "A plan that needs no tests puts every criterion in unbreakable",
+                "file": "test-repo.sh",
+                "testName": "agents/researcher.md decides that a plan that needs no tests puts every criterion in unbreakable",
+                "want": "the collapsed page contains the clause 'a plan that needs no tests puts every criterion in unbreakable'",
+                "got": "agents/researcher.md does not decide where a plan that needs no tests puts its criteria"
+              },
+              {
+                "case": "The reviewer's prompt carries the break the plan named",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: the reviewer's prompt carries the checks and the break the plan named for a criterion (mode w6)",
+                "want": "the reviewer's prompt contains MARKER-BREAK, contains the criterion text 'does i1', and contains the heading 'The break the plan named for each criterion it named one for:'",
+                "got": "the reviewer's prompt does not carry the break the plan named (also: does not carry the breaks heading)"
+              },
+              {
+                "case": "The reviewer's prompt carries a criterion the plan named no break for",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: the structured return names both lists, the state loader asks for both, and a criterion the plan named no break for reaches the reviewer under its own heading (mode w31)",
+                "want": "the reviewer's prompt contains MARKER-UNBREAKABLE and the heading 'The criteria the plan named no break for, with the reason:', and does not contain the breaks heading",
+                "got": "review:i1.0's prompt does not carry the criterion the plan declared unbreakable (also: does not carry the unbreakable heading)"
+              },
+              {
+                "case": "A correction round's reviewer is given them too",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a correction round carries the reviewer's findings to the researcher and the reason to the human (mode w10)",
+                "want": "the review:i1.1 call's prompt contains MARKER-BREAK",
+                "got": "the correction round's reviewer prompt does not carry the break the plan named — the block is round-0 only"
+              },
+              {
+                "case": "A resumed run's reviewer is given the break the state recorded",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a resumed run skips the recorded researcher and test-author and starts at the implementer (mode w2)",
+                "want": "the review:i1.0 call's prompt contains MARKER-BREAK, beside the existing CHECK-MARKER assertion",
+                "got": "the resumed reviewer was handed no break, so the recorded plan never reached the one role that cannot read it"
+              },
+              {
+                "case": "The state loader is asked for both lists",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: the structured return names both lists, the state loader asks for both, and a criterion the plan named no break for reaches the reviewer under its own heading (mode w31)",
+                "want": "byLabel('load-state').schema.properties.runSteps.items.properties.breaks exists and ...items.required includes breaks, and the same for unbreakable and for increments.items.properties.steps.items",
+                "got": "the state loader's schema does not ask runSteps for `breaks` (also: does not require `breaks` on runSteps; does not ask runSteps for `unbreakable`; does not require `unbreakable` on runSteps; does not ask an increment's steps for `breaks`; does not require `breaks` on an increment's steps; does not ask an increment's steps for `unbreakable`; does not require `unbreakable` on an increment's steps)"
+              },
+              {
+                "case": "A direct increment is not handed the previous increment's breaks",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a full increment and a direct increment each take their own path, the direct one judged by the run's last researcher step (mode w21)",
+                "want": "the review:i2.0 prompt does not contain MARKER-BREAK and does contain 'No plan named a break for any criterion of this increment.'",
+                "got": "increment 2's direct reviewer prompt does not say no plan named a break for any criterion of this increment"
+              },
+              {
+                "case": "A run with no researcher step yet tells the reviewer so",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: an increment the planner cut direct is worked by the implementer and the reviewer alone (mode w20)",
+                "want": "the review:i1.0 prompt contains 'No plan named a break for any criterion of this increment.'",
+                "got": "the direct round's reviewer prompt does not say no plan named a break for any criterion of this increment"
+              },
+              {
+                "case": "`bash test.sh` exits 0",
+                "file": "",
+                "testName": "",
+                "want": "the plan states this criterion is not a case of its own: it is the check command itself and its exit code is the criterion",
+                "got": "no test written — the plan declares this covered by the check command run downstream, not by a case in the suite"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added a new 'the break the test plan named reaches the reviewer' section to test-repo.sh (three page-prose cases on agents/researcher.md) plus a new driver mode w31 and extensions to modes w2, w6, w10, w20 and w21 in the same file, pinning that the researcher's structured return demands `breaks` and `unbreakable`, that the state loader's schema asks for both, and that the reviewer's prompt carries a criterion's break or its unbreakable reason under the right heading, resets across increment boundaries, and survives resume and correction rounds. `bash test-repo.sh`: 9 of 226 cases fail, each on the missing behaviour named above (confirmed by running the driver assertions directly); no unrelated case regressed."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nThis increment is worked on branch `claude/break-decides-issue-6ozelk--inc-1`. Before anything else make sure you are on it: `git fetch origin claude/break-decides-issue-6ozelk--inc-1` and check it out; if the remote does not have it, create it from `claude/break-decides-issue-6ozelk` and push it with `-u`.\nThis run works docs/issues/2026-08-16-the-break-decides-the-chain/issue.md one increment at a time, and increment 1 is yours:\n  The break reaches the reviewer — The fact the test plan already determines — whether a criterion has a break, and what it is — travels out of the researcher's structured return and into the prompt of the reviewer that judges the increment.\nWhat it has to satisfy:\n  - The researcher's structured return names, for every acceptance criterion of the increment, whether the test plan named a break for it, and carries that break where it named one.\n  - The workflow carries those criteria and their breaks into the prompt of the reviewer that judges the increment as a whole.\n  - Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.\n  - `bash test.sh` exits 0.\nDeliberately not yours, and not a gap — a later increment takes each of these: The reviewer executes the break and reads the unbreakable; The run tells the human what was accepted unchecked.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-1 research:inc-1.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-1 tests:inc-1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-1 tests:inc-1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
