@@ -134,6 +134,16 @@ const INDEX_STEP = {
       items: { type: 'string' },
       description: 'The step return\'s `checks` when the index carried them. Empty otherwise.',
     },
+    breaks: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'The step return\'s `breaks` when the index carried them. Empty otherwise.',
+    },
+    unbreakable: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'The step return\'s `unbreakable` when the index carried them. Empty otherwise.',
+    },
     findingCount: {
       type: 'integer',
       description: 'The step return\'s `findingCount` when the index carried one, 0 otherwise.',
@@ -147,7 +157,19 @@ const INDEX_STEP = {
       description: 'The step return\'s `reason` when the index carried one, empty otherwise.',
     },
   },
-  required: ['label', 'asked', 'questions', 'rulings', 'needsTests', 'checks', 'findingCount', 'allDirect', 'reason'],
+  required: [
+    'label',
+    'asked',
+    'questions',
+    'rulings',
+    'needsTests',
+    'checks',
+    'breaks',
+    'unbreakable',
+    'findingCount',
+    'allDirect',
+    'reason',
+  ],
   additionalProperties: false,
 }
 
@@ -285,6 +307,22 @@ const PLAN = {
         'The `checks` you recorded, verbatim. The reviewer reads nothing you wrote, so the ' +
         'list reaches it through here.',
     },
+    breaks: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'The `breaks` you recorded, verbatim: one entry per acceptance criterion your test ' +
+        'plan named a break for, each `<criterion> — <the production change that would make ' +
+        'it fail>`. The reviewer reads nothing you wrote, so the break reaches it through here.',
+    },
+    unbreakable: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'The `unbreakable` you recorded, verbatim: one entry per acceptance criterion your ' +
+        'test plan named no break for, each `<criterion> — <why no test can catch it>`. The ' +
+        'reviewer reads nothing you wrote, so that fact reaches it through here.',
+    },
     questions: {
       type: 'array',
       items: { type: 'string' },
@@ -297,7 +335,7 @@ const PLAN = {
     },
     summary: { type: 'string' },
   },
-  required: ['needsTests', 'checks', 'questions', 'rulings', 'summary'],
+  required: ['needsTests', 'checks', 'breaks', 'unbreakable', 'questions', 'rulings', 'summary'],
   additionalProperties: false,
 }
 
@@ -452,6 +490,8 @@ const PLAN_PAYLOAD = [
   'environment',
   'testPlan',
   'checks',
+  'breaks',
+  'unbreakable',
   'questions',
   'rulings',
   'summary',
@@ -484,6 +524,29 @@ function checkList(checks) {
         checks.map((c) => `  - \`${c}\``).join('\n') +
         '\n'
     : 'No command counts for this increment: the list is empty.\n'
+}
+
+// What the plan already settled about each criterion: the break it named, or
+// the reason it named none. The reviewer reads no run state, so a fact the plan
+// settled reaches it through its prompt or not at all.
+function breakList(breaks, unbreakable) {
+  const named = breaks && breaks.length ? breaks : []
+  const none = unbreakable && unbreakable.length ? unbreakable : []
+  if (!named.length && !none.length) {
+    return 'No plan named a break for any criterion of this increment.\n'
+  }
+  return (
+    (named.length
+      ? 'The break the plan named for each criterion it named one for:\n' +
+        named.map((b) => `  - ${b}`).join('\n') +
+        '\n'
+      : '') +
+    (none.length
+      ? 'The criteria the plan named no break for, with the reason:\n' +
+        none.map((u) => `  - ${u}`).join('\n') +
+        '\n'
+      : '')
+  )
 }
 
 // The findings the round before filed, as the reviewer that judges the fix is
@@ -972,6 +1035,12 @@ if (!blockedOnHuman.length) {
     }
 
     let plan = null
+    // Unlike `lastChecks`, these two never cross an increment boundary. A
+    // command judges whatever code is in front of it, while a break names a
+    // criterion and criteria belong to one increment: carrying them would hand
+    // an increment worked `direct` the breaks of the increment before it.
+    let lastBreaks = []
+    let lastUnbreakable = []
     let planLabel = ''
     let testsLabel = ''
     let previousTestsLabel = ''
@@ -1038,6 +1107,8 @@ if (!blockedOnHuman.length) {
         )
         planLabel = researchLabel
         lastChecks = Array.isArray(plan.checks) ? plan.checks : []
+        lastBreaks = Array.isArray(plan.breaks) ? plan.breaks : []
+        lastUnbreakable = Array.isArray(plan.unbreakable) ? plan.unbreakable : []
         if (asksTheHuman(researchLabel, plan)) break
         log(
           `Increment ${n} round ${round}: tests needed: ${plan.needsTests}; ` +
@@ -1172,6 +1243,7 @@ if (!blockedOnHuman.length) {
             (priorFindings.length ? correctionScope : incrementRange) +
             scope(task, increments, n) +
             checkList(lastChecks) +
+            breakList(lastBreaks, lastUnbreakable) +
             // The one role that reads nothing. It records into the state and
             // never opens it, because that state holds the plan it is the check
             // on. Its page says so at length; this prompt is what makes the
