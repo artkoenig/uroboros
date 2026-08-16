@@ -764,6 +764,36 @@ else
 fi
 
 echo
+echo "=== an increment's own agents push only where their prompt asks"
+
+# docs/issues/2026-08-16-increment-branches-stay-local, criterion 1: an
+# increment's own agents work on a branch that never leaves the checkout, so
+# their pages may not claim an unconditional push — only a conditional one,
+# for the runs whose prompt does ask for a push (the issue branch, on a direct
+# increment). agents/planner.md is excluded: its steps stay on the issue
+# branch, so its unconditional push claim is correct as it stands. Break:
+# restore "and commits and pushes the code" to agents/implementer.md's
+# description, or "and commits and pushes the tests" to
+# agents/test-author.md's.
+push_claim_fail=""
+for page in "$root/agents/implementer.md" "$root/agents/test-author.md"; do
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    case "$line" in
+      *'where its prompt asks for a push'*) ;;
+      *) push_claim_fail="${push_claim_fail}$(basename "$page"): $line
+" ;;
+    esac
+  done < <(grep -i 'push' "$page")
+done
+if [ -z "$push_claim_fail" ]; then
+  ok "agents/implementer.md and agents/test-author.md only claim a push where their prompt asks for one"
+else
+  no "these lines claim a push without naming it conditional on the prompt:"
+  echo "$push_claim_fail" | sed 's/^/       /'
+fi
+
+echo
 echo "=== a run resumes from the state it recorded"
 
 # A workflow script is only ever compiled at dispatch, minutes into a real
@@ -957,16 +987,16 @@ const resumeState = () =>
     [idxStep('decompose', decomposeReturnOne)],
   );
 
-// A session that died right after decompose, before ever touching i1: the
-// increment carries no steps and no recorded branch (`idxIncrement`'s default,
-// the empty string at line ~926). docs/issues/2026-08-16-increment-branches-stay-local,
-// criterion 4's edge: with no increment branch, an increment step's own work
-// sits on the checkout's own branch, so the run state reaches the remote only
-// through that step's own push.
-const noBranchState = () =>
-  stateOf(
-    [idxIncrement('i1', { steps: [] })],
-    [idxStep('decompose', decomposeReturnOne)],
+// A run whose loaded state names no issue branch at all. `stateOf` normally
+// hard-codes `branch: 'issue-branch'`; this overrides it to the empty string a
+// session that died before decompose ever named one would leave behind.
+// docs/issues/2026-08-16-increment-branches-stay-local, criterion 4's edge:
+// with no issue branch, no increment branch exists either, so the run state
+// reaches the remote only through each step's own push.
+const noIssueBranchState = () =>
+  Object.assign(
+    stateOf([idxIncrement('i1', { steps: [] })], [idxStep('decompose', decomposeReturnOne)]),
+    { branch: '' },
   );
 
 // A session that died right after round 0's review filed a finding, before the
@@ -1249,7 +1279,7 @@ function contextFor(m) {
     case 'w35':
       return { stateReturn: closedBreakState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
     case 'w36':
-      return { stateReturn: noBranchState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+      return { stateReturn: noIssueBranchState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1377,6 +1407,11 @@ async function main() {
       "increment i1's first dispatch is not told to record the branch in the run state");
     assertTrue(!!byLabel('replan:i1') && byLabel('replan:i1').prompt.includes('merge') && byLabel('replan:i1').prompt.includes('issue-branch--i1'),
       'the accepted replan is not told to merge the increment branch into the issue branch');
+    // docs/issues/2026-08-16-increment-branches-stay-local, criterion 1's merge
+    // side: the increment branch it merges was never pushed, so there is
+    // nothing on the remote to fetch before merging it.
+    assertTrue(!!byLabel('replan:i1') && !byLabel('replan:i1').prompt.includes('git fetch'),
+      "the accepted replan's merge still fetches the increment branch from the remote, though it was never pushed there");
     // docs/issues/2026-08-16-increment-branches-stay-local, criterion 1: no
     // dispatch of an increment step may push the increment branch. Matched
     // line by line, because the first dispatch legitimately pushes
@@ -2162,13 +2197,16 @@ async function main() {
       "w35: the state loader's schema does not require `attemptBreaks` on an increment");
   } else if (mode === 'w36') {
     // docs/issues/2026-08-16-increment-branches-stay-local, criterion 4's edge
-    // case: the increment carries no recorded branch, so its work sits on the
-    // checkout's own branch and the run state reaches the remote only through
-    // each step's own push — every dispatched step pushes its commit.
+    // case: the loaded state names no issue branch, so no increment branch
+    // exists either and the run state reaches the remote only through each
+    // step's own push — every dispatched step pushes its commit, and none
+    // creates a branch.
     for (const c of calls) {
       if (c.label === 'load-state' || c.label === 'publish') continue;
       assertTrue(c.prompt.includes('push the commit'),
-        c.label + " is not told to push its step's commit, though the increment names no branch of its own to carry the state to the remote instead");
+        c.label + " is not told to push its step's commit, though the run names no issue branch to carry the state to the remote instead");
+      assertTrue(!c.prompt.includes('git checkout -b') && !c.prompt.includes('stays in this checkout'),
+        c.label + " names a branch to create or names the checkout it stays in, though the run state names no issue branch to branch from");
     }
   } else {
     throw new Error('unknown mode ' + mode);
@@ -2231,7 +2269,7 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w33 "$wf_name: a criterion the plan named a break for is not carried as unchecked"
   run_driver "$wf" w34 "$wf_name: an increment worked direct carries all its criteria as unchecked"
   run_driver "$wf" w35 "$wf_name: a run resumed behind a closed increment reports the same unchecked list as one that never restarted, and the state loader's schema asks for the archive that carries it"
-  run_driver "$wf" w36 "$wf_name: an increment recorded with no branch of its own pushes every step's commit, since the run state reaches the remote no other way"
+  run_driver "$wf" w36 "$wf_name: a run whose state names no issue branch pushes every step's own commit and creates no branch, since the run state reaches the remote no other way"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
