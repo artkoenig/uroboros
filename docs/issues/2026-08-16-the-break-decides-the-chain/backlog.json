@@ -247,7 +247,7 @@
       "depth": "full",
       "status": "todo",
       "note": "inc-1 landed the two lists and a renderer that emits `No plan named a break for any criterion of this increment.` when both are empty, so the empty case is already a prompt shape this increment's rules must answer to.",
-      "branch": "",
+      "branch": "claude/break-decides-issue-6ozelk--inc-2",
       "steps": [],
       "attempts": []
     },
