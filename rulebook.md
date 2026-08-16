@@ -70,10 +70,19 @@ And what you do not do here:
 
 ### Direct Mode
 
-Small or obvious work: you do it. Read the code, change the code and the
-tests, run them, commit, push, and make sure a pull request is open for the
-branch — the human merges it. No issue file, no researcher, no subagent is
-required.
+Take Direct Mode in two cases, both of them read off the task before you
+start: the issue file costs more than the change — a typo, one line in a
+document; or the loop cannot be run — it is broken or not installed. Every
+other task goes to Issue Mode.
+
+Never take Direct Mode for a task outside those two cases, however much
+"this is too small to file an issue for" it looks: the loop would have cut
+that task `direct` and put a reviewer on the diff, and you give it no
+reviewer and spend the run's most expensive context on it.
+
+Read the code, change the code and the tests, run them, commit, push, and
+make sure a pull request is open for the branch — the human merges it. No
+issue file, no researcher, no subagent is required.
 
 Hand a broad search through the code to a subagent anyway; it comes back as an
 answer instead of as a hundred files in your context.
