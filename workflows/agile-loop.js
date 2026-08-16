@@ -109,53 +109,53 @@ const maxIncrements = Number(parsed.maxIncrements) > 0 ? Number(parsed.maxIncrem
 const INDEX_STEP = {
   type: 'object',
   properties: {
-    label: { type: 'string', description: 'The step label, exactly as the index printed it.' },
+    label: { type: 'string', description: 'The step label as the index printed it.' },
     asked: {
       type: 'boolean',
-      description: 'The index\'s `asked` for this step: true when its return carried questions.',
+      description: 'The index\'s `asked`: true when the return carried questions.',
     },
     questions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'The step return\'s `questions`, when the index carried them. Empty otherwise.',
+      description: 'The return\'s `questions` from the index, else empty.',
     },
     rulings: {
       type: 'array',
       items: { type: 'string' },
-      description: 'The step return\'s `rulings` when the index carried them. Empty otherwise.',
+      description: 'The return\'s `rulings` from the index, else empty.',
     },
     needsTests: {
       type: 'boolean',
-      description: 'The step return\'s `needsTests` when the index carried one, false otherwise.',
+      description: 'The return\'s `needsTests` from the index, else false.',
     },
     checks: {
       type: 'array',
       items: { type: 'string' },
-      description: 'The step return\'s `checks` when the index carried them. Empty otherwise.',
+      description: 'The return\'s `checks` from the index, else empty.',
     },
     breaks: {
       type: 'array',
       items: { type: 'string' },
       description:
-        'The step return\'s `breaks` when the index carried them, each entry verbatim and never paraphrased or shortened. Empty otherwise.',
+        'The return\'s `breaks` from the index, each entry verbatim, never paraphrased or shortened; else empty.',
     },
     unbreakable: {
       type: 'array',
       items: { type: 'string' },
       description:
-        'The step return\'s `unbreakable` when the index carried them, each entry verbatim and never paraphrased or shortened. Empty otherwise.',
+        'The return\'s `unbreakable` from the index, each entry verbatim, never paraphrased or shortened; else empty.',
     },
     findingCount: {
       type: 'integer',
-      description: 'The step return\'s `findingCount` when the index carried one, 0 otherwise.',
+      description: 'The return\'s `findingCount` from the index, else 0.',
     },
     allDirect: {
       type: 'boolean',
-      description: 'The step return\'s `allDirect` when the index carried one, false otherwise.',
+      description: 'The return\'s `allDirect` from the index, else false.',
     },
     reason: {
       type: 'string',
-      description: 'The step return\'s `reason` when the index carried one, empty otherwise.',
+      description: 'The return\'s `reason` from the index, else empty.',
     },
   },
   required: [
@@ -181,11 +181,11 @@ const STATE = {
     branch: {
       type: 'string',
       description:
-        'What `git branch --show-current` printed in the checkout. Empty string when it failed.',
+        'What `git branch --show-current` printed; empty string when it failed.',
     },
     increments: {
       type: 'array',
-      description: 'The index\'s `increments`, in the order it printed them. Empty when there is no state.',
+      description: 'The index\'s `increments` in order; empty when there is no state.',
       items: {
         type: 'object',
         properties: {
@@ -202,7 +202,7 @@ const STATE = {
           attemptRulings: {
             type: 'array',
             description:
-              'The index\'s `attemptRulings` for this increment: the rulings of the steps its closed attempts archived, each with the label of the step that made them. Empty when the index carries none.',
+              'The index\'s `attemptRulings`: the rulings archived by closed attempts, each with its step\'s label; empty when the index carries none.',
             items: {
               type: 'object',
               properties: {
@@ -216,7 +216,7 @@ const STATE = {
           attemptBreaks: {
             type: 'array',
             description:
-              'The index\'s `attemptBreaks` for this increment: the `breaks` and `unbreakable` lists of the steps its closed attempts archived, each with the label of the step that recorded them. Carry every entry of both lists verbatim, never paraphrased or shortened. Empty when the index carries none.',
+              'The index\'s `attemptBreaks`: the `breaks` and `unbreakable` lists archived by closed attempts, each with its step\'s label, every entry verbatim, never paraphrased or shortened; empty when the index carries none.',
             items: {
               type: 'object',
               properties: {
@@ -248,13 +248,13 @@ const STATE = {
     },
     runSteps: {
       type: 'array',
-      description: 'The index\'s `run.steps`. Empty when there is no state.',
+      description: 'The index\'s `run.steps`; empty when there is no state.',
       items: INDEX_STEP,
     },
     decisions: {
       type: 'string',
       description:
-        'Everything under the `## Decisions` heading of the issue file, verbatim and without the heading itself. Empty string when the file has no such heading.',
+        'Everything under the issue file\'s `## Decisions` heading, verbatim, without the heading itself; empty string when there is no such heading.',
     },
     summary: { type: 'string' },
   },
@@ -272,9 +272,9 @@ const BACKLOG = {
     increments: {
       type: 'array',
       description:
-        'The cut you just wrote with `init`, finished and dropped increments included, in ' +
-        'the order they should be worked. This is the one part of your work the script ' +
-        'steers on, so it comes back here as well as going into the file.',
+        'The cut you wrote with `init`, finished and dropped increments included, in ' +
+        'working order. The script steers on it, so it comes back here as well as ' +
+        'going into the file.',
       items: {
         type: 'object',
         properties: {
@@ -297,12 +297,12 @@ const BACKLOG = {
     questions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `questions`, the way your shared brief defines them.',
+      description: 'Your return\'s `questions`, as your shared brief defines them.',
     },
     rulings: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+      description: 'Your return\'s `rulings`, as your shared brief defines them.',
     },
     summary: { type: 'string' },
   },
@@ -322,33 +322,33 @@ const PLAN = {
       items: { type: 'string' },
       description:
         'The `checks` you recorded, verbatim. The reviewer reads nothing you wrote, so the ' +
-        'list reaches it through here.',
+        'list reaches it here.',
     },
     breaks: {
       type: 'array',
       items: { type: 'string' },
       description:
-        'The `breaks` you recorded, verbatim: one entry per acceptance criterion your test ' +
-        'plan named a break for, each `<criterion> — <the production change that would make ' +
-        'it fail>`. The reviewer reads nothing you wrote, so the break reaches it through here.',
+        'The `breaks` you recorded, verbatim: one entry per criterion your test plan named ' +
+        'a break for, each `<criterion> — <the production change that would make it fail>`. ' +
+        'The reviewer reads nothing you wrote, so the break reaches it here.',
     },
     unbreakable: {
       type: 'array',
       items: { type: 'string' },
       description:
-        'The `unbreakable` you recorded, verbatim: one entry per acceptance criterion your ' +
-        'test plan named no break for, each `<criterion> — <why no test can catch it>`. The ' +
-        'reviewer reads nothing you wrote, so that fact reaches it through here.',
+        'The `unbreakable` you recorded, verbatim: one entry per criterion your test plan ' +
+        'named no break for, each `<criterion> — <why no test can catch it>`. The reviewer ' +
+        'reads nothing you wrote, so that fact reaches it here.',
     },
     questions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `questions`, the way your shared brief defines them.',
+      description: 'Your return\'s `questions`, as your shared brief defines them.',
     },
     rulings: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+      description: 'Your return\'s `rulings`, as your shared brief defines them.',
     },
     summary: { type: 'string' },
   },
@@ -362,12 +362,12 @@ const TESTS = {
     questions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `questions`, the way your shared brief defines them.',
+      description: 'Your return\'s `questions`, as your shared brief defines them.',
     },
     rulings: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+      description: 'Your return\'s `rulings`, as your shared brief defines them.',
     },
     summary: { type: 'string' },
   },
@@ -381,12 +381,12 @@ const BUILD = {
     questions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `questions`, the way your shared brief defines them.',
+      description: 'Your return\'s `questions`, as your shared brief defines them.',
     },
     rulings: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+      description: 'Your return\'s `rulings`, as your shared brief defines them.',
     },
     summary: { type: 'string' },
   },
@@ -419,8 +419,8 @@ const VERDICT = {
     findings: {
       type: 'array',
       description:
-        'The findings you recorded, so the next round\'s review can name them: the same ' +
-        'list, in the same words. Empty when you found nothing.',
+        'The findings you recorded: the same list, in the same words, so the next round\'s ' +
+        'review can name them. Empty when you found nothing.',
       items: FINDING,
     },
     findingCount: {
@@ -440,19 +440,18 @@ const VERDICT = {
     head: {
       type: 'string',
       description:
-        'What `git rev-parse HEAD` printed on the branch you reviewed. The round after is ' +
-        'dispatched against it, so the fix\'s diff is exactly what landed after you looked. ' +
-        'Empty string when you could not read it.',
+        'What `git rev-parse HEAD` printed on the branch you reviewed; the round after is ' +
+        'dispatched against it. Empty string when you could not read it.',
     },
     questions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `questions`, the way your shared brief defines them.',
+      description: 'Your return\'s `questions`, as your shared brief defines them.',
     },
     rulings: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Your return\'s `rulings`, the way your shared brief defines them.',
+      description: 'Your return\'s `rulings`, as your shared brief defines them.',
     },
     summary: { type: 'string' },
   },
@@ -477,9 +476,8 @@ const PUSH = {
     prUrl: {
       type: 'string',
       description:
-        'URL of the pull request for this branch — the one you opened, the open one ' +
-        'you found, or the merged one you refused to duplicate. Empty string if there ' +
-        'is none and you could not open one.',
+        'URL of this branch\'s pull request — the one you opened, found open, or found ' +
+        'merged. Empty string if there is none and you could not open one.',
     },
     prCreated: {
       type: 'boolean',
@@ -598,15 +596,15 @@ function findingList(findings) {
 // remote no other way.
 function recordStep(incrementId, label, fields, pushes = true) {
   return (
-    `Announce this step before you begin it and record it before you return, the way your ` +
-    `shared brief describes, with the backlog helper it names:\n` +
+    `Announce this step before you begin and record it before you return, with the backlog ` +
+    `helper your shared brief names:\n` +
     `  - \`start ${dir}/backlog.json ${incrementId} ${label} <the prompt file>\` — the ` +
     `prompt you were given, verbatim and whole, in a file outside the repository.\n` +
     `  - \`record ${dir}/backlog.json ${incrementId} ${label} <the return file> ` +
     `<the prompt file>\` — your return, in a file outside the repository, with that same ` +
     `prompt file. Commit it with your work` +
     (pushes ? ` and push the commit.\n` : `.\n`) +
-    `The fields your return carries, and your page says what each one holds:\n` +
+    `The fields your return carries; your page says what each holds:\n` +
     fields.map((name) => `  - \`${name}\``).join('\n') +
     '\n'
   )
@@ -633,8 +631,8 @@ function readStep(incrementId, label, fields, what) {
 // prompt names, so this block is the naming and nothing around it.
 function readBlock(intro, lines) {
   return (
-    `${intro} It is in the run state, and these reads are how you get it, with the ` +
-    `\`steps\` subcommand of the backlog helper your shared brief names:\n` +
+    `${intro} It is in the run state; read it with the \`steps\` subcommand of the ` +
+    `backlog helper your shared brief names:\n` +
     lines.join('')
   )
 }
@@ -649,12 +647,12 @@ function answeredBlock(label) {
       ? `This step ended the previous run with a question for the human:\n` +
         asked.map((q) => `  - ${q}`).join('\n') +
         '\n'
-      : `This step ended the previous run with a question for the human, and your own earlier ` +
+      : `This step ended the previous run with a question for the human, and your earlier ` +
         `attempt is in the run state under this step's label.\n`) +
     (decisions
-      ? `The human answered it, and the answer is here in full:\n${decisions}\n` +
-        `Work this step again from it, and ask again only what it does not settle.\n`
-      : `The human recorded no answer. Work this step again from what you have, and ask again ` +
+      ? `The human answered, in full:\n${decisions}\n` +
+        `Work this step again from it; ask again only what it does not settle.\n`
+      : `The human recorded no answer. Work this step again from what you have; ask again ` +
         `only what you still cannot settle.\n`)
   )
 }
@@ -693,10 +691,9 @@ function scope(task, all, n) {
     task.criteria.map((c) => `  - ${c}`).join('\n') +
     '\n' +
     (open.length
-      ? `Deliberately not yours, and not a gap — a later increment takes each of these: ` +
+      ? `Not yours and not a gap — a later increment takes each of these: ` +
         `${open.map((t) => t.title).join('; ')}.\n`
-      : `Every other increment is settled; this is the last one, so the issue is complete ` +
-        `once yours is.\n`)
+      : `Every other increment is settled; the issue is complete once yours is.\n`)
   )
 }
 
@@ -715,23 +712,23 @@ const state = await agent(
     `Return exists true, the index's \`increments\` in increments and its \`run.steps\` in ` +
     `runSteps. Each step of either carries the index's \`label\` and \`asked\`; fill ` +
     `questions, rulings, needsTests, checks, breaks, unbreakable, findingCount, allDirect and ` +
-    `reason from that step's ` +
-    `\`return\` object where the index carried them, and leave them empty otherwise.\n` +
-    `Each increment also carries the index's \`attemptRulings\` and \`attemptBreaks\`, returned ` +
-    `as they stand and empty where the index has none.\n` +
+    `reason from that step's \`return\` object where the index carried them, and leave them ` +
+    `empty otherwise.\n` +
+    `Each increment also carries the index's \`attemptRulings\` and \`attemptBreaks\`, as ` +
+    `they stand and empty where the index has none.\n` +
     `Do NOT read the file itself and do NOT return its content: the index is what this ` +
     `dispatch is for.\n` +
     `If the file does not exist, return exists false with both lists empty.\n` +
-    `Return the branch the checkout is on, from \`git branch --show-current\`, in branch.\n` +
+    `Return the branch from \`git branch --show-current\` in branch.\n` +
     `The run state reaches the remote only with the issue branch, so this checkout's copy is ` +
     `the whole of it: read it as it stands and look for no other copy.\n` +
     `The human's answers to whatever ended an earlier run are under a \`## Decisions\` heading ` +
     `in ${dir}/issue.md: return everything under that heading in decisions, verbatim and ` +
     `without the heading itself, up to the next \`## \` heading or the end of the file. Return ` +
-    `an empty string when there is no such heading and when there is no such file, and read no ` +
-    `other part of it into your return.\n` +
-    `Read nothing else, change nothing, run no git command beyond the read-only ones named ` +
-    `here, and do not dispatch any subagent.`,
+    `an empty string when there is no such heading or no such file, and read no other part of ` +
+    `it into your return.\n` +
+    `Read nothing else, change nothing, run only the read-only git commands named here, and ` +
+    `do not dispatch any subagent.`,
   { agentType: 'general-purpose', phase: 'Load state', label: 'load-state', schema: STATE, effort: 'low' },
 )
 
@@ -839,28 +836,26 @@ function nextBranchName(id) {
 function branchBlock(taskId, incrementBranch, create) {
   if (!incrementBranch) return ''
   const local =
-    `That branch stays in this checkout and is never pushed — not "an unpushed commit dies ` +
-    `with the container", not "the reviewer will want to see it": a branch this environment ` +
-    `puts on the remote is one it can never remove again, and an increment's commits are ` +
-    `disposable until the planner lands them.\n` +
+    `That branch stays in this checkout and is never pushed: a branch this environment puts ` +
+    `on the remote can never be removed again, and an increment's commits are disposable ` +
+    `until the planner lands them.\n` +
     `Every agent of this increment works this same checkout, so a commit here is visible to ` +
-    `all of them without any push.\n`
+    `all without any push.\n`
   if (create) {
     return (
       `This increment is worked on its own branch: \`${incrementBranch}\`, off \`${issueBranch}\`.\n` +
       `Before anything else, on \`${issueBranch}\`, record the name with the backlog helper's ` +
       `\`branch\` subcommand, as \`branch ${dir}/backlog.json ${taskId} ${incrementBranch}\`.\n` +
-      `Commit that state change and push \`${issueBranch}\`: that push is what puts the resume ` +
-      `point on the remote.\n` +
-      `Then create the branch with \`git checkout -b ${incrementBranch}\` and work on it from ` +
-      `there.\n` +
+      `Commit that state change and push \`${issueBranch}\`: that push puts the resume point ` +
+      `on the remote.\n` +
+      `Then create the branch with \`git checkout -b ${incrementBranch}\` and work on it.\n` +
       local
     )
   }
   return (
     `This increment is worked on branch \`${incrementBranch}\`, which lives in this checkout ` +
-    `alone. Before anything else make sure you are on it: \`git checkout ${incrementBranch}\`, ` +
-    `and where this checkout does not have it, create it from \`${issueBranch}\`.\n` +
+    `alone. Before anything else get on it: \`git checkout ${incrementBranch}\`; where this ` +
+    `checkout does not have it, create it from \`${issueBranch}\`.\n` +
     local
   )
 }
@@ -950,8 +945,7 @@ const backlog = await step('decompose', 'Decompose', () =>
       `the cut, and write both into ${dir}/backlog.json with the \`init\` subcommand of the ` +
       `backlog helper your shared brief names, with workflow "agile-loop" and the whole ` +
       `codemap in the payload's \`codemap\` field.\n` +
-      `This run works at most ${maxIncrements} increments, so a cut that needs more than ` +
-      `that is a cut that is too fine.\n` +
+      `This run works at most ${maxIncrements} increments; a cut that needs more is too fine.\n` +
       recordStep('-', 'decompose', CUT_PAYLOAD),
     { agentType: 'uroboros:planner', phase: 'Decompose', label: 'decompose', schema: BACKLOG, effort: 'medium' },
   ),
@@ -981,8 +975,8 @@ let increments =
 // thing the planner produces from being emitted a second time.
 function codemapBlock() {
   return (
-    `The planner's codemap is in the run state: read it with the backlog helper's ` +
-    `\`codemap\` subcommand, as \`codemap ${dir}/backlog.json\`, before you begin.\n`
+    `Before you begin, read the planner's codemap with the backlog helper's \`codemap\` ` +
+    `subcommand: \`codemap ${dir}/backlog.json\`.\n`
   )
 }
 
@@ -1147,8 +1141,8 @@ if (!blockedOnHuman.length) {
               (round === 0
                 ? ''
                 : readBlock(
-                    `This is correction loop ${round} of ${MAX_CORRECTIONS} for this increment, ` +
-                      `and what the round before produced is your work order.`,
+                    `This is correction loop ${round} of ${MAX_CORRECTIONS} for this increment; ` +
+                      `what the round before produced is your work order.`,
                     [
                       readStep(task.id, verdictLabel, 'findings', `the review's findings.`),
                       previousTestsLabel
@@ -1156,7 +1150,7 @@ if (!blockedOnHuman.length) {
                             task.id,
                             previousTestsLabel,
                             'openQuestions',
-                            `what the test-author left open, and it is yours to settle.`,
+                            `what the test-author left open, yours to settle.`,
                           )
                         : '',
                     ].filter(Boolean),
@@ -1214,9 +1208,9 @@ if (!blockedOnHuman.length) {
                   `is your whole brief.\n`
               : directFix
               ? readBlock(
-                  `This is correction loop ${round} of ${MAX_CORRECTIONS} for this increment, ` +
-                    `and it is a direct-fix round: nobody planned it and nobody wrote a test ` +
-                    `for it, so the findings are your whole brief.`,
+                  `This is direct-fix correction loop ${round} of ${MAX_CORRECTIONS}: nobody ` +
+                    `planned it and nobody wrote a test for it, so the findings are your ` +
+                    `whole brief.`,
                   [readStep(task.id, verdictLabel, 'findings', `the findings you correct.`)],
                 )
               : readBlock(
@@ -1279,15 +1273,14 @@ if (!blockedOnHuman.length) {
       // increments is needed: what earlier increments delivered is simply not
       // in the range.
       const incrementRange = incrementBranch
-        ? `The increment's diff is its branch against the merge-base with ` +
-          `\`${issueBranch}\`: judge \`git diff ${issueBranch}...HEAD\` (three dots), ` +
+        ? `Judge the increment's diff, \`git diff ${issueBranch}...HEAD\` (three dots), ` +
           `whole, and nothing outside it.\n`
         : `Check the whole diff against the repository's default branch.\n`
       // An empty `head` falls back to the increment's range, so the prompt never
       // renders a git command built from a value the run does not have.
       const correctionScope =
-        `This is a correction round: the round before filed the findings below, this round ` +
-        `was run to fix them, and that fix is what you judge.\n` +
+        `This is a correction round: the round before filed the findings below, and the ` +
+        `fix that answers them is what you judge.\n` +
         (priorHead
           ? `The fix's diff is \`git diff ${priorHead}..HEAD\` (two dots): everything ` +
             `committed since that review.\n`
@@ -1369,19 +1362,19 @@ if (!blockedOnHuman.length) {
             ? accepted
               ? `Land it first: check out \`${issueBranch}\` and merge \`${incrementBranch}\`, ` +
                 `which is in this checkout.\n` +
-                `Then push \`${issueBranch}\`: that push is what puts every increment landed so ` +
-                `far, and the run state a resumed run reads, on the remote.\n`
+                `Then push \`${issueBranch}\`: that push puts every increment landed so far, ` +
+                `and the run state a resumed run reads, on the remote.\n`
               : `Its work was not accepted, so it stays off the issue branch: do not merge ` +
                 `\`${incrementBranch}\`, and leave its commits in this checkout.\n` +
-                `Check out \`${issueBranch}\` first, so the state you ` +
-                `write lands there, and name that unmerged branch in the note you close with.\n`
+                `Check out \`${issueBranch}\` first, so the state you write lands there, and ` +
+                `name that unmerged branch in the note you close with.\n`
             : '') +
           (accepted && !othersOpen
             ? `Nothing else in the backlog is open, so there is nothing to re-cut: close this ` +
               `increment with \`close\`, leave the cut and the codemap as they stand, read ` +
               `nothing, and return an empty \`increments\` list.\n`
-            : `What this increment turned up is what you re-cut against, and it is in the run ` +
-              `state. Read it with the backlog helper your shared brief names:\n` +
+            : `You re-cut against what this increment turned up, and it is in the run state. ` +
+              `Read it with the backlog helper your shared brief names:\n` +
               `  - \`steps ${dir}/backlog.json ${task.id}\` — every step this increment recorded, ` +
               `whole.\n` +
               `  - \`index ${dir}/backlog.json\` — the rest of the cut, with no step content in it.\n` +
@@ -1450,7 +1443,7 @@ if (blockedOnHuman.length) {
 // named here. Handed over it costs a prompt; read back it cost more context than
 // every other dispatch of the Publish phase together.
 function runOutcome() {
-  const lines = ['Run outcome, from the run itself. This is the whole record the body needs:']
+  const lines = ['Run outcome, from the run itself — the whole record the body needs:']
   lines.push(`- The backlog now holds ${increments.length} increment(s):`)
   for (const t of increments) {
     // A delivered increment's branch is merged into the issue branch and lives
@@ -1511,36 +1504,34 @@ const push = await agent(
         '1. Run `git push -u origin "$(git branch --show-current)"`. On a network error ' +
         'retry up to 4 times, waiting 2s, 4s, 8s, 16s.\n') +
     '2. Find the pull request whose head is this branch. Prefer the GitHub MCP tools, ' +
-    'loading them with ToolSearch first, and fall back to the `gh` CLI where this ' +
-    'environment has one and no MCP tool. If an OPEN one exists, ' +
+    'loaded with ToolSearch first; fall back to the `gh` CLI where this environment ' +
+    'has one and no MCP tool. If an OPEN one exists, ' +
     'leave it alone: pushing already updated it. Report its URL.\n' +
     '3. If none is open, open one against the default branch. Title and body come ' +
     `from the issue directory's \`issue.md\` and from the run outcome at the end of this ` +
     'prompt: what was asked for, ' +
     'which increments were delivered, which are still open or blocked and why, what the ' +
     'review said, and every open finding or recorded observation the human should see ' +
-    'before merging. This run worked the issue in increments, so say plainly in the body ' +
+    'before merging. Say plainly in the body ' +
     'when the backlog did NOT empty and name what is left, and when a question for the ' +
     'human ended the run. Name the branch of every blocked increment — the outcome ' +
     'below carries it — so its unmerged work is findable without being in the ' +
     'diff. ' +
     (rulings.length
-      ? 'The outcome below lists the rulings this run took on the human\'s behalf: give them a ' +
-        '`## Rulings` heading of their own in the body, one bullet each, naming the step that ' +
+      ? 'The outcome below lists the rulings this run took on the human\'s behalf: give them ' +
+        'their own `## Rulings` heading in the body, one bullet each, naming the step that ' +
         'made the ruling. '
       : '') +
     'End the body with a blank line, `---`, and ' +
     '`🤖 Generated with [Claude Code](https://claude.com/claude-code)`.\n' +
     '4. If the only pull request for this branch is already MERGED, do NOT open a ' +
-    'second one on top of merged history and do NOT rebase — report `prUrl` of the ' +
+    'second one and do NOT rebase — report `prUrl` of the ' +
     "merged one and say so in the summary. That is the human's call.\n\n" +
-    `Do NOT open ${dir}/backlog.json — not with the backlog helper, not by hand. The ` +
-    'outcome below is that file read for you, and the steps behind it move into an ' +
-    "increment's attempts as it closes, so asking for them costs context and returns " +
-    'nothing.\n' +
-    'Fetch the default branch before you compare anything against it: this checkout ' +
-    "may hold a stale copy of it, and a diff against a stale copy names files this " +
-    'branch never touched.\n' +
+    `Do NOT open ${dir}/backlog.json — not with the backlog helper, not by hand: the ` +
+    'outcome below is that file read for you, and a closing increment archives its ' +
+    'steps, so asking for them costs context and returns nothing.\n' +
+    'Fetch the default branch before you compare anything against it: a diff against ' +
+    'a stale copy names files this branch never touched.\n' +
     'Do NOT commit, do NOT stage, do NOT change any file, do NOT force-push, and do ' +
     'NOT merge anything. Beyond the one checkout step 1 names, do NOT switch ' +
     'branches. If the working tree is dirty, leave it dirty and report it.\n' +
