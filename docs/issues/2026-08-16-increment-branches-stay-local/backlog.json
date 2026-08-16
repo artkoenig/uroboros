@@ -68,6 +68,122 @@
             "summary": "The increment is buildable as specified: the agents of an increment share one checkout, so nothing has to be pushed for them to see each other's work, and the issue's blocker case does not apply. The change drops the increment-branch pushes and the state loader's remote trailing-copy read from workflows/agile-loop.js, deletes the remote-delete instruction there and in agents/planner.md, makes the planner's push of the issue branch the thing that carries every accepted increment and the run state to the remote, and re-cuts the shared brief's push rule on the predicate of what the prompt names — with test-repo.sh's driver cases, including the three that assert today's behaviour, re-cut to match."
           },
           "prompt": "Issue directory: docs/issues/2026-08-16-increment-branches-stay-local\nThis run works docs/issues/2026-08-16-increment-branches-stay-local/issue.md one increment at a time, and increment 1 is yours:\n  Increment branches stay local; the issue branch carries the run state to the remote — The loop works every increment on a branch that never leaves the checkout, lands accepted work on the issue branch and pushes that branch after each landed increment, asks nobody for a remote branch deletion, and still resumes a dead run from the state on the remote.\nWhat it has to satisfy:\n  - No agent working an increment pushes its increment branch: every step of an increment commits locally and pushes nothing.\n  - The planner pushes the issue branch to the remote after each increment it lands, so the remote holds every accepted increment up to that point.\n  - No agent page and no workflow prompt asks for a remote branch deletion: the `git push origin --delete` instruction is gone from workflows/agile-loop.js and from agents/planner.md, and no other page asks for one.\n  - The run state a resume reads reaches the remote with the issue branch, and the resume path no longer depends on an increment branch existing on the remote.\n  - A resumed run works the increments still open and does not redo an increment the run state records as closed.\n  - The reviewer still receives the increment's diff range and can read that diff with the increment branch present only locally.\n  - An increment the review does not accept stays unmerged as it does today, its commits stay local and reach no remote, and the note the planner closes with still names its branch.\n  - The run opens one pull request, for the issue branch, as it does today.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-16-increment-branches-stay-local/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-increment-branches-stay-local/backlog.json i1 research:i1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-increment-branches-stay-local/backlog.json i1 research:i1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `breaks`\n  - `unbreakable`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:i1.0",
+          "at": "2026-08-16T15:29:00.773Z",
+          "return": {
+            "cases": [
+              {
+                "case": "1.1 — driver, fresh-run fixture: no dispatch of an increment step pushes the increment branch, matched line by line",
+                "file": "test-repo.sh",
+                "testName": "run_driver w1 (assertions on research:i1.0/tests:i1.0/implement:i1.0/review:i1.0)",
+                "want": "no line of research:i1.0, tests:i1.0, implement:i1.0 or review:i1.0's prompt contains both a push instruction and issue-branch--i1",
+                "got": "research:i1.0 pushes the increment branch: [\"Before anything else, on `issue-branch`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/x/backlog.json i1 issue-branch--i1`, commit that state change and push `issue-branch`. Then create the branch with `git checkout -b issue-branch--i1`, push it with `-u`, and work on it from there.\"]; tests:i1.0, implement:i1.0 and review:i1.0 each push the increment branch through their continue text: [\"...if the remote does not have it, create it from `issue-branch` and push it with `-u`.\"]"
+              },
+              {
+                "case": "1.2 — driver, same fixture: the record instruction does not carry 'push the commit' on an increment's own step, while decompose's and replan:i1's do",
+                "file": "test-repo.sh",
+                "testName": "run_driver w8 (re-cut) and the equivalent block inside w1",
+                "want": "research:i1.0, tests:i1.0, implement:i1.0 and review:i1.0's record instruction does not include 'push the commit'; decompose's and replan:i1's do",
+                "got": "research:i1.0's record instruction pushes the commit, but an increment's own step commits locally and pushes nothing; tests:i1.0's record instruction pushes the commit, but an increment's own step commits locally and pushes nothing; implement:i1.0's record instruction pushes the commit, but an increment's own step commits locally and pushes nothing; review:i1.0's record instruction pushes the commit, but an increment's own step commits locally and pushes nothing"
+              },
+              {
+                "case": "1.3 — driver, edge case, a fixture whose state names no branch (branch: ''): every dispatched step's prompt still carries 'push the commit'",
+                "file": "test-repo.sh",
+                "testName": "run_driver w36 (new mode, noBranchState fixture)",
+                "want": "every dispatched step's prompt (besides load-state and publish) includes 'push the commit'",
+                "got": "passes today, because every step unconditionally pushes the commit before recordStep is made conditional at all — it does not yet discriminate old from new behaviour, but the researcher's own break note (\"make recordStep drop the push clause unconditionally, or key it on issueBranch instead of on incrementBranch\") is exactly the mutation this case is built to catch once criterion 1's fix ships and the push clause becomes conditional; the only current failure in this run is the shared '--delete' check (see 3.2), not this assertion"
+              },
+              {
+                "case": "1.4 — bash grep over skills/agent-brief/SKILL.md: the push rule states both branches of its predicate — the existing unconditional push, and a new branch for a prompt naming a branch that stays in the checkout, priced and quoting its own excuse",
+                "file": "test-repo.sh",
+                "testName": "Case 10 in '=== every rule in the shared brief is written in its winning form'",
+                "want": "the brief contains 'stays in the checkout', the quoted excuse '\"it should go up too\"', and the price clause 'this environment can never delete again' — markers this test defines as the required text, since the brief carries none of this today",
+                "got": "the shared brief's push rule does not state the local-branch branch of its predicate"
+              },
+              {
+                "case": "2.1 — driver, fresh-run fixture, review accepted: the replan:i1 prompt tells the planner to check out issue-branch, merge issue-branch--i1 and push issue-branch, and its record instruction carries 'push the commit'",
+                "file": "test-repo.sh",
+                "testName": "run_driver w1 (replan:i1 assertions)",
+                "want": "replan:i1's prompt contains a line pushing issue-branch after merging and its record instruction includes 'push the commit'",
+                "got": "passes today: the current 'Land it first' text already merges and pushes issue-branch, and the record instruction already carries 'push the commit'. This criterion was already largely satisfied before this increment; the case pins it against regression while criterion 3 removes the delete instruction the same prompt still carries today"
+              },
+              {
+                "case": "3.1 — bash grep over the tracked files that are pages and code, excluding docs/issues: no file orders 'git push origin --delete', 'git push origin :', or asks in prose for a merged branch to be deleted from the remote",
+                "file": "test-repo.sh",
+                "testName": "'=== nobody asks for a remote branch deletion'",
+                "want": "no hits",
+                "got": "these files still order or describe a remote branch deletion: /home/user/uroboros/agents/planner.md, /home/user/uroboros/workflows/agile-loop.js"
+              },
+              {
+                "case": "3.2 — driver, in the every-mode loop at the top of main: no dispatched prompt in any mode contains '--delete'",
+                "file": "test-repo.sh",
+                "testName": "the every-mode loop in main() (added after the issue.md read-barrier loop)",
+                "want": "no call's prompt in any mode contains '--delete'",
+                "got": "replan:i1 orders a remote branch delete: [\"Once your close is committed and pushed, delete the merged branch on the remote with `git push origin --delete issue-branch--i1` — one issue, one pull request. A failed delete is a line in your summary, not a blocker.\"] — repeated for every mode that dispatches a replan step (34 of the suite's driver modes fail on this alone)"
+              },
+              {
+                "case": "4.1 — driver, fresh-run fixture: the load-state prompt contains no 'git show origin/', no 'merge-base --is-ancestor' and no 'git fetch'",
+                "file": "test-repo.sh",
+                "testName": "run_driver w1 (state loader assertions)",
+                "want": "none of the three present in the load-state prompt",
+                "got": "the state loader still checks a trailing copy of the state on the remote; the state loader still compares a remote increment branch as an ancestor; the state loader still fetches from the remote"
+              },
+              {
+                "case": "4.2 — driver, resumed fixture mid-increment (resumeState(), mode w2): the resumed dispatch names issue-branch--i1, tells the agent to check it out in this checkout, and contains no 'git fetch origin issue-branch--i1'",
+                "file": "test-repo.sh",
+                "testName": "run_driver w2 (added assertions after the recorded-branch check)",
+                "want": "the resumed implementer's prompt tells the agent to check out issue-branch--i1 locally and never fetches it from origin",
+                "got": "the resumed implementer's prompt does not tell the agent to check out the recorded branch in this checkout; the resumed implementer's prompt fetches the increment branch from the remote, which criterion 1 never pushed it to"
+              },
+              {
+                "case": "4.3 — driver, fresh-run fixture: the first dispatch of the increment still records the branch name and still commits and pushes issue-branch before creating the increment branch",
+                "file": "test-repo.sh",
+                "testName": "run_driver w1 (research:i1.0 branch-machinery assertions)",
+                "want": "research:i1.0's prompt records the branch (already covered) and contains a line pushing issue-branch, not issue-branch--i1, before the checkout -b",
+                "got": "increment i1's first dispatch does not commit and push issue-branch before creating the increment branch"
+              },
+              {
+                "case": "6.1 — driver, fresh-run fixture: the review:i1.0 prompt still contains 'git diff issue-branch...HEAD' and contains no 'git fetch origin issue-branch--i1'",
+                "file": "test-repo.sh",
+                "testName": "run_driver w6 (added assertion after the diff-range check)",
+                "want": "the reviewer's prompt keeps the diff-range line (already covered) and never fetches the increment branch from the remote",
+                "got": "the reviewer's prompt fetches the increment branch from the remote, which criterion 1 never pushed it to"
+              },
+              {
+                "case": "7.1 — driver, mode w17 (blocked-increment fixture): the closing prompt says not to merge, names issue-branch--i1 for the note, and no line orders a push of that branch",
+                "file": "test-repo.sh",
+                "testName": "run_driver w17 (added assertion after the accepted-merge-absence check)",
+                "want": "no line of the blocked replan's prompt pushes issue-branch--i1",
+                "got": "passes today: nothing in the current blocked-replan prompt pushes the unmerged branch either, so this case is already true and guards against a push being added later"
+              },
+              {
+                "case": "8.1 — driver, fresh-run fixture: the publish prompt orders 'git push -u origin issue-branch' and no line orders a push of issue-branch--i1",
+                "file": "test-repo.sh",
+                "testName": "run_driver w1 (publish assertions)",
+                "want": "publish's prompt pushes issue-branch and never mentions issue-branch--i1",
+                "got": "the publish prompt pushes an increment branch (the push of issue-branch itself already passes today)"
+              },
+              {
+                "case": "Criterion 5 (a resumed run works the open increments and does not redo a closed one): covered by cases the suite already has (w2, w3, w15) — add nothing new here",
+                "file": "",
+                "testName": "",
+                "want": "modes w2, w3 and w15 keep passing unchanged after the state loader edit",
+                "got": "not a new case; w2, w3 and w15 pass in this run exactly as the plan requires — no case was added or re-cut for this criterion"
+              }
+            ],
+            "openQuestions": [
+              "the merge step in replan:i1's own prompt still says `git fetch origin issue-branch--i1` before merging the increment branch into issue-branch — once criterion 1 stops pushing the increment branch, that fetch has nothing to fetch. The test plan named no case for this (only the reviewer's and the resumed implementer's fetch of that branch, cases 4.2 and 6.1), so no test pins it; the implementer or a later research round should settle whether the merge step needs the same fix."
+            ],
+            "questions": [],
+            "rulings": [
+              "case 1.4's required SKILL.md text ('stays in the checkout', '\"it should go up too\"', 'this environment can never delete again') is prose I chose, not text the plan quoted, because the plan asked only for the shape (a priced, quoted-excuse branch of the predicate) and left the wording to whoever writes it first; wrong costs the implementer rewording one sentence in skills/agent-brief/SKILL.md to match.",
+              "case 1.3's fixture (a resumed state where decompose ran but i1 has no steps and no recorded branch) is my construction of 'the shape already at line 882' the plan pointed to, since no existing fixture used it explicitly; wrong costs one new state builder and one new mode (w36) being redirected to a different fixture shape."
+            ],
+            "summary": "Added and re-cut driver-based and grep-based cases in test-repo.sh for all eight criteria of increment-branches-stay-local: 1.1-1.4 (no increment-branch push, in the record clause, the branch-less edge, and the brief's own predicate), 2.1 (planner pushes the issue branch, already true today), 3.1-3.2 (no remote-delete instruction anywhere, new heading plus the every-mode loop), 4.1-4.3 (resume trusts the state file alone and the first dispatch still pushes issue-branch), 6.1 (reviewer never fetches the increment branch), 7.1 (a blocked branch stays unpushed, already true today) and 8.1 (publish pushes only the issue branch). `bash test-repo.sh` exits 1 with 34 of 239 cases failing, every failure quoted and pinned to the missing behaviour (mostly the still-present `--delete` instruction and the still-unconditional per-step push); two cases (2.1, 7.1) and the branch-less edge (1.3) already pass today because that slice of the behaviour predates this issue or the current unconditional push happens to satisfy the edge case — each is called out in `got` rather than forced red."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-16-increment-branches-stay-local\nThis run works docs/issues/2026-08-16-increment-branches-stay-local/issue.md one increment at a time, and increment 1 is yours:\n  Increment branches stay local; the issue branch carries the run state to the remote — The loop works every increment on a branch that never leaves the checkout, lands accepted work on the issue branch and pushes that branch after each landed increment, asks nobody for a remote branch deletion, and still resumes a dead run from the state on the remote.\nWhat it has to satisfy:\n  - No agent working an increment pushes its increment branch: every step of an increment commits locally and pushes nothing.\n  - The planner pushes the issue branch to the remote after each increment it lands, so the remote holds every accepted increment up to that point.\n  - No agent page and no workflow prompt asks for a remote branch deletion: the `git push origin --delete` instruction is gone from workflows/agile-loop.js and from agents/planner.md, and no other page asks for one.\n  - The run state a resume reads reaches the remote with the issue branch, and the resume path no longer depends on an increment branch existing on the remote.\n  - A resumed run works the increments still open and does not redo an increment the run state records as closed.\n  - The reviewer still receives the increment's diff range and can read that diff with the increment branch present only locally.\n  - An increment the review does not accept stays unmerged as it does today, its commits stay local and reach no remote, and the note the planner closes with still names its branch.\n  - The run opens one pull request, for the issue branch, as it does today.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-16-increment-branches-stay-local/backlog.json i1 research:i1.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-increment-branches-stay-local/backlog.json i1 tests:i1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-increment-branches-stay-local/backlog.json i1 tests:i1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
