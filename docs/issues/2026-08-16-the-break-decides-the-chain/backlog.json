@@ -614,6 +614,93 @@
             "summary": "Planned the last increment: the workflow computes, per increment, the criteria it was accepted on without an executable check — the plan's `unbreakable` entries, or every criterion where no plan named anything, which is what an increment worked `direct` produces — and returns them in the run result, while the backlog helper's index gains an `attemptBreaks` projection so a run resumed behind a closed increment reports the same list. rulebook.md gains the step that makes the session say it in one line, and the four passages still claiming the reviewer is handed nothing another agent produced are rewritten."
           },
           "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nThis increment is worked on its own branch: `claude/break-decides-issue-6ozelk--inc-3`, off `claude/break-decides-issue-6ozelk`.\nBefore anything else, on `claude/break-decides-issue-6ozelk`: record the name with the backlog helper's `branch` subcommand, as `branch docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-3 claude/break-decides-issue-6ozelk--inc-3`, commit that state change and push `claude/break-decides-issue-6ozelk`. Then create the branch with `git checkout -b claude/break-decides-issue-6ozelk--inc-3`, push it with `-u`, and work on it from there.\nThis run works docs/issues/2026-08-16-the-break-decides-the-chain/issue.md one increment at a time, and increment 3 is yours:\n  The run tells the human what was accepted unchecked — Every criterion an increment was accepted on without an executable check — including all of a `direct` increment's — comes back in the run result and reaches the human in the chat.\nWhat it has to satisfy:\n  - The run result carries, per increment, every criterion accepted without an executable check.\n  - An increment worked `direct` names no break for any of its criteria, and the run result carries all of them as accepted without an executable check.\n  - `rulebook.md` requires the session to give the human one line naming those criteria, for every increment that has any.\n  - A run resumed from `backlog.json` reports the same criteria as one that never restarted.\n  - No page or doc still claims the reviewer is given nothing another agent produced.\n  - Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed, and each such case matches only the passage carrying its rule.\n  - `bash test.sh` exits 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-3 research:inc-3.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-3 research:inc-3.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:inc-3.0",
+          "at": "2026-08-16T11:19:33.554Z",
+          "return": {
+            "cases": [
+              {
+                "case": "Case 1 — a fresh one-increment run whose plan declares the criterion unbreakable → result.increments[0].unchecked equals exactly ['does i1 — MARKER-UNBREAKABLE']",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a criterion the plan declared unbreakable reaches the run result as unchecked (driver mode w32)",
+                "want": "result.increments[0].unchecked deep-equals ['does i1 — MARKER-UNBREAKABLE']",
+                "got": "w32: the run result's unchecked list does not carry the criterion the plan declared unbreakable — expected [\"does i1 — MARKER-UNBREAKABLE\"] got undefined"
+              },
+              {
+                "case": "Case 2 — the same run with a plan that names a break for the increment's only criterion → result.increments[0].unchecked is []",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a criterion the plan named a break for is not carried as unchecked (driver mode w33)",
+                "want": "result.increments[0].unchecked deep-equals []",
+                "got": "w33: the run result's unchecked list carries a criterion the plan named a break for — expected [] got undefined"
+              },
+              {
+                "case": "Case 3 — a run whose only increment the planner cut direct, no researcher dispatched → result.increments[0].depth is 'direct' and result.increments[0].unchecked equals ['does i1'] verbatim",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: an increment worked direct carries all its criteria as unchecked (driver mode w34)",
+                "want": "result.increments[0].depth === 'direct' and result.increments[0].unchecked deep-equals ['does i1']",
+                "got": "w34: a direct increment does not carry all its criteria as unchecked — expected [\"does i1\"] got undefined (depth assertion already passes: production code already sets depth)"
+              },
+              {
+                "case": "Case 4 — exactly one numbered step of rulebook.md's Issue Mode list carries all of 'unchecked', 'executable check' and 'one line' (case-insensitive), asserted as a count of exactly 1; second break duplicates that step so the count goes to 2",
+                "file": "test-repo.sh",
+                "testName": "=== the human is told one line naming every criterion accepted without an executable check",
+                "want": "exactly one numbered step of the '### Issue Mode' list matches all three phrases",
+                "got": "rulebook.md's Issue Mode list carries that instruction in 0 step(s), not exactly 1"
+              },
+              {
+                "case": "Case 5 — a run resumed behind an increment an earlier session closed, whose plan declared the criterion unbreakable → result.increments[0].unchecked equals the same list case 1 gets from a run that never restarted",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a run resumed behind a closed increment reports the same unchecked list as one that never restarted, and the state loader's schema asks for the archive that carries it (driver mode w35)",
+                "want": "the restored increment i1's unchecked deep-equals ['does i1 — MARKER-UNBREAKABLE']",
+                "got": "w35: a run resumed behind a closed increment does not report the same unchecked list as one that never restarted — expected [\"does i1 — MARKER-UNBREAKABLE\"] got undefined"
+              },
+              {
+                "case": "Case 6 — the schema half, asserted in the same mode as case 5: the load-state call's schema.properties.increments.items.properties.attemptBreaks exists and .required includes 'attemptBreaks'",
+                "file": "test-repo.sh",
+                "testName": "agile-loop.js: a run resumed behind a closed increment reports the same unchecked list as one that never restarted, and the state loader's schema asks for the archive that carries it (driver mode w35)",
+                "want": "loaderCall.schema.properties.increments.items.properties.attemptBreaks exists, and .required includes 'attemptBreaks'",
+                "got": "w35: the state loader's schema does not ask an increment for `attemptBreaks`; w35: the state loader's schema does not require `attemptBreaks` on an increment"
+              },
+              {
+                "case": "Case 7 — after recording a research step carrying breaks and unbreakable on an increment and closing that increment, index prints that increment with an attemptBreaks entry {label, breaks, unbreakable} holding both lists as recorded, while steps for that increment still returns nothing",
+                "file": "skills/agent-brief/assets/backlog.test.mjs",
+                "testName": "index carries an archived research step's breaks and unbreakable lists as an attemptBreaks entry, and steps still returns nothing for the closed increment",
+                "want": "idx.increments[0].attemptBreaks deep-equals [{ label: 'research:i1.0', breaks: ['does i1 — MARKER-BREAK'], unbreakable: ['does i1 also — MARKER-UNBREAKABLE'] }], and steps returns []",
+                "got": "the archived research step's breaks and unbreakable lists are not carried forward as an attemptBreaks entry — actual undefined, expected [{ breaks: ['does i1 — MARKER-BREAK'], label: 'research:i1.0', unbreakable: ['does i1 also — MARKER-UNBREAKABLE'] }]"
+              },
+              {
+                "case": "Case 8 — an archived step whose return carried neither key contributes no entry, while an archived step that recorded both keys as empty arrays does contribute one",
+                "file": "skills/agent-brief/assets/backlog.test.mjs",
+                "testName": "index's attemptBreaks drops an archived step that recorded neither list and keeps one that recorded both as empty arrays",
+                "want": "idx.increments[0].attemptBreaks deep-equals [{ label: 'research:i1.0', breaks: [], unbreakable: [] }] (the implement:i1.0 step, which recorded neither key, contributes nothing)",
+                "got": "the implementer's step, whose return carried neither key, contributed no entry, while the research step's empty-but-recorded lists still did — actual undefined, expected [{ breaks: [], label: 'research:i1.0', unbreakable: [] }]"
+              },
+              {
+                "case": "Case 9 — over agents/*.md, skills/*/SKILL.md, skills/CLAUDE.md, README.md, rulebook.md and workflows/*.js, every sentence matching 'nothing ... agent(s)/role(s) ... produced' (case-insensitive) must also name a break; docs/ is excluded",
+                "file": "test-repo.sh",
+                "testName": "=== no page or doc still claims the reviewer is given nothing another agent produced",
+                "want": "no matching sentence lacks the word 'break'",
+                "got": "these passages still claim the reviewer is given nothing produced, without naming a break: agents/reviewer.md: 'You are the pair of eyes that has been given nothing the other agents produced — only the diff and the issue file.'; workflows/agile-loop.js: 'It reads nothing and is // handed nothing any other role produced, because it is the check on them.' (agents/reviewer.md's other match, on line 3, already names its breaks in the same sentence and correctly passes)"
+              },
+              {
+                "case": "Case 10 — the page half, pinned to one passage: exactly one paragraph of agents/reviewer.md below the frontmatter matches both 'pair of eyes' and 'break'",
+                "file": "test-repo.sh",
+                "testName": "=== the reviewer's opening paragraph is the one passage naming its own breaks",
+                "want": "exactly one paragraph below the frontmatter matches both 'pair of eyes' and 'break'",
+                "got": "agents/reviewer.md's opening paragraph naming the pair of eyes and its breaks matched 0 paragraph(s), not exactly 1"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [
+              "Scoped rulebook.md's 'numbered step' boundary to run from each '^N. **' marker to the line before the next one, because the plan named the count rule but not the step boundary; wrong costs a slightly mis-scoped match in one bash section, cheap to correct.",
+              "Captured the whole sentence around the 'nothing ... produced' regex hit (back to the previous period, forward to the next), not only the text after 'nothing', because the criterion needs the break-naming word wherever it sits in the sentence and agents/reviewer.md's own qualifying clause sits before 'nothing'; wrong costs a few false positives or negatives in one bash section.",
+              "Wrote case 4's two named breaks (delete the step; duplicate it) as one combined test-repo.sh assertion keyed to a paragraph/step count, mirroring the reviewer-break table's own pattern the plan pointed at; wrong costs a less explicit failure message for the duplicate-step break, not a missed criterion."
+            ],
+            "summary": "Wrote the researcher's 10 planned cases as failing tests: 6 as new driver modes (w32-w35, one mode combining cases 5 and 6) and 3 as new bash sections in test-repo.sh, plus 2 new node:test cases in skills/agent-brief/assets/backlog.test.mjs's index block, and updated that suite's CLAUDE.md. `bash test-repo.sh` ran 236 cases, exit 1, with exactly the 7 new cases red (all others already green) and each failure message naming the missing field or count rather than a crash or typo. `node --test skills/agent-brief/assets/backlog.test.mjs` ran 59 cases, exit 1, with exactly the 2 new cases red on the missing `attemptBreaks` field. No production file was touched."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nThis increment is worked on branch `claude/break-decides-issue-6ozelk--inc-3`. Before anything else make sure you are on it: `git fetch origin claude/break-decides-issue-6ozelk--inc-3` and check it out; if the remote does not have it, create it from `claude/break-decides-issue-6ozelk` and push it with `-u`.\nThis run works docs/issues/2026-08-16-the-break-decides-the-chain/issue.md one increment at a time, and increment 3 is yours:\n  The run tells the human what was accepted unchecked — Every criterion an increment was accepted on without an executable check — including all of a `direct` increment's — comes back in the run result and reaches the human in the chat.\nWhat it has to satisfy:\n  - The run result carries, per increment, every criterion accepted without an executable check.\n  - An increment worked `direct` names no break for any of its criteria, and the run result carries all of them as accepted without an executable check.\n  - `rulebook.md` requires the session to give the human one line naming those criteria, for every increment that has any.\n  - A run resumed from `backlog.json` reports the same criteria as one that never restarted.\n  - No page or doc still claims the reviewer is given nothing another agent produced.\n  - Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed, and each such case matches only the passage carrying its rule.\n  - `bash test.sh` exits 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-3 research:inc-3.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-3 tests:inc-3.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json inc-3 tests:inc-3.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []

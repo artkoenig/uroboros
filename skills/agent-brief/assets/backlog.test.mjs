@@ -864,6 +864,50 @@ test('index carries an archived attempt\'s rulings, the increment\'s own step fi
   assert.equal(stdout.includes('MARKER-ARCHIVED-CONTENT'), false, "the archive's content still never reaches the index, even through attemptRulings");
 });
 
+test('index carries an archived research step\'s breaks and unbreakable lists as an attemptBreaks entry, and steps still returns nothing for the closed increment', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: ['does i1 — MARKER-BREAK'],
+    unbreakable: ['does i1 also — MARKER-UNBREAKABLE'],
+    summary: 'plan summary',
+  })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const stdout = run(['index', backlogPath]);
+  const idx = JSON.parse(stdout);
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: ['does i1 — MARKER-BREAK'], unbreakable: ['does i1 also — MARKER-UNBREAKABLE'] }],
+    "the archived research step's breaks and unbreakable lists are not carried forward as an attemptBreaks entry",
+  );
+  assert.deepEqual(JSON.parse(run(['steps', backlogPath, 'i1'])), [], 'a closed increment still has no current step to return');
+});
+
+test('index\'s attemptBreaks drops an archived step that recorded neither list and keeps one that recorded both as empty arrays', () => {
+  const dir = tmpDir();
+  const backlogPath = path.join(dir, 'backlog.json');
+  run(['init', backlogPath, writeJson(dir, 'init.json', backlogTemplate([incrementPayload('i1', 'First')]))]);
+  run(['record', backlogPath, 'i1', 'research:i1.0', writeJson(dir, 'research.json', {
+    breaks: [],
+    unbreakable: [],
+    summary: 'plan summary',
+  })]);
+  run(['record', backlogPath, 'i1', 'implement:i1.0', writeJson(dir, 'implement.json', { summary: 'build summary' })]);
+  run(['close', backlogPath, 'i1', 'done', 'accepted']);
+
+  const stdout = run(['index', backlogPath]);
+  const idx = JSON.parse(stdout);
+
+  assert.deepEqual(
+    idx.increments[0].attemptBreaks,
+    [{ label: 'research:i1.0', breaks: [], unbreakable: [] }],
+    "the implementer's step, whose return carried neither key, contributed no entry, while the research step's empty-but-recorded lists still did",
+  );
+});
+
 test('index on a missing file exits 1 and prints nothing on stdout', () => {
   const dir = tmpDir();
 

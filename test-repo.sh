@@ -884,6 +884,7 @@ function idxIncrement(id, extra) {
       steps: [],
       attempts: 0,
       attemptRulings: [],
+      attemptBreaks: [],
     },
     extra || {},
   );
@@ -966,6 +967,28 @@ const closedRulingState = () =>
         attemptRulings: [
           { label: 'research:i1.0', rulings: ['MARKER-RULING-ARCHIVED'] },
           { label: 'replan:i1', rulings: ['MARKER-RULING-CLOSE'] },
+        ],
+      }),
+      idxIncrement('i2'),
+    ],
+    [idxStep('decompose', decomposeReturnTwo)],
+  );
+
+// A run resumed behind an increment an earlier session closed, whose plan
+// named a break for none of its criteria: the run's result has to carry the
+// same `unchecked` list a run that never restarted would, recovered from the
+// closed increment's archived attempt rather than from a step this session
+// works.
+const closedBreakState = () =>
+  stateOf(
+    [
+      idxIncrement('i1', {
+        status: 'done',
+        note: 'accepted',
+        branch: 'issue-branch--i1',
+        attempts: 1,
+        attemptBreaks: [
+          { label: 'research:i1.0', breaks: [], unbreakable: ['does i1 — MARKER-UNBREAKABLE'] },
         ],
       }),
       idxIncrement('i2'),
@@ -1163,6 +1186,14 @@ function contextFor(m) {
       return { stateReturn: correctionResumeState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
     case 'w31':
       return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturnUnbreakable };
+    case 'w32':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturnUnbreakable };
+    case 'w33':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w34':
+      return { stateReturn: noState, decomposeReturn: decomposeReturnDirect, researchReturn: planReturn };
+    case 'w35':
+      return { stateReturn: closedBreakState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1925,6 +1956,64 @@ async function main() {
     assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.increments.items.properties.steps.items.required) &&
       loaderCall.schema.properties.increments.items.properties.steps.items.required.includes('unbreakable'),
       "the state loader's schema does not require `unbreakable` on an increment's steps");
+  } else if (mode === 'w32') {
+    // Criterion: "The run result carries, per increment, every criterion
+    // accepted without an executable check." A criterion the plan declared
+    // unbreakable is exactly that.
+    // Break: remove the `unchecked` field from the `worked.push` object in
+    // workflows/agile-loop.js.
+    assertTrue(!!result && Array.isArray(result.increments) && result.increments.length === 1,
+      'w32: the run result does not carry exactly one worked increment');
+    assertEqualArrays(result.increments[0] && result.increments[0].unchecked, ['does i1 — MARKER-UNBREAKABLE'],
+      "w32: the run result's unchecked list does not carry the criterion the plan declared unbreakable");
+  } else if (mode === 'w33') {
+    // Criterion 1's edge: a criterion the plan named a break for is not
+    // carried as unchecked.
+    // Break: make `uncheckedCriteria` return the increment's criteria
+    // whenever `unbreakable` is empty, so an increment whose every criterion
+    // has a break is reported as unchecked.
+    assertTrue(!!result && Array.isArray(result.increments) && result.increments.length === 1,
+      'w33: the run result does not carry exactly one worked increment');
+    assertEqualArrays(result.increments[0] && result.increments[0].unchecked, [],
+      "w33: the run result's unchecked list carries a criterion the plan named a break for");
+  } else if (mode === 'w34') {
+    // Criterion: "An increment worked `direct` names no break for any of its
+    // criteria, and the run result carries all of them as accepted without
+    // an executable check."
+    // Break: delete the both-lists-empty branch of `uncheckedCriteria` so it
+    // returns the empty `unbreakable` list for a direct increment.
+    assertTrue(!!result && Array.isArray(result.increments) && result.increments.length === 1,
+      'w34: the run result does not carry exactly one worked increment');
+    assertTrue(!!result.increments[0] && result.increments[0].depth === 'direct',
+      'w34: the direct increment is not reported with depth "direct"');
+    assertEqualArrays(result.increments[0] && result.increments[0].unchecked, ['does i1'],
+      'w34: a direct increment does not carry all its criteria as unchecked');
+  } else if (mode === 'w35') {
+    // Criterion: "A run resumed from `backlog.json` reports the same
+    // criteria as one that never restarted."
+    // Break: in the restore loop of workflows/agile-loop.js, call
+    // `uncheckedCriteria` with two empty lists instead of the archived pair,
+    // so the restored increment reports all its criteria instead of the one
+    // its plan declared unbreakable.
+    assertTrue(!!result && Array.isArray(result.increments) && result.increments.length >= 1,
+      'w35: the run result does not carry the restored increment');
+    const restored = result.increments.find((w) => w.id === 'i1');
+    assertTrue(!!restored, 'w35: the run result does not carry the restored increment i1');
+    assertEqualArrays(restored && restored.unchecked, ['does i1 — MARKER-UNBREAKABLE'],
+      'w35: a run resumed behind a closed increment does not report the same unchecked list as one that never restarted');
+
+    // Criterion 3's schema half: the state loader has to ask an increment
+    // for `attemptBreaks` or a resumed run has nothing to recover it from.
+    // Break: remove `attemptBreaks` from the STATE schema's increment item.
+    const loaderCall = byLabel('load-state');
+    assertTrue(!!loaderCall && !!loaderCall.schema && !!loaderCall.schema.properties &&
+      !!loaderCall.schema.properties.increments && !!loaderCall.schema.properties.increments.items &&
+      !!loaderCall.schema.properties.increments.items.properties &&
+      !!loaderCall.schema.properties.increments.items.properties.attemptBreaks,
+      "w35: the state loader's schema does not ask an increment for `attemptBreaks`");
+    assertTrue(!!loaderCall && Array.isArray(loaderCall.schema.properties.increments.items.required) &&
+      loaderCall.schema.properties.increments.items.required.includes('attemptBreaks'),
+      "w35: the state loader's schema does not require `attemptBreaks` on an increment");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -1982,6 +2071,10 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w29 "$wf_name: a correction round's review is dispatched against the findings and the fix's diff"
   run_driver "$wf" w30 "$wf_name: a correction round resumed from the state is dispatched as a first round, not as a broken one"
   run_driver "$wf" w31 "$wf_name: the structured return names both lists, the state loader asks for both, and a criterion the plan named no break for reaches the reviewer under its own heading"
+  run_driver "$wf" w32 "$wf_name: a criterion the plan declared unbreakable reaches the run result as unchecked"
+  run_driver "$wf" w33 "$wf_name: a criterion the plan named a break for is not carried as unchecked"
+  run_driver "$wf" w34 "$wf_name: an increment worked direct carries all its criteria as unchecked"
+  run_driver "$wf" w35 "$wf_name: a run resumed behind a closed increment reports the same unchecked list as one that never restarted, and the state loader's schema asks for the archive that carries it"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
@@ -2311,6 +2404,117 @@ if echo "$reviewer_break_summary_bullet" | grep -qi 'diff' && echo "$reviewer_br
 else
   no "the summary bullet on agents/reviewer.md does not report the unbreakable criteria read against the diff and the breaks run:"
   echo "$reviewer_break_summary_bullet" | sed 's/^/       /'
+fi
+
+echo
+echo "=== no page or doc still claims the reviewer is given nothing another agent produced"
+
+# Criterion: "No page or doc still claims the reviewer is given nothing
+# another agent produced." The reviewer now runs the plan's named breaks and
+# reads the diff against an unbreakable criterion, so a bare "given nothing
+# any agent/role produced" is stale wherever it stands without naming the
+# break that qualifies it. docs/ is deliberately excluded from the file list
+# below: the issue files there are the record of earlier runs, not doctrine.
+# Break: restore agents/reviewer.md's opening sentence to
+# "You are the pair of eyes that has been given nothing the other agents
+# produced — only the diff and the issue file." — that sentence names no
+# break, so this case goes red.
+declare -a nothing_produced_files=(
+  "$root"/agents/*.md
+  "$root"/skills/*/SKILL.md
+  "$root/skills/CLAUDE.md"
+  "$root/README.md"
+  "$root/rulebook.md"
+  "$root"/workflows/*.js
+)
+nothing_produced_misses=""
+for f in "${nothing_produced_files[@]}"; do
+  [ -f "$f" ] || continue
+  joined="$(tr '\n' ' ' <"$f" | tr -s ' ')"
+  matches="$(echo "$joined" | grep -oiE '[^.]*nothing[^.]{0,60}(agent|role)s?[^.]{0,20}produced[^.]*\.' || true)"
+  [ -z "$matches" ] && continue
+  while IFS= read -r m; do
+    [ -z "$m" ] && continue
+    if ! echo "$m" | grep -qi 'break'; then
+      nothing_produced_misses="${nothing_produced_misses}${f}: ${m}
+"
+    fi
+  done <<<"$matches"
+done
+if [ -z "$nothing_produced_misses" ]; then
+  ok "no page or doc claims the reviewer is given nothing another agent produced without naming the break that qualifies it"
+else
+  no "these passages still claim the reviewer is given nothing produced, without naming a break:"
+  echo "$nothing_produced_misses" | sed 's/^/       /'
+fi
+
+echo
+echo "=== the reviewer's opening paragraph is the one passage naming its own breaks"
+
+# Criterion: "Each rule this increment adds to a page gets a case in
+# test-repo.sh that turns red when that rule is removed, and each such case
+# matches only the passage carrying its rule." The rewritten opening
+# paragraph of agents/reviewer.md is one of the two rules this increment adds
+# to a page (the rulebook's new numbered step below is the other), so it is
+# pinned to exactly one paragraph below the frontmatter, the same way the
+# break-section rules above are each pinned to one paragraph.
+# Break: delete the clause naming the plan's breaks from that opening
+# paragraph, leaving the old "pair of eyes ... nothing the other agents
+# produced" sentence unqualified again.
+reviewer_opening_count="$(awk -v RS='' '
+  NR > 1 { gsub(/\n/, " "); if (tolower($0) ~ /pair of eyes/ && tolower($0) ~ /break/) c++ }
+  END { print c + 0 }
+' "$reviewer_break_page")"
+if [ "$reviewer_opening_count" -eq 1 ]; then
+  ok "exactly one paragraph of agents/reviewer.md below the frontmatter names both the pair of eyes and the breaks it runs"
+else
+  no "agents/reviewer.md's opening paragraph naming the pair of eyes and its breaks matched $reviewer_opening_count paragraph(s), not exactly 1"
+fi
+
+echo
+echo "=== the human is told one line naming every criterion accepted without an executable check"
+
+# Criterion: "\`rulebook.md\` requires the session to give the human one line
+# naming those criteria, for every increment that has any." Extract each
+# numbered step of the \"### Issue Mode\" list and require exactly one of
+# them to carry \`unchecked\`, \"executable check\" and \"one line\" together
+# — the way the reviewer-break table above counts paragraphs: zero is the
+# missing-instruction defect, two is the duplicate-instruction one.
+# Break 1: delete that numbered step from rulebook.md — the count goes to 0.
+# Break 2: duplicate it as a second numbered item elsewhere in the Issue Mode
+# list — the count goes to 2. This is the case that carries the coverage
+# criterion's "matches only the passage carrying its rule" half for the
+# rulebook's new step.
+issue_mode_section="$(awk '
+  /^### Issue Mode/ { insection = 1; next }
+  /^### / { if (insection) exit }
+  insection { print }
+' "$root/rulebook.md")"
+issue_mode_matches=0
+current_step=""
+count_step() {
+  if [ -n "$current_step" ]; then
+    lower="$(echo "$current_step" | tr '[:upper:]' '[:lower:]')"
+    if echo "$lower" | grep -q 'unchecked' && echo "$lower" | grep -q 'executable check' && echo "$lower" | grep -q 'one line'; then
+      issue_mode_matches=$((issue_mode_matches + 1))
+    fi
+  fi
+}
+while IFS= read -r line; do
+  if echo "$line" | grep -qE '^[0-9]+\. \*\*'; then
+    count_step
+    current_step="$line"
+  else
+    current_step="${current_step}
+${line}"
+  fi
+done <<<"$issue_mode_section"
+count_step
+if [ "$issue_mode_matches" -eq 1 ]; then
+  ok "exactly one numbered step of rulebook.md's Issue Mode list gives the human one line naming every criterion accepted without an executable check"
+else
+  no "rulebook.md's Issue Mode list carries that instruction in $issue_mode_matches step(s), not exactly 1:"
+  echo "$issue_mode_section" | sed 's/^/       /'
 fi
 
 echo
