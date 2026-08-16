@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "issue": "",
+  "workflow": "agile-loop",
+  "codemap": "",
+  "increments": [
+    {
+      "id": "inc-1",
+      "title": "The break reaches the reviewer",
+      "goal": "The fact the test plan already determines — whether a criterion has a break, and what it is — travels out of the researcher's structured return and into the prompt of the reviewer that judges the increment.",
+      "criteria": [
+        "The researcher's structured return names, for every acceptance criterion of the increment, whether the test plan named a break for it, and carries that break where it named one.",
+        "The workflow carries those criteria and their breaks into the prompt of the reviewer that judges the increment as a whole.",
+        "Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "inc-2",
+      "title": "The reviewer executes the break and reads the unbreakable",
+      "goal": "The reviewer stops filing coverage findings against criteria no test can reach and judges them by reading the diff instead, and it stops trusting a named break: it applies each one in its sandbox and only a red run counts as verification.",
+      "criteria": [
+        "The reviewer does not file the absence of a test for a criterion the researcher declared unbreakable.",
+        "The reviewer judges each unbreakable criterion by reading the diff against it, and says in its `summary` what it judged and on what.",
+        "The reviewer applies each named break in its sandbox worktree, runs the commands its prompt already names, and reports the criterion as verified only where that run fails.",
+        "A named break that leaves every one of those commands green is a finding against the criterion it was named for.",
+        "An applied break never reaches the checkout and never reaches the diff.",
+        "Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "inc-3",
+      "title": "The run tells the human what was accepted unchecked",
+      "goal": "Every criterion an increment was accepted on without an executable check — including all of a `direct` increment's — comes back in the run result and reaches the human in the chat.",
+      "criteria": [
+        "The run result carries, per increment, every criterion accepted without an executable check.",
+        "An increment worked `direct` names no break for any of its criteria, and the run result carries all of them as accepted without an executable check.",
+        "`rulebook.md` requires the session to give the human one line naming those criteria, for every increment that has any.",
+        "Each rule this increment adds to a page gets a case in `test-repo.sh` that turns red when that rule is removed.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-16T09:14:23.426Z",
+        "return": {
+          "questions": [],
+          "rulings": [
+            "Cut the issue into three increments along the fact's path — determined, carried, acted on, reported — rather than one per criterion, because each of the three leaves the repository working on its own and every extra increment costs a full research-test-build-review chain; wrong costs one oversized increment that a later re-cut splits.",
+            "Kept the reviewer's two new duties, ignoring an unbreakable criterion's missing test and executing a named break, in one increment, because both are rules on the same page acting on the same fact and a reviewer that reads the fact for one purpose and not the other is half a change; wrong costs a larger review of agents/reviewer.md than either half alone.",
+            "Restated the issue's two run-wide criteria, a red-turning test-repo.sh case per added rule and `bash test.sh` exiting 0, in each increment scoped to that increment's own rules, because the alternative leaves the earlier increments landing untested rules; wrong costs the appearance of duplication in the backlog, not duplicated work.",
+            "Classified all three increments `full`, because each adds rules whose wording is not fixed by the criteria and each is required to land test-repo.sh cases that do not exist yet; wrong costs one research and one test dispatch on an increment that a direct chain would have finished."
+          ],
+          "summary": "Three increments follow the fact's path: inc-1 makes the researcher's structured return carry, per criterion, whether the test plan named a break and what it is, and has the workflow carry those criteria and breaks into the reviewer's prompt; inc-2 gives the reviewer the two duties that fact enables, reading an unbreakable criterion against the diff instead of filing a coverage gap, and applying each named break in its sandbox so that only a red run verifies; inc-3 carries the criteria accepted without an executable check into the run result, covers the `direct` increment whose criteria are all of them, and makes rulebook.md require the session to name them to the human. Criterion mapping: researcher's return names the break per criterion -> inc-1; workflow carries criteria and breaks into the reviewer prompt -> inc-1; reviewer does not file an absent test for an unbreakable criterion -> inc-2; reviewer judges each unbreakable criterion against the diff and says so in its summary -> inc-2; reviewer applies each break in the sandbox and verifies only on a red run -> inc-2; a green break is a finding -> inc-2; an applied break never reaches the checkout or the diff -> inc-2; the run result carries the criteria accepted without an executable check -> inc-3; a direct increment names no break and all its criteria are carried -> inc-3; rulebook.md requires the human to be told -> inc-3; a red-turning test-repo.sh case per added rule -> inc-1, inc-2 and inc-3, each for its own rules; `bash test.sh` exits 0 -> inc-1, inc-2 and inc-3. I rejected a per-criterion cut of the reviewer's five criteria and a separate increment for the rulebook line, both of which buy four more agents for work one review can judge. The codemap names agents/researcher.md, agents/reviewer.md, workflows/agile-loop.js, rulebook.md and test-repo.sh; how the small return field is shaped so the projection stays cheap is a code fact inc-1's researcher settles, not a planning decision."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-16-the-break-decides-the-chain\nOpen the run state for docs/issues/2026-08-16-the-break-decides-the-chain/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-16-the-break-decides-the-chain/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
