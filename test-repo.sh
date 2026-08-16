@@ -3610,6 +3610,270 @@ else
 fi
 
 echo
+echo "=== every rule on the two pages carrying the authoring rules is written in its winning form"
+
+# Two collapsed copies of the pages for the whole section — every marker
+# below wraps across lines in the pages' prose, so a case tests the collapsed
+# copy, never a bare grep on the file. These two names are new; nothing else
+# in the file uses them.
+skills_doc_form="$(tr '\n' ' ' <"$root/skills/CLAUDE.md" | tr -s ' ')"
+agent_rules_form="$(tr '\n' ' ' <"$root/.claude/rules/agents.md" | tr -s ' ')"
+
+# Case 1: skills/CLAUDE.md, S-3/R-1, row 1 — leaving a location in use out of
+# plugin.json is a priced prohibition quoting its excuse (failure class: a
+# rule skipped under pressure). Break: restore "Every location in use is
+# listed in `plugin.json`'s `skills` field", alone or beside the new
+# prohibition.
+if echo "$skills_doc_form" | grep -q 'Never leave a location in use out of `plugin.json`' &&
+  echo "$skills_doc_form" | grep -q '"discovery will find it"' &&
+  echo "$skills_doc_form" | grep -q 'a skill in the tree that no session ever reaches' &&
+  ! echo "$skills_doc_form" | grep -q 'Every location in use is listed in'; then
+  ok "the skill-page rules price leaving a location out of plugin.json and quote the excuse"
+else
+  no "the skill-page location-listing rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 2: skills/CLAUDE.md, S-5/R-2, row 3 — the skill page's body is a
+# recipe, not prose (failure class: an omitted required element asked for in
+# prose). Break: restore "not an essay: how to run it, what it produces, and
+# a closing" (the pre-branch prose) or "not an essay: a section per slot and
+# no slot empty" (the round-0 wording this round replaces).
+if echo "$skills_doc_form" | grep -q 'is the procedure, not an essay: every slot filled' &&
+  echo "$skills_doc_form" | grep -q 'a closing "what it is not"' &&
+  ! echo "$skills_doc_form" | grep -q 'not an essay: how to run it' &&
+  ! echo "$skills_doc_form" | grep -q 'a section per slot'; then
+  ok "the skill-page body is a slot recipe, not prose"
+else
+  no "the skill-page body still reads as prose"
+fi
+
+# Case 3: skills/CLAUDE.md, S-6/R-3, row 1 — putting a path, filename or
+# heading on the interface side is a priced prohibition quoting its excuse
+# (failure class: a rule skipped under pressure). Break: restore "keep paths,
+# filenames and headings on the inside". The fourth marker is the
+# requirement the rewrite keeps, asserted so gutting it while the
+# prohibition stands also goes red.
+if echo "$skills_doc_form" | grep -q 'Never put a path, a filename or a heading on the interface side' &&
+  echo "$skills_doc_form" | grep -q '"the caller needs to know where it lands"' &&
+  echo "$skills_doc_form" | grep -q 'the inside stops being free to change' &&
+  echo "$skills_doc_form" | grep -q 'Say which is which on the page' &&
+  ! echo "$skills_doc_form" | grep -q 'keep paths, filenames and headings on the inside'; then
+  ok "the interface rule is a priced prohibition quoting its excuse"
+else
+  no "the interface rule still reads as an unpriced reminder, present or bolted on, or has dropped the which-is-which requirement"
+fi
+
+# Case 4: skills/CLAUDE.md, S-7/R-4, row 1 — restating a rule another page
+# owns is a priced prohibition quoting its excuse (failure class: a rule
+# skipped under pressure). Break: restore "point at the owner instead of
+# restating it". The fourth marker is the requirement kept in the rule.
+if echo "$skills_doc_form" | grep -q 'Never restate a rule another page owns' &&
+  echo "$skills_doc_form" | grep -q '"one sentence here saves the reader a jump"' &&
+  echo "$skills_doc_form" | grep -q 'the two copies drift apart' &&
+  echo "$skills_doc_form" | grep -q 'point at the owner where another page owns a rule' &&
+  ! echo "$skills_doc_form" | grep -q 'point at the owner instead of restating it'; then
+  ok "the describe-once rule is a priced prohibition quoting its excuse"
+else
+  no "the describe-once rule still reads as an unpriced reminder, present or bolted on, or has dropped the point-at-the-owner requirement"
+fi
+
+# Case 5: skills/CLAUDE.md, S-11a/R-5, row 1 — hard-coding a path inside this
+# repository is a priced prohibition quoting its excuse (failure class: a
+# rule skipped under pressure). Break: restore "so nothing in it may
+# hard-code a path".
+if echo "$skills_doc_form" | grep -q 'Never hard-code a path inside this repository' &&
+  echo "$skills_doc_form" | grep -q '"it resolves here"' &&
+  echo "$skills_doc_form" | grep -q 'resolves nowhere else' &&
+  ! echo "$skills_doc_form" | grep -q 'so nothing in it may hard-code a path'; then
+  ok "the hard-coded-path rule is a priced prohibition quoting its excuse"
+else
+  no "the hard-coded-path rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 6: .claude/rules/agents.md, A-3/R-6, row 1 — adding an agent without
+# adding its line is a priced prohibition quoting its excuse (failure class:
+# a rule skipped under pressure). Break: restore "Add an agent, add its
+# line".
+if echo "$agent_rules_form" | grep -q 'Never add an agent without adding its line' &&
+  echo "$agent_rules_form" | grep -q '"discovery scans the directory anyway"' &&
+  echo "$agent_rules_form" | grep -q 'a missing line is an agent that is simply not there in any session' &&
+  ! echo "$agent_rules_form" | grep -q 'Add an agent, add its line'; then
+  ok "the declare-every-agent rule is a priced prohibition quoting its excuse"
+else
+  no "the declare-every-agent rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 7: .claude/rules/agents.md, A-7/R-7, row 1 — making a page here the
+# only home of a rule that binds a run is a priced prohibition quoting its
+# excuse (failure class: a rule skipped under pressure). Break: restore "It
+# may never be the only home of a rule that binds a run".
+if echo "$agent_rules_form" | grep -q 'Never make a page here the only home of a rule that binds a run' &&
+  echo "$agent_rules_form" | grep -q '"whoever works here will read it"' &&
+  echo "$agent_rules_form" | grep -q 'binds nobody in the one place it had to' &&
+  ! echo "$agent_rules_form" | grep -q 'It may never be the only home of a rule that binds a run'; then
+  ok "the only-home rule is a priced prohibition quoting its excuse"
+else
+  no "the only-home rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 8: .claude/rules/agents.md, A-8/R-8, row 1 — editing one copy without
+# editing the other is a priced prohibition quoting its excuse (failure
+# class: a rule skipped under pressure). Break: restore "Edit one, edit the
+# other."
+if echo "$agent_rules_form" | grep -q 'Never edit one copy without editing the other' &&
+  echo "$agent_rules_form" | grep -q '"the other one can follow later"' &&
+  echo "$agent_rules_form" | grep -q 'runs the session and the agents on different rules' &&
+  ! echo "$agent_rules_form" | grep -q 'Edit one, edit the other'; then
+  ok "the edit-both-copies rule is a priced prohibition quoting its excuse"
+else
+  no "the edit-both-copies rule still reads as an unpriced reminder, present or bolted on"
+fi
+
+# Case 9: .claude/rules/agents.md, A-9 + A-11/R-9, row 4 — the page's one
+# exemption clause, re-cut on an observable predicate with each branch
+# stated on its own (failure class: an exemption clause). Break, two
+# directions: restore "restates nothing the shared brief already says",
+# caught by the first absence assertion; or restore "The one exception opens
+# every page", caught by the second. Each branch is asserted separately, so
+# folding the two back into a general rule plus an exception goes red even
+# if the words survive.
+if echo "$agent_rules_form" | grep -q 'whether that sentence still has to work when the brief did not load' &&
+  echo "$agent_rules_form" | grep -q 'stands in the brief alone' &&
+  echo "$agent_rules_form" | grep -q 'stands on the page, and one sentence meets that' &&
+  echo "$agent_rules_form" | grep -q 'report the shared brief as missing and stop' &&
+  ! echo "$agent_rules_form" | grep -q 'restates nothing the shared brief already says' &&
+  ! echo "$agent_rules_form" | grep -q 'The one exception opens every page'; then
+  ok "the brief-restating rule is keyed to an observable predicate, with each branch stated on its own"
+else
+  no "the brief-restating rule still reads as a general rule plus an exception, present or bolted on"
+fi
+
+# Case 10: .claude/rules/agents.md, A-12/R-10, row 4 — the model-tier rule
+# states each branch on its own; the true branch is a permission, not an
+# obligation (failure class: an exemption clause). Break: restore "name a
+# tier only for an agent whose work is mechanical enough that a smaller one
+# cannot get it wrong" (the pre-branch exemption) or "`model` names that
+# tier and the page says why" (the round-0 wording this round replaces,
+# which turned the permission into an obligation). Both branches are
+# asserted separately, so folding them back onto one semicolon goes red, and
+# the second absence marker alone pins the modality.
+if echo "$agent_rules_form" | grep -q '`model` is left out, so the agent runs on the session' &&
+  echo "$agent_rules_form" | grep -q 'is mechanical enough that a smaller model cannot get it wrong, its page may name that tier' &&
+  echo "$agent_rules_form" | grep -q 'a page that names one says why' &&
+  ! echo "$agent_rules_form" | grep -q 'name a tier only for an agent whose work' &&
+  ! echo "$agent_rules_form" | grep -q '`model` names that tier and the page says why'; then
+  ok "the model-tier rule states each branch on its own"
+else
+  no "the model-tier rule still folds both branches onto one semicolon, present or bolted on"
+fi
+
+# Case 11: .claude/rules/agents.md, A-13/R-11, row 3 — the agent page's body
+# is a recipe, not prose (failure class: an omitted required element asked
+# for in prose). Break: restore "does not already cover: the role, how it
+# works" (the pre-branch prose) or "does not already cover, a section per
+# slot and no slot empty" (the round-0 wording this round replaces).
+if echo "$agent_rules_form" | grep -q 'does not already cover, every slot filled' &&
+  echo "$agent_rules_form" | grep -q 'the boundaries that belong to it alone; the shape of its report' &&
+  ! echo "$agent_rules_form" | grep -q 'does not already cover: the role, how it works' &&
+  ! echo "$agent_rules_form" | grep -q 'does not already cover, a section per slot'; then
+  ok "the agent-page body is a slot recipe, not prose"
+else
+  no "the agent-page body still reads as prose"
+fi
+
+# Case 12: .claude/rules/agents.md, A-14/R-12, row 3 — the two boundaries are
+# slots, not prose (failure class: an omitted required element asked for in
+# prose). Break: restore "So state both explicitly". The third marker is the
+# price the rewrite keeps.
+if echo "$agent_rules_form" | grep -q 'The boundaries slot carries both and leaves neither empty' &&
+  echo "$agent_rules_form" | grep -q 'what the agent does not get; what it may not do' &&
+  echo "$agent_rules_form" | grep -q 'An omission here becomes a leak in every run' &&
+  ! echo "$agent_rules_form" | grep -q 'So state both explicitly'; then
+  ok "the two boundaries are slots, not prose"
+else
+  no "the two boundaries still read as prose, or have dropped the price"
+fi
+
+# Case 13: .claude/rules/agents.md, A-15a/R-13, row 1 — handing a role a tool
+# its work does not need is a priced prohibition quoting its excuse (failure
+# class: a rule skipped under pressure). Break: restore "a read-only role
+# gets no writing tools" as the whole rule. The second presence marker is
+# the requirement carried into the new rule word for word, asserted so a
+# rewrite that leaves it only in the price goes red.
+if echo "$agent_rules_form" | grep -q 'Never hand a role a tool its work does not need' &&
+  echo "$agent_rules_form" | grep -q 'never hand a read-only role a writing tool' &&
+  echo "$agent_rules_form" | grep -q '"it may as well have it in case"' &&
+  echo "$agent_rules_form" | grep -q 'the boundary the page declared is gone from that run on' &&
+  ! echo "$agent_rules_form" | grep -q 'a read-only role gets no writing tools'; then
+  ok "the narrow-tool-list rule is a priced prohibition quoting its excuse"
+else
+  no "the narrow-tool-list rule still reads as an unpriced reminder, present or bolted on, or has dropped the read-only requirement"
+fi
+
+# Case 14: .claude/rules/agents.md, A-15b/R-14, row 1 — handing an agent a
+# path beyond its directory is a priced prohibition quoting its excuse
+# (failure class: a rule skipped under pressure). Break: restore "and hand
+# it no path beyond that directory". The fourth marker is the requirement
+# the rewrite keeps.
+if echo "$agent_rules_form" | grep -q 'Never hand it a path beyond that directory' &&
+  echo "$agent_rules_form" | grep -q '"one path saves it a search"' &&
+  echo "$agent_rules_form" | grep -q 'reads what its role was never given' &&
+  echo "$agent_rules_form" | grep -q 'finds what it needs in the run state, `backlog.json`' &&
+  ! echo "$agent_rules_form" | grep -q 'and hand it no path beyond that directory'; then
+  ok "the no-path-beyond-the-issue-directory rule is a priced prohibition quoting its excuse"
+else
+  no "the no-path-beyond-the-issue-directory rule still reads as an unpriced reminder, present or bolted on, or has dropped the backlog.json requirement"
+fi
+
+# Case 15: neither page carries vocabulary another page owns — the fast,
+# named signal for a failure that the pre-existing ownership cases at lines
+# 2419, 2431 and 2626 would otherwise report as an unexplained ownership
+# drift, since all three include these two pages in their file sets. Break:
+# word any of the fourteen replacements with a word another page owns — for
+# instance pricing R-4 with "the rationalisation it counters", or writing
+# R-2 as "the description names the occasion". Read the two pages directly,
+# no collapsing needed. "probe" and "rulebook" are deliberately NOT in the
+# alternation, because .claude/rules/agents.md already carries both.
+case15_words='occasion|exemption clause|rationalisation|chain depth|counts as tested|dependency footprint'
+case15_ok=true
+case15_report=""
+for case15_file in skills/CLAUDE.md .claude/rules/agents.md; do
+  case15_hits="$(grep -inE "$case15_words" "$root/$case15_file" || true)"
+  if [ -n "$case15_hits" ]; then
+    case15_ok=false
+    case15_report="${case15_report}${case15_file}:
+$case15_hits
+"
+  fi
+done
+if $case15_ok; then
+  ok "the two pages carrying the authoring rules carry no vocabulary another page owns"
+else
+  no "the two pages carrying the authoring rules carry vocabulary another page owns:"
+  echo "$case15_report" | sed 's/^/       /'
+fi
+
+# Case 16: no comment or document elsewhere in the repository still quotes a
+# sentence these rewrites replaced. Break: leave one of the replaced
+# sentences quoted in hooks/read-barrier.mjs's RULES table, in a CLAUDE.md,
+# or on any page. Nothing quotes them today, so the case starts green and
+# catches a re-introduction. The two rewritten pages are deliberately inside
+# the search: after the rewrite they must not carry the old wording either.
+# test-repo.sh is excluded because its own absence markers above quote those
+# fragments, and docs/issues is excluded because the plan and the backlog
+# quote them too.
+case16_fragments='Add an agent, add its line|a read-only role gets no writing tools|The one exception opens every page|nothing in it may hard-code a path|point at the owner instead of restating it'
+case16_hits="$(grep -rnE "$case16_fragments" "$root" \
+  --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=issues \
+  --exclude=test-repo.sh 2>/dev/null || true)"
+if [ -z "$case16_hits" ]; then
+  ok "no comment or document still quotes a sentence these rewrites replaced"
+else
+  no "these files still quote a sentence these rewrites replaced:"
+  echo "$case16_hits" | sed "s|^$root/|       |"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else

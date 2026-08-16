@@ -27,8 +27,10 @@ plugin, agent discovery scans `agents/` *recursively*, and a subdirectory
 becomes part of the name — `agents/review/security.md` registers as
 `uroboros:review:security`. Without the list, every `.md` anywhere below loads
 as an agent of its own — a skill an agent preloads, above all. Declaring the
-files replaces that scan. Add an agent, add its line: nothing compares the two,
-so a missing line is an agent that is simply not there in any session.
+files replaces that scan. Never add an agent without adding its line — not
+"discovery scans the directory anyway": nothing compares the list with the
+directory, so a missing line is an agent that is simply not there in any
+session.
 
 An agent may own a directory beside its page, `<name>/` next to `<name>.md`,
 for what belongs to it alone — the skills it preloads, under
@@ -57,29 +59,37 @@ inherited, which no installing project can reproduce — and why every page in
 `.claude/rules/` carries `paths:`, which `test-repo.sh` checks.
 
 So a page here may only carry what someone developing uroboros needs, and this
-one — about writing the agents — is that. It may never be the only home of a
-rule that binds a run: `docs/` had such a page, and its writing rules moved into
-the shared brief, where every project gets them. Scoping keeps a rule from the
+one — about writing the agents — is that. Never make a page here the only home
+of a rule that binds a run — not "whoever works here will read it": an agent
+dispatched in a project that installed the plugin holds nothing from this
+directory, so the rule binds nobody in the one place it had to. `docs/` had
+such a page, and its writing rules moved into the shared brief, where every
+project gets them. Scoping keeps a rule from the
 wrong reader; it cannot make one exist where this directory does not.
 
 Three rules bind the session and the agents alike: English, the default branch
 moving only through a merged pull request, and the test that decides whether a
 question stops the work. They stand in the rulebook and in the
-shared brief, because the two audiences have no channel in common. Edit one,
-edit the other.
+shared brief, because the two audiences have no channel in common. Never edit
+one copy without editing the other — not "the other one can follow later": no
+check compares them, and the copy left behind runs the session and the agents
+on different rules until somebody notices.
 
-So an agent page carries its role and the boundaries of that role alone, and
-restates nothing the shared brief already says. A rule that stands in both
-drifts.
+So an agent page carries its role and the boundaries of that role alone. What
+decides whether a sentence the shared brief also carries may stand on the page
+is whether that sentence still has to work when the brief did not load. A
+sentence that reaches the agent only once the brief has loaded stands in the
+brief alone: a rule that stands in both drifts.
+
+A sentence that has to work when the brief is missing stands on the page, and
+one sentence meets that — the line that opens every page, telling the agent to
+report the shared brief as missing and stop. A skill that failed to load cannot
+announce its own absence, and Claude Code skips an unresolved `skills:` entry
+with nothing but a line in the debug log — so without that opener an agent runs
+on half its rules and nobody hears about it.
 
 The form a rule on an agent page takes is decided by
 `.claude/rules/authoring.md`.
-
-The one exception opens every page: the line that tells the agent to report the
-shared brief as missing and stop. A skill that failed to load cannot announce
-its own absence, and Claude Code skips an unresolved `skills:` entry with
-nothing but a line in the debug log — so without that opener an agent runs on
-half its rules and nobody hears about it.
 
 ## What a page has to carry
 
@@ -87,26 +97,33 @@ half its rules and nobody hears about it.
   `description` is what a caller reads while deciding — say what the agent
   does and what not to use it for. It is read far more often than the body.
   `skills` carries `agent-brief` and whatever else that agent alone preloads.
-  `model` is left out, so the agent runs on the session's model; name a tier
-  only for an agent whose work is mechanical enough that a smaller one cannot
-  get it wrong, and say on its page why.
-- **The body** is what the shared brief does not already cover: the role, how
-  it works, the boundaries that belong to it alone, and the shape of its
-  report. Beyond the brief it has no context — a caller's reasoning never
-  reaches it.
+  `model` is left out, so the agent runs on the session's model. Where the work
+  of an agent is mechanical enough that a smaller model cannot get it wrong,
+  its page may name that tier in `model`, and a page that names one says why.
+- **The body** is what the shared brief does not already cover, every slot
+  filled: the role; how it works; the boundaries that belong to it alone; the
+  shape of its report. Beyond the brief it has no context — a caller's
+  reasoning never reaches it.
 
 ## The page is the interface
 
 The rulebook binds every dispatch to what this page declares: whatever the
 page says the agent does *not* get is not handed over, and whatever it says
-the agent may not do is not asked of it. So state both explicitly — an
+the agent may not do is not asked of it. The boundaries slot carries both and
+leaves neither empty: what the agent does not get; what it may not do — an
 implementer that may not edit the tests, a test-author that has never seen an
 implementation, a reviewer that sees only the diff and the intent. An omission
 here becomes a leak in every run.
 
-Give each agent the narrowest tool list that does its job; a read-only role
-gets no writing tools. Give it nothing about the project beyond the issue
-directory under `docs/issues/`, and hand it no path beyond that directory: the
-next agent finds what it needs there in the run state, `backlog.json`, through
-the reads its prompt names, and a reviewer derives the intent from the issue
-file and git instead, its diff range already bounding what it may see.
+Give each agent the narrowest tool list that does its job. Never hand a role a
+tool its work does not need, and never hand a read-only role a writing tool —
+not "it may as well have it in case": the tool gets used, and the boundary the
+page declared is gone from that run on.
+
+Give it nothing about the project beyond the issue directory under
+`docs/issues/`. Never hand it a path beyond that directory — not "one path
+saves it a search": the agent reads what its role was never given, and the
+independence the next role rests on is gone. The next agent finds what it needs
+in the run state, `backlog.json`, through the reads its prompt names, and a
+reviewer derives the intent from the issue file and git instead, its diff range
+already bounding what it may see.
