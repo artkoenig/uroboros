@@ -67,8 +67,9 @@ flowchart LR
     PUB --> MERGE(["a human merges"])
 ```
 
-Two modes, and you name which one: **Issue Mode** runs the loop above.
-**Direct Mode** means the session just does it — no issue file, no subagents.
+Every task goes to **Issue Mode**, which runs the loop above. **Direct Mode**
+— the session just does it, no issue file, no subagents — is for two cases
+only: the issue file costs more than the change, or the loop cannot be run.
 For an idea too vague to write criteria for, the [`grill`](skills/grill/) skill
 gets there one question at a time.
 
