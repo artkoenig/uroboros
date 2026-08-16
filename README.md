@@ -17,7 +17,7 @@ subagents, one orchestration workflow, four skills, and a one-page
 ### Key Features
 
 - 🧠 **Context as the scarce resource**: every step gets its own agent and the smallest brief that does its job — nothing else arrives.
-- 🔬 **Separation of powers**: the agent that writes the tests never sees the implementation plan, and the reviewer sees neither. No model grades its own homework.
+- 🔬 **Separation of powers**: the agent that writes the tests never sees the implementation plan, and the reviewer sees neither — only the commands it runs and the breaks it applies. No model grades its own homework.
 - 🧾 **The issue is the record**: every step writes its return into `backlog.json` — plans, verdicts, and the verbatim prompt behind each one.
 - ⏯️ **Resumable**: a run that died mid-flight restarts on the same directory, skips every recorded step and continues from the one that never finished.
 - 🧩 **Incremental**: the planner cuts an issue into increments, each on its own branch, and re-cuts what is left after every one.

@@ -402,6 +402,33 @@ function attemptRulings(increment) {
   return out
 }
 
+// A close archives an attempt's steps, and the plan's per-criterion breaks go
+// with them — yet the run has to report, after that close, which criteria the
+// increment was accepted on without an executable check. So the index carries
+// the archived steps' `breaks` and `unbreakable` lists forward beside their
+// rulings, one entry per archived step whose projection carries either key,
+// INCLUDING when the recorded list is empty. That is the one place this differs
+// from `attemptRulings`, which keeps only non-empty rulings: the run reports the
+// increment's LAST plan, so a later plan that named nothing has to be able to
+// overwrite an earlier one that did.
+function attemptBreaks(increment) {
+  const out = []
+  for (const attempt of increment.attempts || []) {
+    for (const step of attempt.steps || []) {
+      const projected = steering(step && step.return)
+      const hasBreaks = Array.isArray(projected.breaks)
+      const hasUnbreakable = Array.isArray(projected.unbreakable)
+      if (!hasBreaks && !hasUnbreakable) continue
+      out.push({
+        label: (step && step.label) || '',
+        breaks: hasBreaks ? projected.breaks.filter(Boolean) : [],
+        unbreakable: hasUnbreakable ? projected.unbreakable.filter(Boolean) : [],
+      })
+    }
+  }
+  return out
+}
+
 // `asked` is computed rather than projected. Every role's return carries
 // `questions`, a non-empty list ends the run, and a resumed run has to know
 // which steps ended that way even when the questions themselves were too long
@@ -441,6 +468,7 @@ function index(backlogPath) {
       steps: (increment.steps || []).map(indexStep),
       attempts: (increment.attempts || []).length,
       attemptRulings: attemptRulings(increment),
+      attemptBreaks: attemptBreaks(increment),
     })),
     run: { steps: ((backlog.run && backlog.run.steps) || []).map(indexStep) },
   }
