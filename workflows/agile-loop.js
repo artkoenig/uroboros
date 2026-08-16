@@ -690,7 +690,8 @@ const state = await agent(
     `\`find "$HOME/.claude/plugins" -path '*agent-brief/assets/backlog.mjs' | head -1\`.\n` +
     `Return exists true, the index's \`increments\` in increments and its \`run.steps\` in ` +
     `runSteps. Each step of either carries the index's \`label\` and \`asked\`; fill ` +
-    `questions, rulings, needsTests, checks, findingCount, allDirect and reason from that step's ` +
+    `questions, rulings, needsTests, checks, breaks, unbreakable, findingCount, allDirect and ` +
+    `reason from that step's ` +
     `\`return\` object where the index carried them, and leave them empty otherwise.\n` +
     `Each increment also carries the index's \`attemptRulings\`, returned as it stands and ` +
     `empty where the index has none.\n` +
