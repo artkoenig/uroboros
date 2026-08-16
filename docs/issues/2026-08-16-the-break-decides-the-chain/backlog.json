@@ -557,7 +557,7 @@
       "depth": "full",
       "status": "todo",
       "note": "Two things increment 2 showed feed this one: a test-repo.sh case there went green against a passage stating the opposite of its rule, so the coverage criterion now asks each case to match only its own passage; and the reviewer page's frontmatter still carries the claim increment 1 corrected in README.md, which increment 2's plan deliberately left to a later increment.",
-      "branch": "",
+      "branch": "claude/break-decides-issue-6ozelk--inc-3",
       "steps": [],
       "attempts": []
     }
