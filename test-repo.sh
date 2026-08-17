@@ -1385,6 +1385,27 @@ async function main() {
       c.label + ' reads a step without naming the fields it may see: ' + JSON.stringify(unfiltered));
   }
 
+  // docs/issues/2026-08-17-correction-rounds-read-the-plan, criterion 4 (the
+  // 'stays valid' half): a `steps` read always names a non-empty step label —
+  // an empty label renders either a second space right after the increment id
+  // (the shape `readStep` produces when fields are named) or the closing
+  // backtick right after it (the shape it produces when they are not).
+  // `replan:` is exempt: the closing planner reads its increment whole and
+  // names no step, which is the one correct labelless read in the workflow.
+  for (const c of calls) {
+    if (c.label.startsWith('replan:')) continue;
+    const marker = 'steps ' + STATE_PATH;
+    const emptyLabel = c.prompt.split('\n').filter((line) => {
+      const idx = line.indexOf(marker);
+      if (idx === -1) return false;
+      const rest = line.slice(idx + marker.length);
+      const m = rest.match(/^ \S+ (.)/);
+      return !!m && (m[1] === ' ' || m[1] === '`');
+    });
+    assertTrue(emptyLabel.length === 0,
+      c.label + ' reads a step with an empty step label: ' + JSON.stringify(emptyLabel));
+  }
+
   // The publishing agent is handed the run in its prompt and reads no part of
   // the state. It carries no shared brief, so every read it is sent on it pays
   // for twice — once finding the helper, once asking a closed increment for the
@@ -2285,8 +2306,8 @@ async function main() {
     const round1 = calls.find((c) => c.label === 'research:i2.1');
     assertTrue(!!round1 && !round1.prompt.includes('research:i1'),
       "i2's correction-round researcher prompt names increment i1's research step — the correction round is sent to another increment's plan");
-    assertTrue(!!round1 && !/steps docs\/issues\/x\/backlog\.json i2 research:/.test(round1.prompt),
-      "i2's correction-round researcher prompt names a research step of i2, though i2's own round 0 dispatched no researcher for it to read");
+    assertTrue(!!round1 && !round1.prompt.includes('--fields plan'),
+      "i2's correction-round researcher prompt carries a plan read, though i2's own round 0 dispatched no researcher to have written one");
   } else if (mode === 'w38') {
     // docs/issues/2026-08-17-correction-rounds-read-the-plan, criterion 4: a
     // round whose own previous round was a direct-fix round (no researcher)
@@ -2297,8 +2318,8 @@ async function main() {
        'research:i1.2', 'tests:i1.2', 'implement:i1.2', 'review:i1.2', 'replan:i1', 'publish'],
       'a direct-fix round followed by a review with an ordinary finding did not run a full correction round afterwards');
     const round2 = calls.find((c) => c.label === 'research:i1.2');
-    assertTrue(!!round2 && !/steps docs\/issues\/x\/backlog\.json i1 research:/.test(round2.prompt),
-      "round 2's researcher prompt names a research step, though the round before it (the direct-fix round) dispatched no researcher");
+    assertTrue(!!round2 && !round2.prompt.includes('--fields plan'),
+      "round 2's researcher prompt carries a plan read, though the round before it (the direct-fix round) dispatched no researcher to have written one");
     assertTrue(!!round2 && round2.prompt.includes(readStep('i1', 'review:i1.1', 'findings')),
       "round 2's researcher is not sent to the findings the round-1 review filed");
   } else {
