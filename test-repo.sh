@@ -5145,6 +5145,63 @@ else
   no "argument handling fell through: an unknown argument or a valueless --only did not exit non-zero without running a suite"
 fi
 
+echo "=== a narrowed run is never the green suite"
+
+# This section's own collapsed copy of the shared brief — never
+# brief_collapsed or brief_form, which other sections own.
+narrowed_brief="$(tr '\n' ' ' <"$root/skills/agent-brief/SKILL.md" | tr -s ' ')"
+
+# Criterion: the rules the agents follow state that the run an agent commits,
+# reports or takes a verdict from is the unfiltered one — the permission
+# branch that makes the rule a predicate rather than a blanket ban on
+# narrowing at all. Break: delete the first of the two paragraphs added to
+# '## The commands that count'.
+if printf '%s' "$narrowed_brief" | grep -q 'A listed command may be narrowed to part of what it runs' \
+  && printf '%s' "$narrowed_brief" | grep -q 'Narrow it while you are iterating' \
+  && printf '%s' "$narrowed_brief" | grep -q 'is not running a command it does not name'; then
+  ok "the shared brief says narrowing a listed command while iterating is not running a command the list does not name"
+else
+  no "the shared brief is missing the paragraph permitting narrowing a listed command while iterating"
+fi
+
+# Criterion: the rules the agents follow state that a filtered run is not the
+# fact that the suite is green. Break: delete that sentence, or weaken it to
+# 'a narrowed run is a run of the suite'.
+if printf '%s' "$narrowed_brief" | grep -q 'A narrowed run is evidence about the part it ran' \
+  && printf '%s' "$narrowed_brief" | grep -q 'never the fact that the suite is green'; then
+  ok "the shared brief says a narrowed run is evidence about the part it ran and never the fact that the suite is green"
+else
+  no "the shared brief is missing the sentence that a narrowed run is never the fact that the suite is green"
+fi
+
+# Criterion: the run an agent commits, reports or takes a verdict from is the
+# unfiltered one. Break: delete that sentence, or strip its price and its
+# quoted excuses down to a bare reminder. These four markers are the priced-
+# prohibition form .claude/rules/authoring.md requires for a rule skipped
+# under pressure, so this case is also the form case for the rule.
+if printf '%s' "$narrowed_brief" | grep -q 'Never commit on, report or take a verdict from one' \
+  && printf '%s' "$narrowed_brief" | grep -q '"the only suite my change touches is green"' \
+  && printf '%s' "$narrowed_brief" | grep -q 'the run behind a commit, a report or a verdict is the unfiltered one' \
+  && printf '%s' "$narrowed_brief" | grep -q 'nobody ran the suite against'; then
+  ok "the shared brief says the run behind a commit, a report or a verdict is the unfiltered one, priced, with its rationalisations quoted"
+else
+  no "the shared brief is missing the priced prohibition on committing, reporting or taking a verdict from a narrowed run"
+fi
+
+# Criterion: the rules land on the pages that actually bind the agents that
+# run the suite, and a page that gains no rule gains no text. Break, either
+# direction: restate the rule on agents/reviewer.md or any other agent page
+# or shipped skill (two paths match), or delete it from the brief (none
+# match). Mirrors mutation_standard_owners (lines 508-514) and
+# rulebook_readers (lines 185-191).
+narrowed_run_owners="$(grep -lie 'narrowed run' "$root"/agents/*.md "$root"/skills/*/SKILL.md 2>/dev/null || true)"
+if [ "$narrowed_run_owners" = "$root/skills/agent-brief/SKILL.md" ]; then
+  ok "skills/agent-brief/SKILL.md is the only agent page or shipped skill naming a narrowed run"
+else
+  no "the phrase \"narrowed run\" is owned by more (or fewer) pages than skills/agent-brief/SKILL.md alone:"
+  echo "${narrowed_run_owners:-       (none)}" | sed "s|^$root/|       |"
+fi
+
 echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
