@@ -1102,11 +1102,13 @@ if (!blockedOnHuman.length) {
     let lastBreaks = []
     let lastUnbreakable = []
     let planLabel = ''
+    let previousPlanLabel = ''
     let testsLabel = ''
     let previousTestsLabel = ''
     let verdict = null
     let verdictLabel = ''
     for (let round = 0; round <= MAX_CORRECTIONS; round++) {
+      previousPlanLabel = planLabel
       previousTestsLabel = testsLabel
       // Decided before anything is dispatched, and only from the verdict of the
       // round before: round 0 is never a direct-fix round, so `plan` is always
@@ -1132,11 +1134,17 @@ if (!blockedOnHuman.length) {
               `implementer and the reviewer alone, no research and no tests.`,
           )
         }
+        planLabel = ''
         testsLabel = ''
       } else {
         const researchLabel = `research:${task.id}.${round}`
         // What the round before left for this one, all of it in the state: the
-        // review's findings, and the questions the test-author left open.
+        // review's findings, the questions the test-author left open, and the
+        // plan that round wrote — the design this round corrects. The plan is
+        // the largest thing any agent of this run produces and the state
+        // already holds it, so the prompt names the read and copies no plan
+        // text. Where the round before dispatched no researcher it left no plan
+        // label behind, and this prompt names no plan step at all.
         plan = await step(researchLabel, 'Research', () =>
           agent(
             `Issue directory: ${dir}\n` +
@@ -1151,6 +1159,15 @@ if (!blockedOnHuman.length) {
                       `and what the round before produced is your work order.`,
                     [
                       readStep(task.id, verdictLabel, 'findings', `the review's findings.`),
+                      previousPlanLabel
+                        ? readStep(
+                            task.id,
+                            previousPlanLabel,
+                            'plan',
+                            `the plan you wrote for the round before: correct that design instead of ` +
+                              `deriving it again.`,
+                          )
+                        : '',
                       previousTestsLabel
                         ? readStep(
                             task.id,

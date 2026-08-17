@@ -584,6 +584,31 @@ else
 fi
 
 echo
+echo "=== a correction round's researcher reads the plan it already wrote"
+
+# Criterion 5: docs/issues/2026-08-17-correction-rounds-read-the-plan. Every
+# page describing what a correction round's researcher reads describes this
+# read too. Collapsed the way the mutation-standard block above collapses the
+# page, since the sentence may wrap across a line break in its prose.
+researcher_collapsed="$(tr '\n' ' ' <"$root/agents/researcher.md" | tr -s ' ')"
+
+# Break: delete the sentence from the page's '## Correction rounds' section.
+if echo "$researcher_collapsed" | grep -qi "Where your prompt names the research step of the round before, read its \`plan\` first"; then
+  ok "agents/researcher.md tells a correction round's researcher to read the round-before's plan first"
+else
+  no "agents/researcher.md does not tell a correction round's researcher to read the round-before's plan"
+fi
+
+# Break: revert the description's correction-round clause to naming the
+# reviewer's findings alone.
+researcher_description="$(grep '^description:' "$root/agents/researcher.md")"
+if echo "$researcher_description" | grep -qi 'the plan the round before wrote'; then
+  ok "agents/researcher.md's frontmatter description names the plan the round before wrote"
+else
+  no "agents/researcher.md's frontmatter description does not name the plan the round before wrote"
+fi
+
+echo
 echo "=== a decidable question gets a ruling, not a stall"
 
 brief_collapsed="$(tr '\n' ' ' <"$root/skills/agent-brief/SKILL.md" | tr -s ' ')"
@@ -852,6 +877,7 @@ const DISJOINT_MARKERS = [
   'MARKER-RULING-ARCHIVED',
   'MARKER-BREAK',
   'MARKER-UNBREAKABLE',
+  'MARKER-PLAN-TEXT',
 ];
 
 // The read a prompt has to carry for its role to have a brief at all. Written
@@ -874,6 +900,9 @@ const planReturn = {
   unbreakable: [],
   questions: [],
   summary: 'plan summary',
+  // A correction round's researcher reads a previous round's plan out of the
+  // run state; it never reaches a prompt, so this marker proves it.
+  plan: 'MARKER-PLAN-TEXT',
 };
 const planReturnWithQuestion = Object.assign({}, planReturn, { questions: ['ask the human'] });
 // w31's fixture for the criterion the plan named no break for: the break list
@@ -1280,6 +1309,27 @@ function contextFor(m) {
       return { stateReturn: closedBreakState(), decomposeReturn: decomposeReturnTwo, researchReturn: planReturn };
     case 'w36':
       return { stateReturn: noIssueBranchState(), decomposeReturn: decomposeReturnOne, researchReturn: planReturn };
+    case 'w37':
+      // i1 is a full increment that closes clean; i2 is the planner's direct
+      // increment whose round-0 review files one non-direct finding, so i2's
+      // round 1 is a full correction round whose own previous round (i2's
+      // round 0) dispatched no researcher at all.
+      return {
+        stateReturn: noState,
+        decomposeReturn: decomposeReturnMixed,
+        researchReturn: planReturn,
+        verdictFor: (label) => (label === 'review:i2.0' ? verdictReturnWithFinding : verdictReturnClean),
+      };
+    case 'w38':
+      // One full increment whose round-0 review files an all-direct finding
+      // (round 1 is a direct-fix round with no researcher) and whose round-1
+      // review files an ordinary finding (round 2 is a full correction round).
+      return {
+        stateReturn: noState,
+        decomposeReturn: decomposeReturnOne,
+        researchReturn: planReturn,
+        verdictFor: (label) => (label === 'review:i1.0' ? verdictReturnWithDirectFinding : label === 'review:i1.1' ? verdictReturnWithFinding : verdictReturnClean),
+      };
     default:
       throw new Error('unknown mode ' + m);
   }
@@ -1335,6 +1385,27 @@ async function main() {
       c.label + ' reads a step without naming the fields it may see: ' + JSON.stringify(unfiltered));
   }
 
+  // docs/issues/2026-08-17-correction-rounds-read-the-plan, criterion 4 (the
+  // 'stays valid' half): a `steps` read always names a non-empty step label —
+  // an empty label renders either a second space right after the increment id
+  // (the shape `readStep` produces when fields are named) or the closing
+  // backtick right after it (the shape it produces when they are not).
+  // `replan:` is exempt: the closing planner reads its increment whole and
+  // names no step, which is the one correct labelless read in the workflow.
+  for (const c of calls) {
+    if (c.label.startsWith('replan:')) continue;
+    const marker = 'steps ' + STATE_PATH;
+    const emptyLabel = c.prompt.split('\n').filter((line) => {
+      const idx = line.indexOf(marker);
+      if (idx === -1) return false;
+      const rest = line.slice(idx + marker.length);
+      const m = rest.match(/^ \S+ (.)/);
+      return !!m && (m[1] === ' ' || m[1] === '`');
+    });
+    assertTrue(emptyLabel.length === 0,
+      c.label + ' reads a step with an empty step label: ' + JSON.stringify(emptyLabel));
+  }
+
   // The publishing agent is handed the run in its prompt and reads no part of
   // the state. It carries no shared brief, so every read it is sent on it pays
   // for twice — once finding the helper, once asking a closed increment for the
@@ -1360,6 +1431,15 @@ async function main() {
   // in any mode may order one. Checked in every mode.
   for (const c of calls) {
     assertTrue(!c.prompt.includes('--delete'), c.label + ' orders a remote branch delete: ' + JSON.stringify(c.prompt.split('\n').filter((line) => line.includes('--delete'))));
+  }
+
+  // docs/issues/2026-08-17-correction-rounds-read-the-plan, criterion 2: a
+  // correction round's researcher is sent to read the round-before's plan out
+  // of the run state, never handed the plan text itself. Checked in every
+  // mode — no prompt of any dispatch may carry the researcher's returned plan.
+  for (const c of calls) {
+    assertTrue(!c.prompt.includes('MARKER-PLAN-TEXT'),
+      c.label + " prompt carries the previous round's plan text instead of naming the read that fetches it");
   }
 
   if (mode === 'w1') {
@@ -1669,6 +1749,11 @@ async function main() {
       "the correction round's researcher is not sent to the review's findings");
     assertTrue(!!round1 && round1.prompt.includes(readStep('i1', 'tests:i1.0', 'openQuestions')),
       "the correction round's researcher is not sent to what the test-author left open");
+    // docs/issues/2026-08-17-correction-rounds-read-the-plan, criteria 1-3, 6:
+    // the correction round's researcher prompt names the round-before's own
+    // research step, in the same increment, and its `plan` field.
+    assertTrue(!!round1 && round1.prompt.includes(readStep('i1', 'research:i1.0', 'plan')),
+      "the correction round's researcher is not sent to read the round-before's plan out of the run state");
     const round0 = calls.find((c) => c.label === 'research:i1.0');
     assertTrue(!!round0 && !round0.prompt.includes('review:i1'),
       "the first round's researcher is sent to a review that does not exist yet");
@@ -2208,6 +2293,35 @@ async function main() {
       assertTrue(!c.prompt.includes('git checkout -b') && !c.prompt.includes('stays in this checkout'),
         c.label + " names a branch to create or names the checkout it stays in, though the run state names no issue branch to branch from");
     }
+  } else if (mode === 'w37') {
+    // docs/issues/2026-08-17-correction-rounds-read-the-plan, criterion 3
+    // (negative) and criterion 4: i2's round 1 is a full correction round
+    // whose own previous round (i2's round 0, a direct round) dispatched no
+    // researcher, so its prompt names no plan step at all, and never names
+    // another increment's research step either.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0', 'replan:i1',
+       'implement:i2.0', 'review:i2.0', 'research:i2.1', 'tests:i2.1', 'implement:i2.1', 'review:i2.1', 'replan:i2', 'publish'],
+      'a direct increment whose round-0 review files a finding did not run a full correction round in i2');
+    const round1 = calls.find((c) => c.label === 'research:i2.1');
+    assertTrue(!!round1 && !round1.prompt.includes('research:i1'),
+      "i2's correction-round researcher prompt names increment i1's research step — the correction round is sent to another increment's plan");
+    assertTrue(!!round1 && !round1.prompt.includes('--fields plan'),
+      "i2's correction-round researcher prompt carries a plan read, though i2's own round 0 dispatched no researcher to have written one");
+  } else if (mode === 'w38') {
+    // docs/issues/2026-08-17-correction-rounds-read-the-plan, criterion 4: a
+    // round whose own previous round was a direct-fix round (no researcher)
+    // is sent to no plan step at all — not even the plan two rounds back.
+    assertEqualArrays(labels,
+      ['load-state', 'decompose', 'research:i1.0', 'tests:i1.0', 'implement:i1.0', 'review:i1.0',
+       'implement:i1.1', 'review:i1.1',
+       'research:i1.2', 'tests:i1.2', 'implement:i1.2', 'review:i1.2', 'replan:i1', 'publish'],
+      'a direct-fix round followed by a review with an ordinary finding did not run a full correction round afterwards');
+    const round2 = calls.find((c) => c.label === 'research:i1.2');
+    assertTrue(!!round2 && !round2.prompt.includes('--fields plan'),
+      "round 2's researcher prompt carries a plan read, though the round before it (the direct-fix round) dispatched no researcher to have written one");
+    assertTrue(!!round2 && round2.prompt.includes(readStep('i1', 'review:i1.1', 'findings')),
+      "round 2's researcher is not sent to the findings the round-1 review filed");
   } else {
     throw new Error('unknown mode ' + mode);
   }
@@ -2270,6 +2384,8 @@ for wf in "$root/workflows/agile-loop.js"; do
   run_driver "$wf" w34 "$wf_name: an increment worked direct carries all its criteria as unchecked"
   run_driver "$wf" w35 "$wf_name: a run resumed behind a closed increment reports the same unchecked list as one that never restarted, and the state loader's schema asks for the archive that carries it"
   run_driver "$wf" w36 "$wf_name: a run whose state names no issue branch pushes every step's own commit and creates no branch, since the run state reaches the remote no other way"
+  run_driver "$wf" w37 "$wf_name: a correction round of one increment never names another increment's research step, even when its own round before dispatched no researcher"
+  run_driver "$wf" w38 "$wf_name: a round whose round before was a direct-fix round is sent to no plan step at all, not even the plan two rounds back"
 done
 
 # Round 3, finding 2: only the incremental loop re-cuts, so an increment
