@@ -64,6 +64,131 @@
             "summary": "Planned test.sh's filter as a two-pass suite table: the eight suites move into a `declare_suites` function of `suite <name> <label> <cmd...>` lines with the typeable names repo, worktree, backlog, run-state, read-barrier, argus, argus-ui and log-parser, a collect pass that rejects a nameless or duplicated name and feeds `--list` and the unmatched-name failure before any suite runs, and a filtered closing line `FILTERED: ran N of M suites — a filtered run is not a green suite` that keeps PASS and FAIL out of filtered output. Fifteen cases in test-repo.sh drive a temp copy of the script whose suite table is replaced by three shell stubs, because test-repo.sh runs under test.sh and a real filtered invocation from inside it would recurse forever."
           },
           "prompt": "Issue directory: docs/issues/2026-08-17-test-sh-only-filter\nThis run works docs/issues/2026-08-17-test-sh-only-filter/issue.md one increment at a time, and increment 1 is yours:\n  test.sh runs only the suites you name — test.sh gains typeable per-suite names, a `--only` filter that can be repeated, a `--list` listing, a hard failure on an unknown name, and a closing line that says a filtered run was filtered — while the no-argument run is unchanged.\nWhat it has to satisfy:\n  - `bash test.sh` with no arguments runs every suite and prints what it prints today.\n  - Every suite carries a short stable name that a caller can type, and no two suites share one.\n  - `bash test.sh --only <name>` runs that suite alone and no other.\n  - `--only` given more than once runs each named suite and no other, in the order the suite list declares them.\n  - `bash test.sh --list` prints every suite's name and exits 0 without running a suite.\n  - A name that matches no suite makes the run exit non-zero, print the unmatched name and print the names that do exist, and run no suite at all.\n  - A filtered run never prints the wording an unfiltered green run ends with, and its closing line names how many of the repository's suites it ran and that it was filtered.\n  - A filtered run whose suites all pass exits 0, and a filtered run with a failing suite exits non-zero.\n  - Adding a suite to test.sh requires giving it a name, and a suite without one makes a case turn red.\n  - The behaviour of each criterion in this increment is covered by cases that turn red when that behaviour is removed.\nDeliberately not yours, and not a gap — a later increment takes each of these: The agents' rules say a filtered run is not green.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-17-test-sh-only-filter/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-test-sh-only-filter/backlog.json cli-filter research:cli-filter.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-test-sh-only-filter/backlog.json cli-filter research:cli-filter.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `breaks`\n  - `unbreakable`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:cli-filter.0",
+          "at": "2026-08-17T16:41:25.292Z",
+          "return": {
+            "cases": [
+              {
+                "case": "`bash test.sh` with no arguments runs every suite and prints what it prints today",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh with no arguments runs every suite, in declared order, and ends with the unchanged PASS: all N suites line",
+                "want": "exit 0; output contains === the alpha suite, === the beta suite, === the gamma suite in that order and all three stub markers; last line exactly PASS: all 3 suites",
+                "got": "FAIL — bash test.sh with no arguments did not run all three stub suites in declared order with the unchanged PASS line (exit 99): (setup failed: test.sh has no declare_suites() body to substitute stub suites into) — test.sh has no declare_suites() function yet, so the stub-substitution harness cannot build its fixture"
+              },
+              {
+                "case": "`bash test.sh` with no arguments prints what it prints today (red path)",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh with no arguments and one failing suite exits non-zero and ends with the unchanged FAIL: N of M suite(s) line",
+                "want": "exit 1 and last line exactly FAIL: 1 of 3 suite(s)",
+                "got": "FAIL — bash test.sh with no arguments and one failing suite did not exit non-zero with the unchanged FAIL line (exit 99): (setup failed: test.sh has no declare_suites() body to substitute stub suites into) — same missing declare_suites() structure"
+              },
+              {
+                "case": "Every suite carries a short stable name, and no two share one",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --list exits 0 and lists a typeable, unique name per suite, including the eight repository suites",
+                "want": "exit 0; every line's first field matches ^[a-z][a-z0-9-]*$; no field repeats; the eight names repo, worktree, backlog, run-state, read-barrier, argus, argus-ui, log-parser are all present",
+                "got": "FAIL — bash test.sh --list (exit 137) did not list eight unique typeable names — bad=[a long dump of === lines and prose] missing=[repo worktree backlog run-state read-barrier argus argus-ui log-parser] — test.sh does not parse --list yet, falls through and runs every real suite (recursing into test-repo.sh itself), so the call is killed by the hard-timeout wrapper (exit 137) with no suite names printed. The hard-timeout wrapper (run_with_hard_timeout, walking /proc parent-child links to kill the whole re-entered tree) exists precisely because this is what happens pre-implementation, and it terminated the recursion cleanly (verified: zero leftover test.sh/test-repo.sh processes afterwards)"
+              },
+              {
+                "case": "`bash test.sh --list` prints every suite's name and exits 0 without running a suite",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --list prints exactly one line per declared suite, no '=== ' section line, and exits 0 without running a suite",
+                "want": "exit 0; output has as many lines as test.sh has suite  declaration lines; no === line and no suite output",
+                "got": "FAIL — bash test.sh --list (exit 137, 293 lines against 0 declared suites, 35 '=== ' lines) did not list without running — test.sh has zero suite  declarations today and --list falls through into a real (recursive) run"
+              },
+              {
+                "case": "`bash test.sh --only <name>` runs that suite alone and no other",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only beta runs beta alone",
+                "want": "exit 0; output contains === the beta suite and BETA-RAN; contains neither the alpha/gamma section lines nor their markers",
+                "got": "FAIL — bash test.sh --only beta (exit 99) did not run beta alone: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "--only given more than once runs each named suite and no other, in declaration order",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only gamma --only alpha runs alpha then gamma (declaration order), never beta",
+                "want": "exit 0; === the alpha suite appears before === the gamma suite; BETA-RAN is absent",
+                "got": "FAIL — bash test.sh --only gamma --only alpha (exit 99) did not run alpha then gamma with beta excluded: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "A name that matches no suite fails and runs nothing",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only nope exits non-zero, names nope, lists the suites that do exist, and runs none of them",
+                "want": "exit non-zero; output names nope and lists alpha, beta and gamma; contains no === line and no stub marker",
+                "got": "FAIL — bash test.sh --only nope (exit 99) did not fail cleanly naming nope and the existing suites: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "A name that matches no suite runs no suite at all (even alongside a valid name)",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only alpha --only nope exits non-zero, names nope, and never runs alpha",
+                "want": "exit non-zero and ALPHA-RAN absent from the output",
+                "got": "FAIL — bash test.sh --only alpha --only nope (exit 99) ran a suite despite the unknown name, or did not name it: (setup failed: test.sh has no declare_suites() body to substitute stub suites into). Strengthened beyond the plan's two checks to also require the output names nope, because the plan's original two checks (nonzero exit, ALPHA-RAN absent) are also satisfied by the harness's own setup-failure sentinel and would have passed today for the wrong reason; recorded as a ruling below"
+              },
+              {
+                "case": "A filtered run never prints the wording an unfiltered green run ends with, and its closing line names how many suites it ran and that it was filtered",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only alpha never prints the unfiltered PASS:/FAIL: wording and ends with the filtered line naming 1 of 3 suites",
+                "want": "exit 0; no PASS: or FAIL: line; last line exactly FILTERED: ran 1 of 3 suites — a filtered run is not a green suite",
+                "got": "FAIL — bash test.sh --only alpha (exit 99) did not end with the filtered closing line: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "A filtered run whose suites all pass exits 0",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only alpha --only beta, both passing, exits 0 and ends with FILTERED: ran 2 of 3 suites",
+                "want": "exit 0; last line exactly FILTERED: ran 2 of 3 suites — a filtered run is not a green suite",
+                "got": "FAIL — bash test.sh --only alpha --only beta (exit 99) did not exit 0 with the filtered closing line: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "A filtered run with a failing suite exits non-zero",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "bash test.sh --only alpha, failing, exits non-zero and ends with FILTERED: ran 1 of 3 suites, 1 failed",
+                "want": "exit non-zero; last line exactly FILTERED: ran 1 of 3 suites, 1 failed — a filtered run is not a green suite",
+                "got": "FAIL — bash test.sh --only alpha, failing, (exit 99) did not exit non-zero with the failed filtered closing line: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "Adding a suite requires giving it a name",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "a suite declared without a name makes test.sh exit non-zero, naming the problem, without running the nameless suite",
+                "want": "exit non-zero; output says the suite was declared without a name; ALPHA-RAN absent",
+                "got": "FAIL — a suite declared without a name (exit 99) did not fail with a message naming the problem: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "Adding a suite requires giving it a name, and no two share one",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "two suites declared with the same name make test.sh exit non-zero, naming the shared name alpha",
+                "want": "exit non-zero and the output names the shared name alpha",
+                "got": "FAIL — two suites sharing the name alpha (exit 99) did not fail naming alpha: (setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+              },
+              {
+                "case": "Adding a suite requires giving it a name (the structural half): declare_suites() { ... } declared once, its closing brace at column 0, and every suite-invocation line begins with `suite `",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "test.sh declares every suite inside one declare_suites() function whose closing brace sits at column 0, through a suite command",
+                "want": "exactly one line matches ^declare_suites\\(\\) \\{$ with a closing } at column 0; every non-comment suite-invocation line begins, after leading whitespace, with suite ",
+                "got": "FAIL — test.sh's declare_suites() structure is missing, or a suite invocation does not begin with 'suite ' (declare_count=0 closed=0 bad_lines=[21 24 31 36 41 47 50 53 ]) — test.sh has no declare_suites() function today; its eight run  invocations are bare command lines"
+              },
+              {
+                "case": "Argument handling has no silent fall-through (not a criterion, tested because a typo that ran everything would look green)",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "an unknown argument (--all) exits non-zero with usage naming --only and --list, and a valueless --only exits non-zero, neither running a suite",
+                "want": "--all: exit non-zero, usage line naming --only and --list, no stub marker; --only with no value: exit non-zero and no stub marker",
+                "got": "FAIL — argument handling fell through: an unknown argument or a valueless --only did not exit non-zero without running a suite — test.sh has no argument parsing at all today, so every extra argument is silently ignored and every suite runs"
+              }
+            ],
+            "openQuestions": [
+              "Case 12's exact wording for 'the suite was declared without a name' is left to the implementer; the case only asserts the output mentions 'name' (case-insensitive), since the plan gives no exact string for this message the way it pins the FILTERED/PASS/FAIL closing lines.",
+              "The plan's case 7 and case 12 message-content checks (naming nope/alpha/beta/gamma, or naming the problem) are asserted as substring greps rather than exact strings, since the plan does not pin exact wording for them the way it does for the three closing lines."
+            ],
+            "questions": [],
+            "rulings": [
+              "Strengthened case 8's assertion to also require the output names 'nope', because the plan's two literal checks (nonzero exit, ALPHA-RAN absent) are also satisfied by the harness's own setup-failure sentinel and passed today for the wrong reason; wrong costs a case that stays accidentally green through part of the implementer's work instead of pinning validate-before-run ordering.",
+              "Wrapped the one real, unmodified $root/test.sh --list invocation (cases 3 and 4) in a hard, process-tree-walking kill (run_with_hard_timeout / kill_tree) instead of a plain `timeout`, because before --list exists that call falls through and re-enters test-repo.sh recursively, and a plain `timeout` only signals the direct child, leaving re-entered orphans running; wrong costs a runaway process tree on every red run of this suite until the feature exists.",
+              "Wrote the missing suite doc as /home/user/uroboros/CLAUDE.md at the repository root (no test/ directory exists for these three scripts to sit beside), styled after tools/*/test/CLAUDE.md and hooks/CLAUDE.md; wrong costs a doc in the wrong place that the next agent has to relocate."
+            ],
+            "summary": "Added the 15 planned cases for test.sh's --only filter, --list, unknown-name failure, filtered closing line and no-name/duplicate-name validation to a new section of test-repo.sh, run via a temp-copy stub harness (run_stub_test_sh and two variants) that substitutes declare_suites()'s body with synthetic alpha/beta/gamma suites, plus one real-script check of --list guarded by a process-tree-kill wrapper against pre-implementation recursion. All 15 cases fail today (bash test-repo.sh, confirmed via an isolated run of just this section, exit non-zero, 15 of 15 cases red), each on the missing declare_suites()/suite/--only/--list/FILTERED behaviour rather than a harness defect; wrote CLAUDE.md at the repository root as the suite doc for test.sh, test-repo.sh and test-worktree.sh, none of which previously had one."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-17-test-sh-only-filter\nThis run works docs/issues/2026-08-17-test-sh-only-filter/issue.md one increment at a time, and increment 1 is yours:\n  test.sh runs only the suites you name — test.sh gains typeable per-suite names, a `--only` filter that can be repeated, a `--list` listing, a hard failure on an unknown name, and a closing line that says a filtered run was filtered — while the no-argument run is unchanged.\nWhat it has to satisfy:\n  - `bash test.sh` with no arguments runs every suite and prints what it prints today.\n  - Every suite carries a short stable name that a caller can type, and no two suites share one.\n  - `bash test.sh --only <name>` runs that suite alone and no other.\n  - `--only` given more than once runs each named suite and no other, in the order the suite list declares them.\n  - `bash test.sh --list` prints every suite's name and exits 0 without running a suite.\n  - A name that matches no suite makes the run exit non-zero, print the unmatched name and print the names that do exist, and run no suite at all.\n  - A filtered run never prints the wording an unfiltered green run ends with, and its closing line names how many of the repository's suites it ran and that it was filtered.\n  - A filtered run whose suites all pass exits 0, and a filtered run with a failing suite exits non-zero.\n  - Adding a suite to test.sh requires giving it a name, and a suite without one makes a case turn red.\n  - The behaviour of each criterion in this increment is covered by cases that turn red when that behaviour is removed.\nDeliberately not yours, and not a gap — a later increment takes each of these: The agents' rules say a filtered run is not green.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-17-test-sh-only-filter/backlog.json cli-filter research:cli-filter.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-test-sh-only-filter/backlog.json cli-filter tests:cli-filter.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-test-sh-only-filter/backlog.json cli-filter tests:cli-filter.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []

@@ -4794,6 +4794,358 @@ else
 fi
 
 echo
+echo "=== test.sh runs only the suites you name"
+
+# Hard-timeout wrapper for the one call below that invokes the real,
+# unmodified $root/test.sh (with --list). A plain `timeout` only signals the
+# direct child; if --list is not honoured and the real run falls through into
+# running every suite, that child spawns this very test-repo.sh again — which
+# reaches this same call and starts its own session — so containment cannot
+# rely on one process group. kill_tree walks /proc's parent-child links
+# instead, which no descendant can opt out of, and kills every generation.
+kill_tree() {
+  local pid="$1" child
+  for child in $(pgrep -P "$pid" 2>/dev/null); do
+    kill_tree "$child"
+  done
+  kill -9 "$pid" 2>/dev/null
+}
+
+run_with_hard_timeout() {
+  local secs="$1"
+  shift
+  local outfile
+  outfile="$(mktemp)"
+  "$@" </dev/null >"$outfile" 2>&1 &
+  local pid=$!
+  (
+    sleep "$secs"
+    kill_tree "$pid"
+  ) &
+  local watcher=$!
+  wait "$pid" 2>/dev/null
+  local status=$?
+  kill "$watcher" 2>/dev/null
+  wait "$watcher" 2>/dev/null
+  cat "$outfile"
+  rm -f "$outfile"
+  return $status
+}
+
+# Harness shared by most cases below: build a temp copy of the real test.sh
+# with declare_suites()'s body replaced by three stub suites (alpha, beta,
+# gamma), each a two-line script that echoes a unique marker and exits with a
+# chosen code. Never invoke the real $root/test.sh with anything but --list —
+# any other real invocation re-enters test-repo.sh and never terminates, so a
+# failed substitution is reported as a setup failure instead of ever running
+# the unmodified copy.
+run_stub_test_sh() {
+  local alpha_exit="$1" beta_exit="$2" gamma_exit="$3"
+  shift 3
+  local tmp
+  tmp="$(mktemp -d)"
+  cp "$root/test.sh" "$tmp/test.sh"
+  printf '#!/bin/bash\necho ALPHA-RAN\nexit %s\n' "$alpha_exit" >"$tmp/stub-alpha.sh"
+  printf '#!/bin/bash\necho BETA-RAN\nexit %s\n' "$beta_exit" >"$tmp/stub-beta.sh"
+  printf '#!/bin/bash\necho GAMMA-RAN\nexit %s\n' "$gamma_exit" >"$tmp/stub-gamma.sh"
+  chmod +x "$tmp"/stub-*.sh
+
+  perl -0777 -pi -e \
+    's#(declare_suites\(\)\s*\{).*?(\n\})#\1\nsuite alpha "the alpha suite" bash "\$root/stub-alpha.sh"\nsuite beta "the beta suite" bash "\$root/stub-beta.sh"\nsuite gamma "the gamma suite" bash "\$root/stub-gamma.sh"\2#s' \
+    "$tmp/test.sh"
+
+  if ! grep -q 'stub-alpha.sh' "$tmp/test.sh"; then
+    stub_output="(setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+    stub_status=99
+    rm -rf "$tmp"
+    return
+  fi
+
+  stub_output="$(timeout 30 bash "$tmp/test.sh" "$@" 2>&1)"
+  stub_status=$?
+  rm -rf "$tmp"
+}
+
+# Variant of the harness above for case 12: declares one suite with a label
+# where the name belongs (`suite "the nameless suite" ...`) instead of a name.
+run_nameless_stub_test_sh() {
+  local tmp
+  tmp="$(mktemp -d)"
+  cp "$root/test.sh" "$tmp/test.sh"
+  printf '#!/bin/bash\necho ALPHA-RAN\nexit 0\n' >"$tmp/stub-alpha.sh"
+  chmod +x "$tmp/stub-alpha.sh"
+
+  perl -0777 -pi -e \
+    's#(declare_suites\(\)\s*\{).*?(\n\})#\1\nsuite "the nameless suite" bash "\$root/stub-alpha.sh"\2#s' \
+    "$tmp/test.sh"
+
+  if ! grep -q 'stub-alpha.sh' "$tmp/test.sh"; then
+    stub_output="(setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+    stub_status=99
+    rm -rf "$tmp"
+    return
+  fi
+
+  stub_output="$(timeout 30 bash "$tmp/test.sh" 2>&1)"
+  stub_status=$?
+  rm -rf "$tmp"
+}
+
+# Variant of the harness above for case 13: declares the same name (`alpha`)
+# twice.
+run_dup_stub_test_sh() {
+  local tmp
+  tmp="$(mktemp -d)"
+  cp "$root/test.sh" "$tmp/test.sh"
+  printf '#!/bin/bash\necho ALPHA-RAN\nexit 0\n' >"$tmp/stub-alpha.sh"
+  chmod +x "$tmp/stub-alpha.sh"
+
+  perl -0777 -pi -e \
+    's#(declare_suites\(\)\s*\{).*?(\n\})#\1\nsuite alpha "the alpha suite" bash "\$root/stub-alpha.sh"\nsuite alpha "the alpha suite again" bash "\$root/stub-alpha.sh"\2#s' \
+    "$tmp/test.sh"
+
+  if ! grep -q 'stub-alpha.sh' "$tmp/test.sh"; then
+    stub_output="(setup failed: test.sh has no declare_suites() body to substitute stub suites into)"
+    stub_status=99
+    rm -rf "$tmp"
+    return
+  fi
+
+  stub_output="$(timeout 30 bash "$tmp/test.sh" 2>&1)"
+  stub_status=$?
+  rm -rf "$tmp"
+}
+
+# Criterion: `bash test.sh` with no arguments runs every suite and prints what
+# it prints today. Break: making the no-argument run select anything, or
+# changing the green closing wording.
+run_stub_test_sh 0 0 0
+alpha_at="$(printf '%s\n' "$stub_output" | grep -n '=== the alpha suite' | head -1 | cut -d: -f1)"
+beta_at="$(printf '%s\n' "$stub_output" | grep -n '=== the beta suite' | head -1 | cut -d: -f1)"
+gamma_at="$(printf '%s\n' "$stub_output" | grep -n '=== the gamma suite' | head -1 | cut -d: -f1)"
+last_line="$(printf '%s\n' "$stub_output" | tail -1)"
+if [ "$stub_status" -eq 0 ] \
+  && [ -n "$alpha_at" ] && [ -n "$beta_at" ] && [ -n "$gamma_at" ] \
+  && [ "$alpha_at" -lt "$beta_at" ] && [ "$beta_at" -lt "$gamma_at" ] \
+  && printf '%s\n' "$stub_output" | grep -q '^ALPHA-RAN$' \
+  && printf '%s\n' "$stub_output" | grep -q '^BETA-RAN$' \
+  && printf '%s\n' "$stub_output" | grep -q '^GAMMA-RAN$' \
+  && [ "$last_line" = "PASS: all 3 suites" ]; then
+  ok "bash test.sh with no arguments runs every suite, in declared order, and ends with the unchanged PASS: all N suites line"
+else
+  no "bash test.sh with no arguments did not run all three stub suites in declared order with the unchanged PASS line (exit $stub_status): $stub_output"
+fi
+
+# Criterion: `bash test.sh` with no arguments prints what it prints today, on
+# the red path too. Break: dropping the failure branch or its exit 1.
+run_stub_test_sh 0 1 0
+last_line="$(printf '%s\n' "$stub_output" | tail -1)"
+if [ "$stub_status" -ne 0 ] && [ "$last_line" = "FAIL: 1 of 3 suite(s)" ]; then
+  ok "bash test.sh with no arguments and one failing suite exits non-zero and ends with the unchanged FAIL: N of M suite(s) line"
+else
+  no "bash test.sh with no arguments and one failing suite did not exit non-zero with the unchanged FAIL line (exit $stub_status): $stub_output"
+fi
+
+# Criterion: every suite carries a short stable name, and no two suites share
+# one. Break: dropping a suite's name, renaming one, or letting two suites
+# share one.
+list_output="$(run_with_hard_timeout 20 bash "$root/test.sh" --list)"
+list_status=$?
+list_names="$(printf '%s\n' "$list_output" | awk '{print $1}')"
+bad_names="$(printf '%s\n' "$list_names" | grep -vE '^[a-z][a-z0-9-]*$')"
+dup_names="$(printf '%s\n' "$list_names" | sort | uniq -d)"
+missing_names=""
+for expected_name in repo worktree backlog run-state read-barrier argus argus-ui log-parser; do
+  printf '%s\n' "$list_names" | grep -qx "$expected_name" || missing_names="${missing_names}${missing_names:+ }$expected_name"
+done
+if [ "$list_status" -eq 0 ] && [ -z "$bad_names" ] && [ -z "$dup_names" ] && [ -z "$missing_names" ]; then
+  ok "bash test.sh --list exits 0 and lists a typeable, unique name per suite, including the eight repository suites"
+else
+  no "bash test.sh --list (exit $list_status) did not list eight unique typeable names — bad=[$bad_names] dup=[$dup_names] missing=[$missing_names] output: $list_output"
+fi
+
+# Criterion: `bash test.sh --list` prints every suite's name and exits 0
+# without running a suite. Break: listing after the run pass, or falling
+# through from --list into it.
+suite_decl_count="$(grep -cE '^[[:space:]]*suite ' "$root/test.sh")"
+list_line_count="$(printf '%s\n' "$list_output" | grep -c '.')"
+list_has_section="$(printf '%s\n' "$list_output" | grep -c '=== ')"
+if [ "$list_status" -eq 0 ] \
+  && [ "$suite_decl_count" -gt 0 ] \
+  && [ "$list_line_count" -eq "$suite_decl_count" ] \
+  && [ "$list_has_section" -eq 0 ]; then
+  ok "bash test.sh --list prints exactly one line per declared suite, no '=== ' section line, and exits 0 without running a suite"
+else
+  no "bash test.sh --list (exit $list_status, $list_line_count lines against $suite_decl_count declared suites, $list_has_section '=== ' lines) did not list without running: $list_output"
+fi
+
+# Criterion: `bash test.sh --only <name>` runs that suite alone and no other.
+# Break: ignoring the filter in the run pass, or running the whole list and
+# only labelling the output.
+run_stub_test_sh 0 0 0 --only beta
+if [ "$stub_status" -eq 0 ] \
+  && printf '%s\n' "$stub_output" | grep -q '=== the beta suite' \
+  && printf '%s\n' "$stub_output" | grep -q '^BETA-RAN$' \
+  && ! printf '%s\n' "$stub_output" | grep -q '=== the alpha suite' \
+  && ! printf '%s\n' "$stub_output" | grep -q '=== the gamma suite' \
+  && ! printf '%s\n' "$stub_output" | grep -q '^ALPHA-RAN$' \
+  && ! printf '%s\n' "$stub_output" | grep -q '^GAMMA-RAN$'; then
+  ok "bash test.sh --only beta runs beta alone"
+else
+  no "bash test.sh --only beta (exit $stub_status) did not run beta alone: $stub_output"
+fi
+
+# Criterion: --only given more than once runs each named suite and no other,
+# in the order the suite list declares them. Break: running the selection in
+# command-line order, or honouring only the last --only.
+run_stub_test_sh 0 0 0 --only gamma --only alpha
+alpha_at="$(printf '%s\n' "$stub_output" | grep -n '=== the alpha suite' | head -1 | cut -d: -f1)"
+gamma_at="$(printf '%s\n' "$stub_output" | grep -n '=== the gamma suite' | head -1 | cut -d: -f1)"
+if [ "$stub_status" -eq 0 ] \
+  && [ -n "$alpha_at" ] && [ -n "$gamma_at" ] && [ "$alpha_at" -lt "$gamma_at" ] \
+  && ! printf '%s\n' "$stub_output" | grep -q 'BETA-RAN'; then
+  ok "bash test.sh --only gamma --only alpha runs alpha then gamma (declaration order), never beta"
+else
+  no "bash test.sh --only gamma --only alpha (exit $stub_status) did not run alpha then gamma with beta excluded: $stub_output"
+fi
+
+# Criterion: a name that matches no suite makes the run exit non-zero, print
+# the unmatched name and print the names that do exist, and run no suite at
+# all. Break: skipping validation so an unknown name silently runs nothing and
+# exits 0.
+run_stub_test_sh 0 0 0 --only nope
+if [ "$stub_status" -ne 0 ] \
+  && printf '%s\n' "$stub_output" | grep -q 'nope' \
+  && printf '%s\n' "$stub_output" | grep -q 'alpha' \
+  && printf '%s\n' "$stub_output" | grep -q 'beta' \
+  && printf '%s\n' "$stub_output" | grep -q 'gamma' \
+  && ! printf '%s\n' "$stub_output" | grep -q '=== ' \
+  && ! printf '%s\n' "$stub_output" | grep -qE 'ALPHA-RAN|BETA-RAN|GAMMA-RAN'; then
+  ok "bash test.sh --only nope exits non-zero, names nope, lists the suites that do exist, and runs none of them"
+else
+  no "bash test.sh --only nope (exit $stub_status) did not fail cleanly naming nope and the existing suites: $stub_output"
+fi
+
+# Criterion: a name that matches no suite runs no suite at all, even when a
+# valid name is also given. Break: validating each name inside the run pass
+# instead of before it.
+run_stub_test_sh 0 0 0 --only alpha --only nope
+if [ "$stub_status" -ne 0 ] \
+  && printf '%s\n' "$stub_output" | grep -q 'nope' \
+  && ! printf '%s\n' "$stub_output" | grep -q 'ALPHA-RAN'; then
+  ok "bash test.sh --only alpha --only nope exits non-zero, names nope, and never runs alpha"
+else
+  no "bash test.sh --only alpha --only nope (exit $stub_status) ran a suite despite the unknown name, or did not name it: $stub_output"
+fi
+
+# Criterion: a filtered run never prints the wording an unfiltered green run
+# ends with, and its closing line names how many of the repository's suites it
+# ran and that it was filtered. Break: reusing the PASS: all N suites line for
+# a filtered run, or counting only the suites run so the repository's total
+# disappears.
+run_stub_test_sh 0 0 0 --only alpha
+last_line="$(printf '%s\n' "$stub_output" | tail -1)"
+if [ "$stub_status" -eq 0 ] \
+  && ! printf '%s\n' "$stub_output" | grep -q '^PASS:' \
+  && ! printf '%s\n' "$stub_output" | grep -q '^FAIL:' \
+  && [ "$last_line" = "FILTERED: ran 1 of 3 suites — a filtered run is not a green suite" ]; then
+  ok "bash test.sh --only alpha never prints the unfiltered PASS:/FAIL: wording and ends with the filtered line naming 1 of 3 suites"
+else
+  no "bash test.sh --only alpha (exit $stub_status) did not end with the filtered closing line: $stub_output"
+fi
+
+# Criterion: a filtered run whose suites all pass exits 0. Break: exiting
+# non-zero because the run was filtered.
+run_stub_test_sh 0 0 0 --only alpha --only beta
+last_line="$(printf '%s\n' "$stub_output" | tail -1)"
+if [ "$stub_status" -eq 0 ] && [ "$last_line" = "FILTERED: ran 2 of 3 suites — a filtered run is not a green suite" ]; then
+  ok "bash test.sh --only alpha --only beta, both passing, exits 0 and ends with FILTERED: ran 2 of 3 suites"
+else
+  no "bash test.sh --only alpha --only beta (exit $stub_status) did not exit 0 with the filtered closing line: $stub_output"
+fi
+
+# Criterion: a filtered run with a failing suite exits non-zero. Break:
+# dropping the failure count from the filtered branch so a red filtered run
+# exits 0.
+run_stub_test_sh 1 0 0 --only alpha
+last_line="$(printf '%s\n' "$stub_output" | tail -1)"
+if [ "$stub_status" -ne 0 ] && [ "$last_line" = "FILTERED: ran 1 of 3 suites, 1 failed — a filtered run is not a green suite" ]; then
+  ok "bash test.sh --only alpha, failing, exits non-zero and ends with FILTERED: ran 1 of 3 suites, 1 failed"
+else
+  no "bash test.sh --only alpha, failing, (exit $stub_status) did not exit non-zero with the failed filtered closing line: $stub_output"
+fi
+
+# Criterion: adding a suite to test.sh requires giving it a name, and a suite
+# without one makes a case turn red. Break: dropping the name validation in
+# the collect pass, which would let an unnamed suite run unfilterable.
+run_nameless_stub_test_sh
+if [ "$stub_status" -ne 0 ] \
+  && printf '%s\n' "$stub_output" | grep -qi 'name' \
+  && ! printf '%s\n' "$stub_output" | grep -q 'ALPHA-RAN'; then
+  ok "a suite declared without a name makes test.sh exit non-zero, naming the problem, without running the nameless suite"
+else
+  no "a suite declared without a name (exit $stub_status) did not fail with a message naming the problem: $stub_output"
+fi
+
+# Criterion: adding a suite requires giving it a name, and no two share one.
+# Break: dropping the duplicate-name check.
+run_dup_stub_test_sh
+if [ "$stub_status" -ne 0 ] && printf '%s\n' "$stub_output" | grep -q 'alpha'; then
+  ok "two suites declared with the same name make test.sh exit non-zero, naming the shared name alpha"
+else
+  no "two suites sharing the name alpha (exit $stub_status) did not fail naming alpha: $stub_output"
+fi
+
+# Criterion: adding a suite requires giving it a name (the structural half) —
+# every suite is declared inside one declare_suites() function, through a
+# `suite` command that carries a name. Break: bolting a new suite in as a bare
+# command line outside the table, where it would carry no name and no filter
+# could reach it; also break: reshaping the function so the harness above
+# silently substitutes nothing.
+struct_check="$(awk '
+  /^declare_suites\(\) \{$/ { declare_count++; in_fn=1; next }
+  in_fn && /^\}$/ { closed=1; in_fn=0; next }
+  {
+    line=$0
+    trimmed=line
+    sub(/^[ \t]+/, "", trimmed)
+    if (trimmed ~ /^#/) next
+    if (line ~ /bash "\$root\/test-.*\.sh"/ || line ~ /node --test/ || line ~ /npm --prefix/) {
+      if (trimmed !~ /^suite /) bad = bad NR " "
+    }
+  }
+  END { print (declare_count + 0) "|" (closed + 0) "|" bad }
+' "$root/test.sh")"
+declare_count="$(printf '%s' "$struct_check" | cut -d'|' -f1)"
+declare_closed="$(printf '%s' "$struct_check" | cut -d'|' -f2)"
+bad_invocation_lines="$(printf '%s' "$struct_check" | cut -d'|' -f3)"
+if [ "$declare_count" -eq 1 ] && [ "$declare_closed" -eq 1 ] && [ -z "$bad_invocation_lines" ]; then
+  ok "test.sh declares every suite inside one declare_suites() function whose closing brace sits at column 0, through a suite command"
+else
+  no "test.sh's declare_suites() structure is missing, or a suite invocation does not begin with 'suite ' (declare_count=$declare_count closed=$declare_closed bad_lines=[$bad_invocation_lines])"
+fi
+
+# Not a criterion: tested because a typo in argument handling that ran
+# everything would look green. Break: treating an unknown argument or a
+# valueless --only as no argument at all.
+run_stub_test_sh 0 0 0 --all
+all_ok=1
+[ "$stub_status" -ne 0 ] || all_ok=0
+printf '%s\n' "$stub_output" | grep -q -- '--only' || all_ok=0
+printf '%s\n' "$stub_output" | grep -q -- '--list' || all_ok=0
+printf '%s\n' "$stub_output" | grep -qE 'ALPHA-RAN|BETA-RAN|GAMMA-RAN' && all_ok=0
+
+run_stub_test_sh 0 0 0 --only
+[ "$stub_status" -ne 0 ] || all_ok=0
+printf '%s\n' "$stub_output" | grep -qE 'ALPHA-RAN|BETA-RAN|GAMMA-RAN' && all_ok=0
+
+if [ "$all_ok" -eq 1 ]; then
+  ok "an unknown argument (--all) exits non-zero with usage naming --only and --list, and a valueless --only exits non-zero, neither running a suite"
+else
+  no "argument handling fell through: an unknown argument or a valueless --only did not exit non-zero without running a suite"
+fi
+
+echo
 if [ "$failed" -eq 0 ]; then
   echo "PASS: $passed cases"
 else
