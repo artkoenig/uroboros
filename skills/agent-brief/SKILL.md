@@ -103,6 +103,18 @@ Report the command, what it covered, and its exit code — "`npm test --
 src/api`, 104 cases, exit 0", never "green" alone. Say so if a run skipped or
 excluded anything.
 
+A listed command may be narrowed to part of what it runs — one suite out of
+the run's list, one file out of a suite, an `--only` filter. Narrow it while
+you are iterating: narrowing a command the list names is not running a command
+it does not name.
+
+A narrowed run is evidence about the part it ran, and never the fact that the
+suite is green. Never commit on, report or take a verdict from one — not "the
+only suite my change touches is green", not "the rest of them passed an hour
+ago": the run behind a commit, a report or a verdict is the unfiltered one,
+exactly as the list names it, and a chain in which every agent narrowed ships
+a change nobody ran the suite against.
+
 ## The mutation standard
 
 A criterion counts as tested only when at least one of its tests fails if the
