@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "issue": "docs/issues/2026-08-17-correction-rounds-read-the-plan/issue.md",
+  "workflow": "agile-loop",
+  "codemap": "",
+  "increments": [
+    {
+      "id": "i1",
+      "title": "A correction round's researcher is sent to its own previous plan",
+      "goal": "A correction round's researcher prompt names the previous round's research step of the same increment and its plan field, and instructs the researcher to read it out of the run state before planning the fix; the pages that describe what such a researcher reads say so too, and a test turns red when the prompt stops naming it.",
+      "criteria": [
+        "A correction round's researcher prompt names the research step of the round before for the same increment, and instructs the researcher to read that step's plan out of the run state before it plans the fix.",
+        "The prompt names that step and its field and copies no plan text into itself.",
+        "The step the prompt names belongs to the increment being worked and never to another increment.",
+        "Where the increment's previous round dispatched no researcher, the prompt names no such step and stays valid.",
+        "Every page that describes what a correction round's researcher reads describes this too.",
+        "A test turns red when the prompt no longer names the previous round's plan.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-17T13:19:04.364Z",
+        "return": {
+          "questions": [],
+          "rulings": [
+            "Cut the issue as a single increment rather than splitting the workflow prompt from the pages and the test, because the criteria describe one change to one prompt and its two descriptions, and a split would leave the pages describing a read the prompt does not name yet; wrong costs one larger increment to review in a single chain instead of two smaller ones.",
+            "Set the increment's depth to `full`, because the issue asks for a test that turns red when the prompt stops naming the previous round's plan and no such test exists; wrong costs a researcher and a test-author the run could have skipped."
+          ],
+          "summary": "Cut docs/issues/2026-08-17-correction-rounds-read-the-plan into one full-chain increment, i1, covering all seven acceptance criteria: A correction round's researcher prompt names the research step of the round before for the same increment -> i1; The prompt names that step and its field and copies no plan text -> i1; The step named belongs to the increment being worked -> i1; Where the previous round dispatched no researcher the prompt names no such step -> i1; Every page that describes what a correction round's researcher reads describes this too -> i1; A test turns red when the prompt no longer names the previous round's plan -> i1; `bash test.sh` exits 0 -> i1. The codemap names three files: the workflow that builds the prompt, the researcher's page that describes what a correction round reads, and the repository suite that holds the workflow driver cases. One increment because the criteria describe one change to one prompt plus its descriptions and its test; splitting it would land pages promising a read the prompt does not yet name."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-17-correction-rounds-read-the-plan\nOpen the run state for docs/issues/2026-08-17-correction-rounds-read-the-plan/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
