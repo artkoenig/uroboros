@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "issue": "",
+  "workflow": "agile-loop",
+  "codemap": "test.sh — the filter itself: argument handling for `--only` and `--list`, a name per suite, the unmatched-name failure, and the closing line a filtered run ends with.\ntest-repo.sh — the repository's own cases: the guard that every suite listed in test.sh carries a name, one case per rule the agent pages gain, and the cases that cover the filter's behaviour.\nskills/agent-brief/SKILL.md — carries the rules every agent follows about which commands it runs and how it reports them, so the rule that a filtered run is not the green suite belongs among them.\nagents/reviewer.md — the page whose worked example runs `bash test.sh` and which takes the verdict from that run.\nREADME.md — documents the one test command and glosses it as eight suites; a name list and a filter flag change what that line says.\nskills/CLAUDE.md — states that a shipped executable's suite is listed in test.sh, which now also means naming it.",
+  "increments": [
+    {
+      "id": "cli-filter",
+      "title": "test.sh runs only the suites you name",
+      "goal": "test.sh gains typeable per-suite names, a `--only` filter that can be repeated, a `--list` listing, a hard failure on an unknown name, and a closing line that says a filtered run was filtered — while the no-argument run is unchanged.",
+      "criteria": [
+        "`bash test.sh` with no arguments runs every suite and prints what it prints today.",
+        "Every suite carries a short stable name that a caller can type, and no two suites share one.",
+        "`bash test.sh --only <name>` runs that suite alone and no other.",
+        "`--only` given more than once runs each named suite and no other, in the order the suite list declares them.",
+        "`bash test.sh --list` prints every suite's name and exits 0 without running a suite.",
+        "A name that matches no suite makes the run exit non-zero, print the unmatched name and print the names that do exist, and run no suite at all.",
+        "A filtered run never prints the wording an unfiltered green run ends with, and its closing line names how many of the repository's suites it ran and that it was filtered.",
+        "A filtered run whose suites all pass exits 0, and a filtered run with a failing suite exits non-zero.",
+        "Adding a suite to test.sh requires giving it a name, and a suite without one makes a case turn red.",
+        "The behaviour of each criterion in this increment is covered by cases that turn red when that behaviour is removed."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    },
+    {
+      "id": "agent-rules",
+      "title": "The agents' rules say a filtered run is not green",
+      "goal": "The rules the agents follow state that a filtered run does not establish that the suite is green and that the run an agent commits, reports or takes a verdict from is the unfiltered one, with a test-repo.sh case behind each rule added.",
+      "criteria": [
+        "The rules the agents follow state that a filtered run is not the fact that the suite is green, and that the run an agent commits, reports or takes a verdict from is the unfiltered one.",
+        "Every rule this adds to a page gets a case in test-repo.sh that turns red when that rule is removed, and each such case matches only the passage carrying its rule.",
+        "`bash test.sh` exits 0."
+      ],
+      "depth": "full",
+      "status": "todo",
+      "note": "",
+      "branch": "",
+      "steps": [],
+      "attempts": []
+    }
+  ],
+  "run": {
+    "steps": [
+      {
+        "label": "decompose",
+        "at": "2026-08-17T16:14:27.193Z",
+        "return": {
+          "questions": [],
+          "rulings": [
+            "Cut the issue into two increments rather than one, because the CLI behaviour of test.sh and the rules the agent pages carry are judged by different evidence and the second only makes sense once the filter exists; wrong costs one extra research-test-build-review chain.",
+            "Left the suite that covers test.sh's own filter behaviour unnamed as a file in the codemap, because whether those cases join test-repo.sh or a new suite of their own is the researcher's call; wrong costs the researcher one extra search.",
+            "Assigned the issue's blanket `bash test.sh exits 0` criterion to the last increment alone, because every increment leaves the repository green anyway and repeating it would put one criterion in two increments; wrong costs nothing beyond a re-cut of criteria text."
+          ],
+          "summary": "Two increments. `cli-filter` is the load-bearing one and goes first: it puts typeable suite names, `--only` (repeatable), `--list`, the unmatched-name failure, the filtered closing line and the exit-code contract into test.sh, with the no-argument run unchanged and a guard that a new suite without a name turns a case red. `agent-rules` follows: it lands the rule that a filtered run is not the fact that the suite is green and that the run an agent commits, reports or takes a verdict from is the unfiltered one, each rule backed by a test-repo.sh case that matches only its own passage. I rejected splitting the filter itself into flag-parsing and output-wording halves — the wording criterion is the point of the filter and half of it alone is a filter nobody may trust — and rejected a separate documentation increment, since README and skills/CLAUDE.md follow whichever increment changes the behaviour they describe. Criterion map: no-argument run unchanged -> cli-filter; every suite carries a unique typeable name -> cli-filter; `--only <name>` runs that suite alone -> cli-filter; repeated `--only` in declared order -> cli-filter; `--list` prints names and exits 0 -> cli-filter; unmatched name exits non-zero, prints it and the existing names, runs nothing -> cli-filter; filtered run never prints the unfiltered green wording and says it was filtered -> cli-filter; filtered exit codes -> cli-filter; a suite without a name turns a case red -> cli-filter; behaviour of those criteria covered by red-on-removal cases -> cli-filter; the agents' rules state a filtered run is not the green suite -> agent-rules; every rule added gets a passage-specific test-repo.sh case -> agent-rules; `bash test.sh` exits 0 -> agent-rules. Codemap names test.sh, test-repo.sh, skills/agent-brief/SKILL.md, agents/reviewer.md, README.md and skills/CLAUDE.md."
+        },
+        "prompt": "Issue directory: docs/issues/2026-08-17-test-sh-only-filter\nOpen the run state for docs/issues/2026-08-17-test-sh-only-filter/issue.md: map the issue against the codebase, decide the cut, and write both into docs/issues/2026-08-17-test-sh-only-filter/backlog.json with the `init` subcommand of the backlog helper your shared brief names, with workflow \"agile-loop\" and the whole codemap in the payload's `codemap` field.\nThis run works at most 8 increments, so a cut that needs more than that is a cut that is too fine.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-test-sh-only-filter/backlog.json - decompose <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-test-sh-only-filter/backlog.json - decompose <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+      }
+    ],
+    "attempts": []
+  }
+}
