@@ -120,7 +120,9 @@ listed in [`.worktreeinclude`](.worktreeinclude) and copied in.
 ## 🧪 Tests
 
 ```bash
-bash test.sh   # eight suites: repo rules, worktrees, recorder, hooks, read barrier, tools
+bash test.sh                     # every suite: repo rules, worktrees, recorder, hooks, read barrier, tools
+bash test.sh --only read-barrier # just the suite you name, repeatable
+bash test.sh --list              # the name of every suite, and what it covers
 ```
 
 ## 📚 Read more
