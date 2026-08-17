@@ -54,6 +54,95 @@
             "summary": "A correction round's researcher will be sent to its own previous round's plan through the run state — one guarded `--fields plan` read in the workflow's correction block, a per-increment `previousPlanLabel` that resets whenever a round dispatches no researcher, and the same rule on the researcher's page — with two new driver modes and two page cases in test-repo.sh proving it, including the direct-increment and direct-fix rounds where no such step exists."
           },
           "prompt": "Issue directory: docs/issues/2026-08-17-correction-rounds-read-the-plan\nThis run works docs/issues/2026-08-17-correction-rounds-read-the-plan/issue.md one increment at a time, and increment 1 is yours:\n  A correction round's researcher is sent to its own previous plan — A correction round's researcher prompt names the previous round's research step of the same increment and its plan field, and instructs the researcher to read it out of the run state before planning the fix; the pages that describe what such a researcher reads say so too, and a test turns red when the prompt stops naming it.\nWhat it has to satisfy:\n  - A correction round's researcher prompt names the research step of the round before for the same increment, and instructs the researcher to read that step's plan out of the run state before it plans the fix.\n  - The prompt names that step and its field and copies no plan text into itself.\n  - The step the prompt names belongs to the increment being worked and never to another increment.\n  - Where the increment's previous round dispatched no researcher, the prompt names no such step and stays valid.\n  - Every page that describes what a correction round's researcher reads describes this too.\n  - A test turns red when the prompt no longer names the previous round's plan.\n  - `bash test.sh` exits 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json`, before you begin.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json i1 research:i1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json i1 research:i1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `needsTests`\n  - `plan`\n  - `moduleMap`\n  - `environment`\n  - `testPlan`\n  - `checks`\n  - `breaks`\n  - `unbreakable`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        },
+        {
+          "label": "tests:i1.0",
+          "at": "2026-08-17T13:35:01.640Z",
+          "return": {
+            "cases": [
+              {
+                "case": "1.1 — mode w10, the research:i1.1 dispatch prompt contains readStep('i1','research:i1.0','plan')",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "run_driver w10: \"agile-loop.js: a correction round carries the reviewer's findings to the researcher and the reason to the human\" — added assertion \"the correction round's researcher is not sent to read the round-before's plan out of the run state\"",
+                "want": "round1's prompt (research:i1.1) contains the literal string readStep('i1', 'research:i1.0', 'plan'), i.e. 'steps docs/issues/x/backlog.json i1 research:i1.0 --fields plan'",
+                "got": "FAIL — the correction round's researcher is not sent to read the round-before's plan out of the run state (bash test-repo.sh, w10 driver run)"
+              },
+              {
+                "case": "2.1 — the same asserted string as 1.1 carries --fields plan, pinning the field; the standing per-call assertion (no prompt reads a step without --fields) covers every other mode",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "same assertion as 1.1 (w10), plus the pre-existing standing per-call loop 'reads a step without naming the fields it may see'",
+                "want": "the new read names --fields plan explicitly; no prompt in any mode reads a step with no --fields at all",
+                "got": "FAIL — same failure as 1.1 pins this; the standing --fields loop currently passes in every mode (no case broke it)"
+              },
+              {
+                "case": "2.2 — every mode, standing per-call assertion: no prompt of any dispatch contains the researcher's returned plan text (MARKER-PLAN-TEXT)",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "standing loop in main(): '<label> prompt carries the previous round's plan text instead of naming the read that fetches it' — planReturn gained plan: 'MARKER-PLAN-TEXT', joined to DISJOINT_MARKERS",
+                "want": "no call.prompt in any of the 38 driver modes contains MARKER-PLAN-TEXT",
+                "got": "currently passes in every mode (bash test-repo.sh, all w1-w38 runs ok) since no prompt interpolates the plan today; it turns red if a correction dispatch appends the round-before return's plan text into the prompt instead of naming the read"
+              },
+              {
+                "case": "3.1 (positive) — mode w10, the assertion of 1.1 names i1 and research:i1.0 while increment i1 is being worked",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "same assertion as 1.1 (w10)",
+                "want": "the named step is 'i1' / 'research:i1.0' while i1 is the increment worked",
+                "got": "FAIL — same failure as 1.1"
+              },
+              {
+                "case": "3.2 (negative) — new mode w37: i1 full/clean, i2 direct with a round-0 finding, so i2's round 1 researcher must never name increment i1's research step",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "run_driver w37: \"agile-loop.js: a correction round of one increment never names another increment's research step, even when its own round before dispatched no researcher\"",
+                "want": "labels match the given full sequence, and research:i2.1's prompt contains no occurrence of 'research:i1' at all",
+                "got": "currently ok (bash test-repo.sh, w37 driver run) — the fixture's label sequence and the absence of 'research:i1' both hold today, since no cross-increment leak exists yet; it turns red if a fix carries the last researcher's label across increment boundaries instead of scoping it to the increment being worked"
+              },
+              {
+                "case": "4.1 — mode w37: the research:i2.1 prompt matches no 'i2 research:' read at all, and still contains readStep('i2','review:i2.0','findings')",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "run_driver w37 (same test as 3.2), second assertion 'i2's correction-round researcher prompt names a research step of i2, though i2's own round 0 dispatched no researcher for it to read'",
+                "want": "no `steps docs/issues/x/backlog.json i2 research:` read appears in research:i2.1's prompt; the label sequence is unchanged",
+                "got": "currently ok — passes vacuously since the read does not exist yet at all; turns red if an unconditional render emits the read with an empty label"
+              },
+              {
+                "case": "4.2 — new mode w38: a direct-fix round (no researcher) followed by a full round; round 2's researcher must name no plan step at all, not even the plan two rounds back",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "run_driver w38: \"agile-loop.js: a round whose round before was a direct-fix round is sent to no plan step at all, not even the plan two rounds back\"",
+                "want": "labels match the given sequence; research:i1.2's prompt matches no 'i1 research:' read at all (in particular not research:i1.0); still contains readStep('i1','review:i1.1','findings')",
+                "got": "currently ok — passes vacuously since the plan-read feature does not exist yet; turns red if round 0's label is made to survive the direct-fix round instead of being cleared, sending round 2 back to research:i1.0"
+              },
+              {
+                "case": "5.1 — agents/researcher.md, collapsed to one line, contains verbatim 'Where your prompt names the research step of the round before, read its `plan` first'",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "=== a correction round's researcher reads the plan it already wrote — \"agents/researcher.md tells a correction round's researcher to read the round-before's plan first\"",
+                "want": "the collapsed page text contains that sentence",
+                "got": "FAIL — agents/researcher.md does not tell a correction round's researcher to read the round-before's plan (bash test-repo.sh)"
+              },
+              {
+                "case": "5.2 — the description: line of agents/researcher.md's frontmatter contains 'the plan the round before wrote'",
+                "file": "/home/user/uroboros/test-repo.sh",
+                "testName": "=== a correction round's researcher reads the plan it already wrote — \"agents/researcher.md's frontmatter description names the plan the round before wrote\"",
+                "want": "the description: line contains that phrase",
+                "got": "FAIL — agents/researcher.md's frontmatter description does not name the plan the round before wrote (bash test-repo.sh)"
+              },
+              {
+                "case": "6.1 — case 1.1 is the go-red case for this criterion; no second case, since a criterion satisfied by another criterion's case is satisfied by that case running",
+                "file": "",
+                "testName": "",
+                "want": "",
+                "got": "not a separate case — satisfied by case 1.1's test running and failing red, as the plan itself states"
+              },
+              {
+                "case": "7 — bash test.sh exits 0 — no case of its own; the command is the executable check, checked by the implementer once the change exists",
+                "file": "",
+                "testName": "",
+                "got": "not a separate case — the plan names no test for this criterion, only the command itself"
+              }
+            ],
+            "openQuestions": [],
+            "questions": [],
+            "rulings": [],
+            "summary": "Added driver modes w37 and w38 and one new assertion in the existing w10 case to test-repo.sh, plus two page cases under a new '=== a correction round's researcher reads the plan it already wrote' heading, per the researcher's test plan for increment 1. bash test-repo.sh: 253 ok, 3 FAIL (the w10 plan-read assertion and the two page cases) — all three fail on the missing behaviour itself, confirmed by reading their failure messages; the two new fixture modes w37 and w38 pass today because the cross-increment and cross-round leaks they guard against do not exist yet, and will turn red only if the implementer introduces them."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-17-correction-rounds-read-the-plan\nThis run works docs/issues/2026-08-17-correction-rounds-read-the-plan/issue.md one increment at a time, and increment 1 is yours:\n  A correction round's researcher is sent to its own previous plan — A correction round's researcher prompt names the previous round's research step of the same increment and its plan field, and instructs the researcher to read it out of the run state before planning the fix; the pages that describe what such a researcher reads say so too, and a test turns red when the prompt stops naming it.\nWhat it has to satisfy:\n  - A correction round's researcher prompt names the research step of the round before for the same increment, and instructs the researcher to read that step's plan out of the run state before it plans the fix.\n  - The prompt names that step and its field and copies no plan text into itself.\n  - The step the prompt names belongs to the increment being worked and never to another increment.\n  - Where the increment's previous round dispatched no researcher, the prompt names no such step and stays valid.\n  - Every page that describes what a correction round's researcher reads describes this too.\n  - A test turns red when the prompt no longer names the previous round's plan.\n  - `bash test.sh` exits 0.\nEvery other increment is settled; this is the last one, so the issue is complete once yours is.\nYour work order is the researcher's test plan. It is in the run state, and these reads are how you get it, with the `steps` subcommand of the backlog helper your shared brief names:\n  - `steps docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json i1 research:i1.0 --fields testPlan` — the test plan.\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json i1 tests:i1.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-correction-rounds-read-the-plan/backlog.json i1 tests:i1.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `cases`\n  - `openQuestions`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
         }
       ],
       "attempts": []
