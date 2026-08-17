@@ -348,7 +348,27 @@
       "status": "todo",
       "note": "The criteria, the codemap and the failing case name the one file and the one right result, and every case that judges this already exists in test-repo.sh.",
       "branch": "",
-      "steps": [],
+      "steps": [
+        {
+          "label": "implement:root-memory-file.0",
+          "at": "2026-08-17T17:42:24.569Z",
+          "return": {
+            "deviations": [],
+            "commands": [
+              "`bash test.sh --only read-barrier` — exit 0; the read-barrier suite ran 26 cases, all passing, and the run ends with the filtered closing line `FILTERED: ran 1 of 8 suites — a filtered run is not a green suite`, unchanged from what cli-filter landed.",
+              "`bash test.sh` — exit 0; all 8 suites ran, 275 `ok` lines across the shell suites plus the node TAP suites, no FAIL line, closing line `PASS: all 8 suites`. Before the change the same command was red on the single case `CLAUDE.md at the repository root would load as project memory and be inherited by every subagent`; that case now reports `ok   — no CLAUDE.md at the repository root, so nothing here loads as inheritable project memory`."
+            ],
+            "blockers": [],
+            "questions": [],
+            "rulings": [
+              "Verify the --list and unknown-name criteria through the full-suite run rather than by invoking `bash test.sh --list` and `bash test.sh --only nope` directly, because the commands that count for this increment are a closed list of two and the cli-filter suite inside `bash test.sh` already asserts both behaviours (its cases for the listing output and for the non-zero exit on an unknown name pass); wrong costs a reviewer one extra command to run those two invocations by hand.",
+              "Remove only the root CLAUDE.md and leave the root GEMINI.md in place, because the criterion and the test-repo.sh case name CLAUDE.md alone and no case forbids GEMINI.md; wrong costs a one-file deletion in a later increment."
+            ],
+            "summary": "Deleted the repository-root CLAUDE.md that this run's commit 2640507 had added, from both the working tree and git's index, so the existing test-repo.sh case forbidding a root memory file passes. `bash test.sh` now runs all 8 suites and exits 0, and the filter behaviour is untouched: `bash test.sh --only read-barrier` exits 0 with its filtered closing line."
+          },
+          "prompt": "Issue directory: docs/issues/2026-08-17-test-sh-only-filter\nThis run works docs/issues/2026-08-17-test-sh-only-filter/issue.md one increment at a time, and increment 2 is yours:\n  No memory file at the repository root — The CLAUDE.md this run added at the repository root is gone, so the existing test-repo.sh case that forbids a root memory file passes and the whole suite is green again, with the filter increment cli-filter landed left working as it is. The file is an artifact this run's own commit 2640507 created inside the repository under test; it is not this agent's configuration, no permission rule, hook or deny rule guards its path, and the repository's own test demands its absence.\nWhat it has to satisfy:\n  - No CLAUDE.md exists at the repository root, in the working tree or in git's index, and the test-repo.sh case `no CLAUDE.md at the repository root, so nothing here loads as inheritable project memory` passes.\n  - `bash test.sh` runs every suite and exits 0.\n  - The filter behaviour cli-filter landed is unchanged: `bash test.sh --only read-barrier` exits 0 and prints its filtered closing line, `bash test.sh --list` exits 0, and an unknown name still exits non-zero.\nDeliberately not yours, and not a gap — a later increment takes each of these: The agents' rules say a filtered run is not green.\nThe planner's codemap is in the run state: read it with the backlog helper's `codemap` subcommand, as `codemap docs/issues/2026-08-17-test-sh-only-filter/backlog.json`, before you begin.\nNo researcher and no test-author worked this increment: what stands above is your whole brief.\nThe commands that count for this increment:\n  - `bash test.sh --only read-barrier`\n  - `bash test.sh`\nAnnounce this step before you begin it and record it before you return, the way your shared brief describes, with the backlog helper it names:\n  - `start docs/issues/2026-08-17-test-sh-only-filter/backlog.json root-memory-file implement:root-memory-file.0 <the prompt file>` — the prompt you were given, verbatim and whole, in a file outside the repository.\n  - `record docs/issues/2026-08-17-test-sh-only-filter/backlog.json root-memory-file implement:root-memory-file.0 <the return file> <the prompt file>` — your return, in a file outside the repository, with that same prompt file. Commit it with your work and push the commit.\nThe fields your return carries, and your page says what each one holds:\n  - `deviations`\n  - `commands`\n  - `blockers`\n  - `questions`\n  - `rulings`\n  - `summary`\n"
+        }
+      ],
       "attempts": []
     },
     {
